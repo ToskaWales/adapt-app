@@ -546,6 +546,7 @@ const provider = new GoogleAuthProvider();
 // ── expose to window so non-module code can call ──
 window._fb = { auth, db, provider, fbSignOut, addDoc, getDocs, query, orderBy, limit, serverTimestamp, collection };
 
+getRedirectResult(auth).catch(e => console.error(e)); 
 window.signInWithGoogle = async () => {
   try { await signInWithRedirect(auth, provider); }
   catch(e) { console.error(e); alert('Sign-in failed: ' + e.message); }
