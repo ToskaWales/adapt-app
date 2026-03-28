@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADAPT — Training Coach</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080808; --s1: #111; --s2: #181818; --s3: #222;
+  --acc: #c8ff00; --acc2: #ff4d00; --acc3: #00d4ff;
+  --text: #f2f2f2; --muted: #666; --border: #252525;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'JetBrains Mono', monospace; font-weight: 300; overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1000; opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+.screen { display: none; min-height: 100vh; padding: 0; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ── LOGIN ── */
+#login {
+justify-content: center; align-items: center;
+padding: 40px 24px; text-align: center; position: relative; overflow: hidden;
+}
+#login::after {
+content: ‘ADAPT’; position: absolute;
+font-family: ‘Syne’, sans-serif; font-weight: 800;
+font-size: clamp(100px, 30vw, 220px); color: transparent;
+-webkit-text-stroke: 1px #1a1a1a; pointer-events: none;
+top: 50%; left: 50%; transform: translate(-50%, -50%);
+white-space: nowrap; z-index: 0;
+}
+.login-inner { position: relative; z-index: 1; max-width: 360px; }
+.logo-tag {
+display: inline-flex; align-items: center; gap: 8px;
+background: var(–s2); border: 1px solid var(–border);
+padding: 6px 14px; font-size: 10px; letter-spacing: 0.15em;
+text-transform: uppercase; color: var(–acc); margin-bottom: 32px;
+}
+.logo-dot { width: 6px; height: 6px; background: var(–acc); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.login-title {
+font-family: ‘Syne’, sans-serif; font-weight: 800;
+font-size: clamp(38px, 11vw, 64px); line-height: 0.92;
+letter-spacing: -0.03em; margin-bottom: 20px;
+}
+.login-title .hi { color: var(–acc); }
+.login-title .lo { color: var(–muted); font-weight: 400; font-size: 0.5em; display: block; letter-spacing: 0.05em; margin-top: 10px; }
+.login-desc { color: var(–muted); font-size: 12px; line-height: 1.8; margin-bottom: 40px; }
+.btn-google {
+display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+background: #fff; color: #111; font-family: ‘Syne’, sans-serif;
+font-weight: 700; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase;
+padding: 16px 32px; cursor: pointer; border: none; width: 100%; max-width: 320px;
+transition: all 0.15s; position: relative; overflow: hidden;
+}
+.btn-google:hover { background: #f0f0f0; }
+.btn-google:active { transform: scale(0.98); }
+.g-icon { width: 20px; height: 20px; flex-shrink: 0; }
+.login-note { margin-top: 16px; font-size: 10px; color: var(–muted); letter-spacing: 0.06em; }
+
+/* ── HOME ── */
+#home {
+justify-content: center; align-items: center;
+padding: 40px 24px; text-align: center; position: relative; overflow: hidden;
+}
+#home::after {
+content: ‘ADAPT’; position: absolute;
+font-family: ‘Syne’, sans-serif; font-weight: 800;
+font-size: clamp(120px, 35vw, 260px); color: transparent;
+-webkit-text-stroke: 1px #1e1e1e; pointer-events: none;
+top: 50%; left: 50%; transform: translate(-50%, -50%);
+white-space: nowrap; z-index: 0;
+}
+.home-inner { position: relative; z-index: 1; }
+.user-bar {
+display: flex; align-items: center; justify-content: center;
+gap: 10px; margin-bottom: 28px;
+}
+.user-avatar {
+width: 32px; height: 32px; border-radius: 50%;
+border: 1px solid var(–border); object-fit: cover;
+}
+.user-name { font-size: 11px; color: var(–muted); letter-spacing: 0.06em; }
+.sign-out-btn {
+font-size: 10px; color: var(–muted); background: none; border: 1px solid var(–border);
+padding: 4px 10px; cursor: pointer; letter-spacing: 0.06em; transition: all 0.15s;
+}
+.sign-out-btn:hover { color: var(–acc2); border-color: var(–acc2); }
+.home-title {
+font-family: ‘Syne’, sans-serif; font-weight: 800;
+font-size: clamp(40px, 12vw, 72px); line-height: 0.92;
+letter-spacing: -0.03em; margin-bottom: 20px;
+}
+.home-title .hi { color: var(–acc); }
+.home-title .lo { color: var(–muted); font-weight: 400; font-size: 0.55em; display: block; letter-spacing: 0.05em; margin-top: 8px; }
+.home-desc { color: var(–muted); font-size: 12px; line-height: 1.8; max-width: 340px; margin: 0 auto 24px; }
+.mode-badges { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; justify-content: center; }
+.mode-badge-on { background: var(–s2); border: 1px solid var(–border); padding: 7px 14px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(–acc); }
+.mode-badge-soon { background: var(–s3); border: 1px solid var(–border); padding: 7px 14px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(–muted); }
+.btn-primary {
+display: inline-block; background: var(–acc); color: #000;
+font-family: ‘Syne’, sans-serif; font-weight: 700; font-size: 13px;
+letter-spacing: 0.08em; text-transform: uppercase;
+padding: 16px 40px; cursor: pointer; border: none; transition: all 0.15s;
+position: relative; overflow: hidden;
+}
+.btn-primary::after { content: ‘’; position: absolute; inset: 0; background: #fff; opacity: 0; transition: opacity 0.15s; }
+.btn-primary:hover::after { opacity: 0.15; }
+.btn-primary:active { transform: scale(0.98); }
+.btn-secondary {
+display: inline-block; background: transparent; color: var(–muted);
+font-family: ‘JetBrains Mono’, monospace; font-size: 11px; letter-spacing: 0.08em;
+padding: 12px 28px; cursor: pointer; border: 1px solid var(–border);
+transition: all 0.15s; margin-top: 12px;
+}
+.btn-secondary:hover { border-color: var(–muted); color: var(–text); }
+
+/* ── SHARED SCREEN PARTS ── */
+.screen-header {
+padding: 16px 20px; border-bottom: 1px solid var(–border);
+display: flex; align-items: center; gap: 14px;
+background: var(–s1); position: sticky; top: 0; z-index: 10;
+}
+.back-btn {
+background: none; border: 1px solid var(–border); color: var(–muted);
+font-size: 16px; width: 34px; height: 34px; cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+transition: all 0.15s; flex-shrink: 0;
+}
+.back-btn:hover { border-color: var(–acc); color: var(–acc); }
+.screen-title { font-family: ‘Syne’, sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; flex: 1; }
+.screen-body { flex: 1; padding: 24px 20px; overflow-y: auto; }
+
+/* ── CHECK-IN ── */
+.ci-section { margin-bottom: 32px; }
+.ci-label {
+font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+color: var(–acc); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.ci-label::after { content: ‘’; flex: 1; height: 1px; background: var(–border); }
+.ci-q { font-family: ‘Syne’, sans-serif; font-weight: 600; font-size: 15px; margin-bottom: 14px; line-height: 1.3; }
+.energy-slider {
+-webkit-appearance: none; width: 100%; height: 4px;
+background: var(–border); outline: none; border-radius: 0; margin-bottom: 10px;
+}
+.energy-slider::-webkit-slider-thumb {
+-webkit-appearance: none; width: 20px; height: 20px;
+background: var(–acc); cursor: pointer; border-radius: 0; transform: rotate(45deg);
+}
+.slider-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(–muted); }
+.slider-val {
+text-align: center; font-family: ‘Syne’, sans-serif; font-weight: 800;
+font-size: 34px; color: var(–acc); margin-top: 6px; transition: color 0.2s;
+}
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+padding: 8px 14px; border: 1px solid var(–border); font-size: 11px;
+letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s;
+background: var(–s2); color: var(–muted); user-select: none;
+}
+.chip:hover { border-color: var(–muted); color: var(–text); }
+.chip.active { border-color: var(–acc); background: rgba(200,255,0,0.07); color: var(–acc); }
+.chip.active-bad { border-color: var(–acc2); background: rgba(255,77,0,0.07); color: var(–acc2); }
+.ci-textarea {
+width: 100%; background: var(–s2); border: 1px solid var(–border);
+color: var(–text); font-family: ‘JetBrains Mono’, monospace; font-size: 12px;
+padding: 12px; resize: none; height: 80px; outline: none;
+transition: border-color 0.2s; line-height: 1.6;
+}
+.ci-textarea:focus { border-color: var(–acc); }
+.ci-textarea::placeholder { color: var(–muted); }
+.weight-input-wrap { display: flex; align-items: stretch; }
+.weight-input {
+background: var(–s2); border: 1px solid var(–border); border-right: none;
+color: var(–text); font-family: ‘Syne’, sans-serif; font-weight: 700;
+font-size: 28px; padding: 10px 14px; width: 130px; outline: none;
+text-align: center; transition: border-color 0.2s;
+}
+.weight-input:focus { border-color: var(–acc); }
+.weight-unit {
+background: var(–s3); border: 1px solid var(–border);
+padding: 10px 14px; font-size: 12px; color: var(–muted);
+display: flex; align-items: center; letter-spacing: 0.1em;
+}
+.submit-wrap { padding: 0 20px 40px; }
+
+/* ── GENERATING ── */
+#generating { justify-content: center; align-items: center; text-align: center; padding: 40px 24px; }
+.gen-anim {
+width: 72px; height: 72px; border: 2px solid var(–border);
+border-top-color: var(–acc); border-radius: 50%;
+animation: spin 1s linear infinite; margin: 0 auto 28px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.gen-title { font-family: ‘Syne’, sans-serif; font-weight: 700; font-size: 22px; margin-bottom: 10px; }
+.gen-sub { color: var(–muted); font-size: 12px; line-height: 1.8; }
+.gen-steps { margin-top: 24px; text-align: left; max-width: 280px; }
+.gen-step {
+display: flex; align-items: center; gap: 12px;
+padding: 9px 0; border-bottom: 1px solid var(–border);
+font-size: 11px; color: var(–muted); transition: color 0.3s;
+}
+.gen-step.done { color: var(–acc); }
+.gen-step.active { color: var(–text); }
+.step-icon { width: 14px; flex-shrink: 0; text-align: center; font-size: 11px; }
+
+/* ── RESULT ── */
+#result { flex-direction: column; }
+.plan-nav {
+display: flex; background: var(–s1); border-bottom: 1px solid var(–border);
+position: sticky; top: 0; z-index: 10; overflow-x: auto;
+}
+.plan-nav::-webkit-scrollbar { display: none; }
+.nav-tab {
+padding: 14px 18px; font-size: 10px; letter-spacing: 0.12em;
+text-transform: uppercase; color: var(–muted); cursor: pointer;
+white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.15s;
+}
+.nav-tab:hover { color: var(–text); }
+.nav-tab.active { color: var(–acc); border-bottom-color: var(–acc); }
+.plan-body { flex: 1; padding: 20px; overflow-y: auto; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.plan-output { font-size: 13px; line-height: 1.8; color: var(–text); }
+.plan-output h2 { font-family: ‘Syne’, sans-serif; font-weight: 700; font-size: 20px; margin: 20px 0 10px; color: var(–acc); letter-spacing: -0.01em; }
+.plan-output h2:first-child { margin-top: 0; }
+.plan-output h3 { font-family: ‘Syne’, sans-serif; font-weight: 600; font-size: 13px; margin: 16px 0 6px; color: var(–acc3); letter-spacing: 0.06em; text-transform: uppercase; }
+.plan-output p { margin-bottom: 10px; color: var(–muted); }
+.plan-output p strong { color: var(–text); font-weight: 500; }
+.plan-output ul { list-style: none; margin-bottom: 14px; }
+.plan-output ul li {
+display: flex; justify-content: space-between; align-items: baseline;
+padding: 7px 0; border-bottom: 1px solid var(–border); font-size: 12px;
+color: var(–muted); gap: 8px;
+}
+.plan-output ul li:last-child { border-bottom: none; }
+.plan-output ul li .li-kcal {
+font-size: 10px; color: var(–acc2); letter-spacing: 0.06em;
+white-space: nowrap; flex-shrink: 0;
+}
+.plan-output ul li::before { content: none; }
+.meal-block {
+background: var(–s2); border: 1px solid var(–border);
+margin-bottom: 10px; overflow: hidden;
+}
+.meal-header {
+display: flex; justify-content: space-between; align-items: center;
+padding: 12px 16px; cursor: pointer; gap: 10px;
+transition: background 0.15s;
+}
+.meal-header:hover { background: var(–s3); }
+.meal-num {
+font-family: ‘Syne’, sans-serif; font-size: 11px;
+background: var(–acc); color: #000; width: 22px; height: 22px;
+display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700;
+}
+.meal-name-wrap { flex: 1; }
+.meal-title { font-size: 13px; font-weight: 500; }
+.meal-time { font-size: 10px; color: var(–muted); margin-top: 2px; }
+.meal-kcal-badge {
+font-family: ‘Syne’, sans-serif; font-weight: 700; font-size: 16px;
+color: var(–acc2); letter-spacing: 0.03em; white-space: nowrap;
+}
+.meal-kcal-badge span { font-size: 10px; font-family: ‘JetBrains Mono’, monospace; font-weight: 300; }
+.meal-body { display: none; border-top: 1px solid var(–border); padding: 12px 16px; }
+.meal-body.open { display: block; }
+.meal-items { list-style: none; }
+.meal-items li {
+display: flex; justify-content: space-between;
+font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(–border); color: var(–muted);
+}
+.meal-items li:last-child { border-bottom: none; }
+.meal-items li span:first-child { color: var(–text); }
+.meal-chevron { color: var(–muted); font-size: 11px; transition: transform 0.2s; }
+.meal-chevron.open { transform: rotate(180deg); }
+.result-actions {
+padding: 14px 20px; border-top: 1px solid var(–border);
+display: flex; gap: 10px; background: var(–s1); flex-wrap: wrap;
+}
+.result-actions .btn-primary { font-size: 11px; padding: 12px 20px; flex: 1; text-align: center; }
+.result-actions .btn-secondary { font-size: 11px; padding: 12px 20px; flex: 1; text-align: center; }
+
+/* ── HISTORY ── */
+.history-badge {
+background: var(–s2); border: 1px solid var(–border);
+padding: 14px 16px; margin-bottom: 8px;
+display: flex; justify-content: space-between; align-items: center;
+cursor: pointer; transition: border-color 0.15s;
+}
+.history-badge:hover { border-color: var(–acc); }
+.history-date { font-size: 11px; color: var(–muted); }
+.history-energy { font-family: ‘Syne’, sans-serif; font-weight: 700; font-size: 20px; }
+.energy-hi { color: var(–acc); }
+.energy-mid { color: #ffaa00; }
+.energy-lo { color: var(–acc2); }
+.empty-state { text-align: center; padding: 60px 20px; color: var(–muted); font-size: 12px; line-height: 1.8; }
+
+/* ── WEIGHT CHART ── */
+.chart-wrap {
+background: var(–s2); border: 1px solid var(–border);
+padding: 16px; margin-bottom: 20px;
+}
+.chart-title { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(–acc); margin-bottom: 12px; }
+canvas#weightChart { width: 100% !important; height: 140px !important; }
+.chart-empty { font-size: 11px; color: var(–muted); text-align: center; padding: 30px 0; }
+
+/* ── SYNC STATUS ── */
+.sync-badge {
+font-size: 10px; letter-spacing: 0.08em; padding: 3px 8px;
+border: 1px solid var(–border); color: var(–muted); margin-left: auto;
+}
+.sync-badge.saved { color: var(–acc); border-color: var(–acc); }
+.sync-badge.saving { color: #ffaa00; border-color: #ffaa00; }
+.sync-badge.error { color: var(–acc2); border-color: var(–acc2); }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(–bg); }
+::-webkit-scrollbar-thumb { background: var(–border); }
+</style>
+
+</head>
+<body>
+
+<!-- LOGIN -->
+
+<div id="login" class="screen active">
+  <div class="login-inner">
+    <div class="logo-tag"><span class="logo-dot"></span> Adaptive · Offline-first</div>
+    <h1 class="login-title">
+      YOUR PLAN<br>
+      <span class="hi">EVOLVES</span>
+      <span class="lo">with your body</span>
+    </h1>
+    <p class="login-desc">Log energy, sleep & performance every week.<br>Get a fully adapted training + diet plan instantly.</p>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg class="g-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </button>
+    <p class="login-note">Your data is saved privately to your account only</p>
+  </div>
+</div>
+
+<!-- HOME -->
+
+<div id="home" class="screen">
+  <div class="home-inner">
+    <div class="user-bar">
+      <img id="userAvatar" class="user-avatar" src="" alt="">
+      <span id="userName" class="user-name"></span>
+      <button class="sign-out-btn" onclick="signOut()">Sign out</button>
+    </div>
+    <h1 class="home-title">
+      YOUR PLAN<br>
+      <span class="hi">EVOLVES</span>
+      <span class="lo">with your body</span>
+    </h1>
+    <p class="home-desc">Log your energy levels, weight & gym performance. Your plan adapts every week.</p>
+    <div class="mode-badges">
+      <div class="mode-badge-on">📴 Offline Engine</div>
+      <div class="mode-badge-soon">⚡ AI — Coming Soon</div>
+    </div>
+    <div>
+      <button class="btn-primary" onclick="goTo('checkin')">→ Weekly Check-In</button>
+      <br>
+      <button class="btn-secondary" onclick="goTo('history')">View History</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHECK-IN -->
+
+<div id="checkin" class="screen">
+  <div class="screen-header">
+    <button class="back-btn" onclick="goTo('home')">←</button>
+    <div class="screen-title">Weekly Check-In</div>
+    <div id="syncBadge" class="sync-badge"></div>
+  </div>
+  <div class="screen-body">
+
+
+<div class="ci-section">
+  <div class="ci-label">Energy & Recovery</div>
+  <div class="ci-q">How's your energy been this week?</div>
+  <input type="range" class="energy-slider" id="energySlider" min="1" max="10" value="5" oninput="updateSlider('energySlider','energyVal',this.value)">
+  <div class="slider-labels"><span>💀 Destroyed</span><span>⚡ Superhuman</span></div>
+  <div class="slider-val" id="energyVal">5</div>
+</div>
+
+<div class="ci-section">
+  <div class="ci-label">Sleep Quality</div>
+  <div class="ci-q">Average sleep this week?</div>
+  <div class="chip-group" id="sleepChips">
+    <div class="chip" onclick="selectChip(this,'sleepChips')" data-val="<5hrs">&lt;5 hrs</div>
+    <div class="chip" onclick="selectChip(this,'sleepChips')" data-val="5-6hrs">5–6 hrs</div>
+    <div class="chip active" onclick="selectChip(this,'sleepChips')" data-val="7-8hrs">7–8 hrs</div>
+    <div class="chip" onclick="selectChip(this,'sleepChips')" data-val="8+hrs">8+ hrs</div>
+  </div>
+</div>
+
+<div class="ci-section">
+  <div class="ci-label">Gym Performance</div>
+  <div class="ci-q">How did your lifts feel this week?</div>
+  <div class="chip-group" id="liftChips">
+    <div class="chip active-bad" onclick="selectSingle(this,'liftChips')" data-val="regressed">↓ Went backwards</div>
+    <div class="chip" onclick="selectSingle(this,'liftChips')" data-val="same">→ Same as before</div>
+    <div class="chip" onclick="selectSingle(this,'liftChips')" data-val="slightly_up">↑ Slightly up</div>
+    <div class="chip" onclick="selectSingle(this,'liftChips')" data-val="pbs">🔥 Hit PRs</div>
+  </div>
+</div>
+
+<div class="ci-section">
+  <div class="ci-label">Body Weight</div>
+  <div class="ci-q">Current bodyweight</div>
+  <div class="weight-input-wrap">
+    <input type="number" class="weight-input" id="weightInput" placeholder="75" step="0.1">
+    <div class="weight-unit">KG</div>
+  </div>
+</div>
+
+<div class="ci-section">
+  <div class="ci-label">Hunger & Diet</div>
+  <div class="ci-q">How's the eating been?</div>
+  <div class="chip-group" id="dietChips">
+    <div class="chip" onclick="selectChip(this,'dietChips')" data-val="way_under">Way under target</div>
+    <div class="chip active" onclick="selectChip(this,'dietChips')" data-val="under">Slightly under</div>
+    <div class="chip" onclick="selectChip(this,'dietChips')" data-val="on_target">On target</div>
+    <div class="chip" onclick="selectChip(this,'dietChips')" data-val="over">Over target</div>
+  </div>
+</div>
+
+<div class="ci-section">
+  <div class="ci-label">Notes (optional)</div>
+  <div class="ci-q">Any pain, highlights or issues?</div>
+  <textarea class="ci-textarea" id="notesInput" placeholder="e.g. Knees felt sore on squats, hit a bench PR, skipped Friday..."></textarea>
+</div>
+
+<div class="ci-section">
+  <div class="ci-label">Mood & Stress</div>
+  <div class="ci-q">Overall stress level this week?</div>
+  <input type="range" class="energy-slider" id="stressSlider" min="1" max="10" value="4" oninput="updateSlider('stressSlider','stressVal',this.value)">
+  <div class="slider-labels"><span>😌 Chill</span><span>🤯 Maxed out</span></div>
+  <div class="slider-val" id="stressVal">4</div>
+</div>
+
+
+  </div>
+  <div class="submit-wrap">
+    <button class="btn-primary" style="width:100%;text-align:center" onclick="submitCheckin()">GENERATE MY PLAN →</button>
+  </div>
+</div>
+
+<!-- GENERATING -->
+
+<div id="generating" class="screen">
+  <div class="gen-anim"></div>
+  <div class="gen-title">Building your plan</div>
+  <div class="gen-sub">Analysing check-in data<br>and adapting your week</div>
+  <div class="gen-steps">
+    <div class="gen-step active" id="step1"><span class="step-icon">○</span> Reading check-in data</div>
+    <div class="gen-step" id="step2"><span class="step-icon">○</span> Calculating recovery tier</div>
+    <div class="gen-step" id="step3"><span class="step-icon">○</span> Adjusting training volume</div>
+    <div class="gen-step" id="step4"><span class="step-icon">○</span> Recalculating calories</div>
+    <div class="gen-step" id="step5"><span class="step-icon">○</span> Writing meal plan</div>
+    <div class="gen-step" id="step6"><span class="step-icon">○</span> Saving to your account</div>
+  </div>
+</div>
+
+<!-- RESULT -->
+
+<div id="result" class="screen">
+  <div class="screen-header" style="justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:14px">
+      <button class="back-btn" onclick="goTo('home')">←</button>
+      <div class="screen-title">Your Plan</div>
+    </div>
+    <div id="planDate" style="font-size:10px;color:var(--muted);letter-spacing:0.1em"></div>
+  </div>
+  <div class="plan-nav">
+    <div class="nav-tab active" onclick="switchTab('overview',this)">Overview</div>
+    <div class="nav-tab" onclick="switchTab('training',this)">Training</div>
+    <div class="nav-tab" onclick="switchTab('diet',this)">Diet</div>
+    <div class="nav-tab" onclick="switchTab('recovery',this)">Recovery</div>
+  </div>
+  <div class="plan-body">
+    <div id="tab-overview" class="tab-content active plan-output"><div id="overview-text"></div></div>
+    <div id="tab-training" class="tab-content plan-output"><div id="training-text"></div></div>
+    <div id="tab-diet" class="tab-content plan-output"><div id="diet-text"></div></div>
+    <div id="tab-recovery" class="tab-content plan-output"><div id="recovery-text"></div></div>
+  </div>
+  <div class="result-actions">
+    <button class="btn-primary" onclick="goTo('checkin')">→ New Check-In</button>
+    <button class="btn-secondary" onclick="goTo('history')">History</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+
+<div id="history" class="screen">
+  <div class="screen-header">
+    <button class="back-btn" onclick="goTo('home')">←</button>
+    <div class="screen-title">History</div>
+  </div>
+  <div class="screen-body">
+    <div class="chart-wrap">
+      <div class="chart-title">Bodyweight Over Time</div>
+      <canvas id="weightChart"></canvas>
+      <div id="chartEmpty" class="chart-empty" style="display:none">No weight data yet — enter your weight in check-ins</div>
+    </div>
+    <div id="historyBody"></div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDQKmSRuK0cpIupdwVOilD8gX88ML-3K8s",
+  authDomain: "adaptive-plan-app.firebaseapp.com",
+  projectId: "adaptive-plan-app",
+  storageBucket: "adaptive-plan-app.firebasestorage.app",
+  messagingSenderId: "214755243355",
+  appId: "1:214755243355:web:4fe3818b936a442477967e"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+// ── expose to window so non-module code can call ──
+window._fb = { auth, db, provider, fbSignOut, addDoc, getDocs, query, orderBy, limit, serverTimestamp, collection };
+
+window.signInWithGoogle = async () => {
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { console.error(e); alert('Sign-in failed: ' + e.message); }
+};
+
+window.signOut = async () => {
+  await fbSignOut(auth);
+  goTo('login');
+};
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('userAvatar').src = user.photoURL || '';
+    document.getElementById('userName').textContent = user.displayName?.split(' ')[0] || 'Hey';
+    goTo('home');
+  } else {
+    goTo('login');
+  }
+});
+
+// Save check-in + plan to Firestore
+window.saveToFirestore = async (data) => {
+  const user = auth.currentUser;
+  if (!user) return;
+  const { addDoc, collection, serverTimestamp } = window._fb;
+  setSyncBadge('saving');
+  try {
+    await addDoc(collection(db, 'users', user.uid, 'checkins'), {
+      ...data,
+      createdAt: serverTimestamp()
+    });
+    setSyncBadge('saved');
+  } catch(e) {
+    console.error('Firestore save error:', e);
+    setSyncBadge('error');
+  }
+};
+
+// Load check-in history from Firestore
+window.loadFromFirestore = async () => {
+  const user = auth.currentUser;
+  if (!user) return [];
+  const { getDocs, query, orderBy, limit, collection } = window._fb;
+  try {
+    const q = query(collection(db, 'users', user.uid, 'checkins'), orderBy('createdAt', 'desc'), limit(20));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) {
+    console.error('Firestore load error:', e);
+    return [];
+  }
+};
+</script>
+
+<script>
+// ── STATE ──
+let currentData = {};
+let stepInterval = null;
+
+// ── SYNC BADGE ──
+function setSyncBadge(state) {
+  const el = document.getElementById('syncBadge');
+  if (!el) return;
+  const map = { saving: '↑ Saving…', saved: '✓ Saved', error: '✗ Not saved' };
+  el.textContent = map[state] || '';
+  el.className = 'sync-badge ' + (state || '');
+}
+
+// ── NAVIGATION ──
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'history') loadHistory();
+  if (id === 'checkin') resetSteps();
+  window.scrollTo(0, 0);
+}
+window.goTo = goTo;
+
+// ── SLIDER ──
+function updateSlider(sliderId, valId, val) {
+  const el = document.getElementById(valId);
+  el.textContent = val;
+  const n = parseInt(val);
+  el.style.color = n >= 7 ? 'var(--acc)' : n >= 4 ? '#ffaa00' : 'var(--acc2)';
+}
+window.updateSlider = updateSlider;
+
+// ── CHIPS ──
+function selectChip(el, groupId) {
+  document.querySelectorAll('#' + groupId + ' .chip').forEach(c => c.classList.remove('active', 'active-bad'));
+  el.classList.add('active');
+}
+function selectSingle(el, groupId) {
+  document.querySelectorAll('#' + groupId + ' .chip').forEach(c => c.classList.remove('active', 'active-bad'));
+  el.classList.add('active');
+}
+window.selectChip = selectChip;
+window.selectSingle = selectSingle;
+
+// ── TAB SWITCH ──
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+}
+window.switchTab = switchTab;
+
+// ── STEPS ──
+function resetSteps() {
+  if (stepInterval) { clearInterval(stepInterval); stepInterval = null; }
+  for (let i = 1; i <= 6; i++) {
+    const s = document.getElementById('step' + i);
+    if (s) { s.classList.remove('done', 'active'); s.querySelector('.step-icon').textContent = '○'; }
+  }
+  setSyncBadge('');
+}
+
+function animateSteps() {
+  resetSteps();
+  let i = 0;
+  stepInterval = setInterval(() => {
+    if (i > 0) {
+      const prev = document.getElementById('step' + i);
+      if (prev) { prev.classList.remove('active'); prev.classList.add('done'); prev.querySelector('.step-icon').textContent = '✓'; }
+    }
+    i++;
+    if (i <= 6) {
+      const cur = document.getElementById('step' + i);
+      if (cur) cur.classList.add('active');
+    } else {
+      clearInterval(stepInterval); stepInterval = null;
+    }
+  }, 700);
+}
+
+// ── SUBMIT ──
+function submitCheckin() {
+  const energy = document.getElementById('energySlider').value;
+  const stress = document.getElementById('stressSlider').value;
+  const weight = document.getElementById('weightInput').value || null;
+  const notes  = document.getElementById('notesInput').value || '';
+  const sleep  = document.querySelector('#sleepChips .chip.active')?.dataset.val || '7-8hrs';
+  const lifts  = document.querySelector('#liftChips .chip.active, #liftChips .chip.active-bad')?.dataset.val || 'same';
+  const diet   = document.querySelector('#dietChips .chip.active')?.dataset.val || 'under';
+
+  currentData = { energy, stress, weight, notes, sleep, lifts, diet, date: new Date().toLocaleDateString('en-GB') };
+  goTo('generating');
+  animateSteps();
+
+  setTimeout(async () => {
+    if (stepInterval) { clearInterval(stepInterval); stepInterval = null; }
+    // Mark all steps done
+    for (let i = 1; i <= 6; i++) {
+      const s = document.getElementById('step' + i);
+      if (s) { s.classList.remove('active'); s.classList.add('done'); s.querySelector('.step-icon').textContent = '✓'; }
+    }
+    const planData = generatePlan(currentData);
+    // Save to Firestore
+    if (window.saveToFirestore) {
+      await window.saveToFirestore({
+        energy: parseInt(energy), stress: parseInt(stress),
+        weight: weight ? parseFloat(weight) : null,
+        notes, sleep, lifts, diet,
+        date: currentData.date,
+        plan: planData.raw
+      });
+    }
+    renderPlan(planData);
+  }, 4200);
+}
+window.submitCheckin = submitCheckin;
+
+// ── PLAN ENGINE ──
+function generatePlan(d) {
+  const energy = parseInt(d.energy);
+  const stress = parseInt(d.stress);
+  const sleep  = d.sleep  || '7-8hrs';
+  const lifts  = d.lifts  || 'same';
+  const diet   = d.diet   || 'under';
+  const weight = d.weight ? parseFloat(d.weight) : null;
+
+  // Recovery tier — energy is primary driver
+  let tier;
+  if (energy <= 3) { tier = 0; }
+  else if (energy <= 5) {
+    const ok = (sleep === '7-8hrs' || sleep === '8+hrs') && stress <= 5;
+    tier = ok ? 1 : 0;
+  } else if (energy <= 7) {
+    tier = (sleep === '<5hrs' || stress >= 8) ? 1 : 2;
+  } else {
+    tier = ((sleep === '<5hrs' || sleep === '5-6hrs') && stress >= 7) ? 1 : 2;
+  }
+
+  // Calories
+  const kcalMap = { way_under: 4400, under: 4200, on_target: 4000, over: 3850 };
+  let kcal = kcalMap[diet] || 4000;
+  if (tier === 0) kcal = Math.max(kcal, 4100);
+  if (tier === 2 && lifts === 'pbs') kcal += 100;
+
+  const kcalReasonMap = {
+    way_under: 'raised significantly — well under target all week',
+    under:     'raised slightly — under target this week',
+    on_target: 'held at target — great adherence',
+    over:      'lowered slightly — over target this week'
+  };
+  const kcalReason = kcalReasonMap[diet] || 'held at baseline';
+
+  // Macros
+  const protein = weight ? Math.round(weight * 2.0) : Math.round(kcal * 0.20 / 4);
+  const fatKcal = Math.round(kcal * 0.28);
+  const fat     = Math.round(fatKcal / 9);
+  const carbs   = Math.round((kcal - protein * 4 - fatKcal) / 4);
+
+  // Training config
+  const cfg = {
+    0: { label:'DELOAD WEEK',   sets:2, cReps:'10–12', iReps:'15',    dl:'4×6 @ 60% max', note:'All weights at 50–60% of normal. Movement and blood flow only — not intensity.' },
+    1: { label:'MODERATE WEEK', sets:3, cReps:'8–10',  iReps:'12',    dl:'4×5',            note:'Hold 1–2 reps from failure. Quality over weight this week.' },
+    2: { label:'FULL WEEK',     sets:4, cReps:'6–8',   iReps:'10–12', dl:'4×4–5',          note:'Push hard. Add weight to at least one lift per session.' },
+  }[tier];
+
+  // Lift notes
+  const liftNoteMap = {
+    regressed:   'Lifts went backwards — *do not add weight*. Regression is almost always a nutrition or recovery issue. Focus on perfect form and hitting rep targets.',
+    same:        'Lifts held steady. Aim to add 1 rep or 2.5kg to at least one compound this week.',
+    slightly_up: 'Good progress. Keep increments small — 2.5kg on compounds, 1.25kg on isolation.',
+    pbs:         'PRs hit — excellent. Nutrition and recovery are aligned. Keep the momentum, stay conservative on load jumps.'
+  };
+  const liftNote = liftNoteMap[lifts] || liftNoteMap['same'];
+
+  // Labels
+  const eLabel  = energy >= 8 ? 'excellent' : energy >= 6 ? 'good' : energy >= 4 ? 'moderate' : 'low';
+  const sLabel  = { '<5hrs':'critically low','5-6hrs':'below optimal','7-8hrs':'solid','8+hrs':'excellent' }[sleep] || 'average';
+  const stLabel = stress >= 8 ? 'very high' : stress >= 6 ? 'elevated' : stress >= 4 ? 'moderate' : 'low';
+  const tLabel  = { 0:'poor — deload', 1:'moderate — controlled effort', 2:'good — push hard' }[tier];
+
+  const dietTip = {
+    way_under: You were significantly under your calorie target. Calories raised to ${kcal}. Use liquid calories (milk in shakes, olive oil in meals) to close the gap — do not rely on appetite alone.,
+    under:     Slightly under target. Raised to ${kcal}. Quick fix: add a glass of whole milk to 2 meals. That alone is ~300 kcal with no extra prep.,
+    on_target: Diet was on point. Calories held at ${kcal}. Keep it up.,
+    over:      Ate above target. Pulled back slightly to ${kcal}. A small surplus is fine but consistent overconsumption at 5% body fat is worth monitoring.
+  }[diet] || '';
+
+  // Meal kcal estimates (scale with total kcal)
+  const s = kcal / 4000;
+  const meals = [
+    { num:1, name:'Breakfast', time:'7:00 – 8:00 AM', kcal: Math.round(880*s),
+      items:[['Oats (dry)', Math.round(100*s)+'g'],['Whole milk','300ml'],['Banana','1 large'],['Peanut butter','2 tbsp'],['Whole eggs','3']] },
+    { num:2, name:'Mid-Morning', time:'10:30 AM', kcal: Math.round(480*s),
+      items:[['Full-fat Greek yoghurt','200g'],['Granola','60g'],['Mixed nuts','30g'],['Honey','1 tbsp']] },
+    { num:3, name:'Lunch', time:'1:00 PM', kcal: Math.round(880*s),
+      items:[['White rice (cooked)',Math.round(250*s)+'g'],['Chicken thigh',Math.round(200*s)+'g'],['Avocado','½'],['Olive oil','1 tbsp'],['Mixed veg','150g']] },
+    { num:4, name:'Pre-Workout', time:'60–90 min before gym', kcal: diet==='way_under'||diet==='under' ? Math.round(580*s) : Math.round(480*s),
+      items: diet==='way_under'||diet==='under'
+        ? [['White bagel','1 large'],['Peanut butter','2 tbsp'],['Whey shake','1 scoop in 300ml milk'],['Banana','1']]
+        : [['White bagel','1'],['Peanut butter','1.5 tbsp'],['Whey shake','1 scoop'],['Banana','1']] },
+    { num:5, name:'Post-Workout Dinner', time:'Within 60 min of gym', kcal: Math.round(880*s),
+      items:[['Salmon or beef mince','200g'],['Sweet potato',Math.round(300*s)+'g'],['Olive oil','1 tbsp'],['Spinach','100g'],['Whole milk','200ml']] },
+    { num:6, name:'Before Bed', time:'30 min before sleep', kcal: Math.round(300*s),
+      items:[['Cottage cheese or casein shake','200g'],['Mixed nuts','20g']] },
+  ];
+
+  // Recovery protocol
+  const recoveryText = {
+    0: **⚠ Recovery week — this IS your training.**\n\nEnergy ${energy}/10, sleep ${sLabel}, stress ${stLabel}. Your body cannot grow right now. Training hard will make things worse.\n\n- **Sleep:** Hard bedtime tonight. 8.5 hours in bed. No screens 45 min before — blue light cuts melatonin by 50%.\n- **Stress:** At ${stress}/10 cortisol is elevated and actively breaks down muscle. Identify the #1 stressor and limit it.\n- **Naps:** 20-minute nap after lunch recovers ~30% of lost sleep performance. Set an alarm.\n- **Food:** Do not skip meals even if appetite is low. Use shakes if solid food is too much.\n- **Supplements:** Magnesium glycinate 400mg before bed. Vitamin D 2000IU with breakfast. Zinc 15mg with dinner.\n- **No cardio:** Zero. Every calorie goes to recovery.,
+    1: **Moderate recovery — train smart, not hard.**\n\nEnergy ${energy}/10, sleep ${sLabel}. You can have good sessions but this is not the week for maxes.\n\n- **Sleep:** ${sleep === '5-6hrs' ? 'Below optimal — get to bed 45 min earlier than normal.' : 'Reasonable — keep the schedule consistent.'}\n- **Sessions:** Under 55 minutes. Longer spikes cortisol beyond recovery capacity.\n- **Rest periods:** 2–3 min between compounds. Do not rush.\n- **Supplements:** Creatine 5g daily. Magnesium glycinate 300mg before bed. Vitamin D 2000IU.\n- **Hydration:** 3.5L water daily. 2% dehydration measurably drops strength.,
+    2: **Strong recovery — make this week count.**\n\nEnergy ${energy}/10, sleep ${sLabel}, stress ${stLabel}. Ideal conditions for growth.\n\n- **Intent:** Know before every session which lift you want to push. Add weight to at least 2 exercises across the week.\n- **Sleep:** ${sleep} — protect it. Same schedule on weekends.\n- **Supplements:** Creatine 5g daily. Vitamin D 2000IU. Omega-3 2g with dinner. Optional: 100mg caffeine 30 min pre-workout.\n- **Pre-workout window:** Meal 4 exactly 60–90 min before training.\n- **Post-workout:** Eat meal 5 within 60 min. Protein synthesis peaks here.\n- **Progressive overload:** If you hit the top of a rep range, add weight next session. Do not stay comfortable.
+  }[tier];
+
+  // Build structured plan object
+  return {
+    raw: [energy, stress, sleep, lifts, diet, weight, kcal].join('|'), // minimal store
+    overview: { energy, eLabel, sLabel, stLabel, tLabel, liftNote, dietTip, kcal, protein, carbs, fat },
+    training: { cfg, tier },
+    meals,
+    recovery: recoveryText,
+    kcal, protein, carbs, fat
+  };
+}
+
+// ── RENDER PLAN ──
+function renderPlan(planData) {
+  const { overview, training, meals, recovery, kcal, protein, carbs, fat } = planData;
+  const { energy, eLabel, sLabel, stLabel, tLabel, liftNote, dietTip } = overview;
+  const { cfg, tier } = training;
+
+  // Overview tab
+  document.getElementById('overview-text').innerHTML = `
+    <h2>Weekly Analysis</h2>
+    <p>Energy: <strong>${energy}/10 (${eLabel})</strong> · Sleep: <strong>${sLabel}</strong> · Stress: <strong>${stLabel}</strong></p>
+    <p>Recovery tier: <strong>${tLabel}</strong></p>
+    <p>${liftNote}</p>
+    <p>${dietTip}</p>
+    <h3>This Week's Macros</h3>
+    <ul>
+      <li><span>Daily Calories</span><span>${kcal} kcal</span></li>
+      <li><span>Protein</span><span>${protein}g</span></li>
+      <li><span>Carbohydrates</span><span>${carbs}g</span></li>
+      <li><span>Fats</span><span>${fat}g</span></li>
+    </ul>`;
+
+  // Training tab
+  const days = [
+    { day:'Monday — Upper A', focus:'Push Focus', ex:[
+      ['Barbell Bench Press', cfg.sets+'×'+cfg.cReps],
+      ['Incline DB Press', cfg.sets+'×'+cfg.cReps],
+      ['Seated Cable Row', cfg.sets+'×'+cfg.cReps],
+      ['Lat Pulldown', cfg.sets+'×'+cfg.cReps],
+      ['Overhead Press', cfg.sets+'×'+cfg.cReps],
+      ['Tricep Pushdown', cfg.sets+'×'+cfg.iReps],
+      ['EZ-Bar Curl', cfg.sets+'×'+cfg.iReps],
+    ]},
+    { day:'Tuesday — Lower A', focus:'Squat Focus', ex:[
+      ['Barbell Back Squat', cfg.sets+'×'+cfg.cReps],
+      ['Romanian Deadlift', cfg.sets+'×'+cfg.cReps],
+      ['Leg Press', cfg.sets+'×'+(tier===0?'15 light':'10–12')],
+      ['Lying Leg Curl', cfg.sets+'×'+cfg.iReps],
+      ['Calf Raise', cfg.sets+'×15–20'],
+      ['Ab Wheel / Plank', '3×30–45s'],
+    ]},
+    { day:'Thursday — Upper B', focus:'Pull Focus', ex:[
+      ['Weighted Pull-Ups', cfg.sets+'×'+cfg.cReps],
+      ['Barbell Row', cfg.sets+'×'+cfg.cReps],
+      ['DB Shoulder Press', cfg.sets+'×'+cfg.cReps],
+      ['Cable Fly', cfg.sets+'×'+cfg.iReps],
+      ['Face Pull', cfg.sets+'×15'],
+      ['Hammer Curl', cfg.sets+'×'+cfg.iReps],
+      ['Skull Crushers', cfg.sets+'×'+cfg.iReps],
+    ]},
+    { day:'Friday — Lower B', focus:'Hinge Focus', ex:[
+      ['Conventional Deadlift', cfg.dl],
+      ['Bulgarian Split Squat', cfg.sets+'×'+cfg.cReps+' each'],
+      ['Hack Squat', cfg.sets+'×'+(tier===0?'15 light':'10–12')],
+      ['Seated Leg Curl', cfg.sets+'×'+cfg.iReps],
+      ['Calf Raise', cfg.sets+'×15–20'],
+      ['Cable Crunch', '3×15'],
+    ]},
+  ];
+
+  let trainingHtml = <h2>Training Plan</h2><p><strong>${cfg.label}</strong> — ${cfg.sets} sets · ${cfg.note}</p>;
+  days.forEach(d => {
+    trainingHtml += <h3>${d.day} <span style="color:var(--muted);font-size:10px">${d.focus}</span></h3><ul>;
+    d.ex.forEach(([name, scheme]) => {
+      trainingHtml += <li><span>${name}</span><span style="color:var(--acc);font-size:11px">${scheme}</span></li>;
+    });
+    trainingHtml += '</ul>';
+  });
+  trainingHtml += <p style="margin-top:12px;color:var(--muted)">Rest days: Wed, Sat, Sun. Light 20-min walk on Wednesday is fine. Hit all 6 meals on rest days.</p>;
+  document.getElementById('training-text').innerHTML = trainingHtml;
+
+  // Diet tab — collapsible meal blocks
+  let dietHtml = `<h2>Diet Plan</h2>
+  <ul style="margin-bottom:16px">
+    <li><span>Daily Target</span><span style="color:var(--acc);font-weight:600">${kcal} kcal</span></li>
+    <li><span>Protein</span><span>${protein}g · ${protein*4} kcal</span></li>
+    <li><span>Carbs</span><span>${carbs}g · ${carbs*4} kcal</span></li>
+    <li><span>Fats</span><span>${fat}g · ${fat*9} kcal</span></li>
+  </ul>`;
+
+  meals.forEach(m => {
+    dietHtml += `
+    <div class="meal-block">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-num">${m.num}</div>
+        <div class="meal-name-wrap">
+          <div class="meal-title">${m.name}</div>
+          <div class="meal-time">${m.time}</div>
+        </div>
+        <div class="meal-kcal-badge">${m.kcal}<span> kcal</span></div>
+        <div class="meal-chevron">▼</div>
+      </div>
+      <div class="meal-body">
+        <ul class="meal-items">
+          ${m.items.map(([food,qty]) => <li><span>${food}</span><span>${qty}</span></li>).join('')}
+        </ul>
+      </div>
+    </div>`;
+  });
+
+  const totalMealKcal = meals.reduce((s,m) => s+m.kcal, 0);
+  dietHtml += <p style="margin-top:12px;font-size:11px;color:var(--muted)">Meal total: ~${totalMealKcal} kcal</p>;
+  document.getElementById('diet-text').innerHTML = dietHtml;
+
+  // Recovery tab
+  document.getElementById('recovery-text').innerHTML = <h2>Recovery Protocol</h2> + markdownToHtml(recovery);
+
+  // Set date & reset tabs
+  document.getElementById('planDate').textContent = currentData.date || '';
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-overview').classList.add('active');
+  document.querySelector('.nav-tab').classList.add('active');
+  goTo('result');
+}
+window.renderPlan = renderPlan;
+
+// Meal toggle
+function toggleMeal(header) {
+  const body = header.nextElementSibling;
+  const chev = header.querySelector('.meal-chevron');
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+window.toggleMeal = toggleMeal;
+
+// ── MARKDOWN TO HTML (for recovery text) ──
+function markdownToHtml(md) {
+  const lines = md.split('\n');
+  let html = '', inList = false;
+  for (let line of lines) {
+    if (line.startsWith('### ')) { if(inList){html+='</ul>';inList=false;} html += '<h3>'+inl(line.slice(4))+'</h3>'; }
+    else if (line.startsWith('## '))  { if(inList){html+='</ul>';inList=false;} html += '<h2>'+inl(line.slice(3))+'</h2>'; }
+    else if (/^[-] /.test(line))     { if(!inList){html+='<ul>';inList=true;} html += '<li>'+inl(line.replace(/^[-] /,''))+'</li>'; }
+    else if (line.trim() === '')       { if(inList){html+='</ul>';inList=false;} }
+    else                               { if(inList){html+='</ul>';inList=false;} html += '<p>'+inl(line)+'</p>'; }
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
+function inl(t) {
+  return t.replace(/\\(.+?)\\/g,'<strong>$1</strong>').replace(/\(.+?)\/g,'<em>$1</em>');
+}
+
+// ── HISTORY ──
+async function loadHistory() {
+  const body = document.getElementById('historyBody');
+  body.innerHTML = '<div class="empty-state">Loading…</div>';
+
+  const entries = window.loadFromFirestore ? await window.loadFromFirestore() : [];
+
+  // Weight chart
+  drawWeightChart(entries);
+
+  if (entries.length === 0) {
+    body.innerHTML = '<div class="empty-state">No check-ins yet.<br><br>Complete your first weekly check-in to start tracking progress.</div>';
+    return;
+  }
+
+  body.innerHTML = entries.map((entry, i) => {
+    const e   = parseInt(entry.energy) || 5;
+    const cls = e >= 7 ? 'energy-hi' : e >= 4 ? 'energy-mid' : 'energy-lo';
+    const wt  = entry.weight ? entry.weight + 'kg' : '';
+    return `<div class="history-badge" onclick="viewEntry('${entry.id}')">
+      <div>
+        <div class="history-date" style="font-weight:500">${entry.date || ''}${wt ? ' · '+wt : ''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${(entry.lifts||'').replace(/_/g,' ')} · ${entry.sleep||''}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="history-energy ${cls}">${entry.energy}<span style="font-size:11px;font-family:'JetBrains Mono';font-weight:300">/10</span></div>
+        <div style="font-size:10px;color:var(--muted)">energy</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window._historyCache = {};
+window.viewEntry = async function(id) {
+  // Re-generate plan from stored data
+  const entries = await window.loadFromFirestore();
+  const entry = entries.find(e => e.id === id);
+  if (!entry) return;
+  currentData = entry;
+  const planData = generatePlan(entry);
+  renderPlan(planData);
+};
+
+// ── WEIGHT CHART ──
+function drawWeightChart(entries) {
+  const withWeight = entries.filter(e => e.weight).reverse().slice(-12);
+  const emptyEl = document.getElementById('chartEmpty');
+  const canvas  = document.getElementById('weightChart');
+
+  if (withWeight.length < 2) {
+    canvas.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  emptyEl.style.display = 'none';
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 300;
+  const H = 140;
+  canvas.width = W; canvas.height = H;
+
+  const weights = withWeight.map(e => parseFloat(e.weight));
+  const labels  = withWeight.map(e => e.date || '');
+  const minW    = Math.min(...weights) - 1;
+  const maxW    = Math.max(...weights) + 1;
+  const range   = maxW - minW || 1;
+
+  const pad = { l:36, r:12, t:12, b:28 };
+  const cW  = W - pad.l - pad.r;
+  const cH  = H - pad.t - pad.b;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = '#252525'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (cH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    const val = (maxW - (range / 4) * i).toFixed(1);
+    ctx.fillStyle = '#555'; ctx.font = '9px JetBrains Mono,monospace';
+    ctx.fillText(val+'kg', 0, y + 3);
+  }
+
+  // Line
+  const pts = weights.map((w, i) => ({
+    x: pad.l + (i / (weights.length - 1)) * cW,
+    y: pad.t + ((maxW - w) / range) * cH
+  }));
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = '#c8ff00'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Fill under line
+  ctx.lineTo(pts[pts.length-1].x, pad.t + cH);
+  ctx.lineTo(pts[0].x, pad.t + cH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + cH);
+  grad.addColorStop(0, 'rgba(200,255,0,0.15)');
+  grad.addColorStop(1, 'rgba(200,255,0,0)');
+  ctx.fillStyle = grad; ctx.fill();
+
+  // Dots
+  pts.forEach((p, i) => {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+    ctx.fillStyle = '#c8ff00'; ctx.fill();
+  });
+
+  // X labels (first and last)
+  ctx.fillStyle = '#555'; ctx.font = '9px JetBrains Mono,monospace';
+  ctx.fillText(labels[0], pad.l, H - 6);
+  const last = labels[labels.length-1];
+  ctx.fillText(last, W - pad.r - ctx.measureText(last).width, H - 6);
+}
+</script>
+
+</body>
+</html>
