@@ -387,7 +387,7 @@ border: 1px solid var(–border); color: var(–muted); margin-left: auto;
   </div>
   <div class="screen-body">
 
-
+```
 <div class="ci-section">
   <div class="ci-label">Energy & Recovery</div>
   <div class="ci-q">How's your energy been this week?</div>
@@ -451,7 +451,7 @@ border: 1px solid var(–border); color: var(–muted); margin-left: auto;
   <div class="slider-labels"><span>😌 Chill</span><span>🤯 Maxed out</span></div>
   <div class="slider-val" id="stressVal">4</div>
 </div>
-
+```
 
   </div>
   <div class="submit-wrap">
@@ -524,7 +524,7 @@ border: 1px solid var(–border); color: var(–muted); margin-left: auto;
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, getRedirectResult, getRedirectResult, signInWithRedirect, signOut as fbSignOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut as fbSignOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -542,14 +542,32 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
 
-// ── expose to window so non-module code can call ──
 window._fb = { auth, db, provider, fbSignOut, addDoc, getDocs, query, orderBy, limit, serverTimestamp, collection };
 
-getRedirectResult(auth).catch(e => console.error(e)); 
+// Handle redirect result on page load
+getRedirectResult(auth).then(result => {
+  if (result?.user) console.log('Signed in via redirect');
+}).catch(e => console.error('Redirect error:', e));
+
 window.signInWithGoogle = async () => {
-  try { await signInWithRedirect(auth, provider); }
-  catch(e) { console.error(e); alert('Sign-in failed: ' + e.message); }
+  const btn = document.querySelector('.btn-google');
+  if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
+  try {
+    // Try popup first, fall back to redirect if blocked
+    await signInWithPopup(auth, provider);
+  } catch(e) {
+    console.warn('Popup blocked, trying redirect:', e.code);
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      try { await signInWithRedirect(auth, provider); }
+      catch(e2) { alert('Sign-in failed: ' + e2.message); }
+    } else {
+      alert('Sign-in error: ' + e.message);
+    }
+  } finally {
+    if (btn) { btn.disabled = false; }
+  }
 };
 
 window.signOut = async () => {
@@ -559,8 +577,10 @@ window.signOut = async () => {
 
 onAuthStateChanged(auth, user => {
   if (user) {
-    document.getElementById('userAvatar').src = user.photoURL || '';
-    document.getElementById('userName').textContent = user.displayName?.split(' ')[0] || 'Hey';
+    const avatar = document.getElementById('userAvatar');
+    const name = document.getElementById('userName');
+    if (avatar) avatar.src = user.photoURL || '';
+    if (name) name.textContent = user.displayName?.split(' ')[0] || 'Hey';
     goTo('home');
   } else {
     goTo('login');
@@ -770,7 +790,7 @@ function generatePlan(d) {
 
   // Lift notes
   const liftNoteMap = {
-    regressed:   'Lifts went backwards — *do not add weight*. Regression is almost always a nutrition or recovery issue. Focus on perfect form and hitting rep targets.',
+    regressed:   'Lifts went backwards — **do not add weight**. Regression is almost always a nutrition or recovery issue. Focus on perfect form and hitting rep targets.',
     same:        'Lifts held steady. Aim to add 1 rep or 2.5kg to at least one compound this week.',
     slightly_up: 'Good progress. Keep increments small — 2.5kg on compounds, 1.25kg on isolation.',
     pbs:         'PRs hit — excellent. Nutrition and recovery are aligned. Keep the momentum, stay conservative on load jumps.'
@@ -784,10 +804,10 @@ function generatePlan(d) {
   const tLabel  = { 0:'poor — deload', 1:'moderate — controlled effort', 2:'good — push hard' }[tier];
 
   const dietTip = {
-    way_under: You were significantly under your calorie target. Calories raised to ${kcal}. Use liquid calories (milk in shakes, olive oil in meals) to close the gap — do not rely on appetite alone.,
-    under:     Slightly under target. Raised to ${kcal}. Quick fix: add a glass of whole milk to 2 meals. That alone is ~300 kcal with no extra prep.,
-    on_target: Diet was on point. Calories held at ${kcal}. Keep it up.,
-    over:      Ate above target. Pulled back slightly to ${kcal}. A small surplus is fine but consistent overconsumption at 5% body fat is worth monitoring.
+    way_under: `You were significantly under your calorie target. Calories raised to ${kcal}. Use liquid calories (milk in shakes, olive oil in meals) to close the gap — do not rely on appetite alone.`,
+    under:     `Slightly under target. Raised to ${kcal}. Quick fix: add a glass of whole milk to 2 meals. That alone is ~300 kcal with no extra prep.`,
+    on_target: `Diet was on point. Calories held at ${kcal}. Keep it up.`,
+    over:      `Ate above target. Pulled back slightly to ${kcal}. A small surplus is fine but consistent overconsumption at 5% body fat is worth monitoring.`
   }[diet] || '';
 
   // Meal kcal estimates (scale with total kcal)
@@ -811,9 +831,9 @@ function generatePlan(d) {
 
   // Recovery protocol
   const recoveryText = {
-    0: **⚠ Recovery week — this IS your training.**\n\nEnergy ${energy}/10, sleep ${sLabel}, stress ${stLabel}. Your body cannot grow right now. Training hard will make things worse.\n\n- **Sleep:** Hard bedtime tonight. 8.5 hours in bed. No screens 45 min before — blue light cuts melatonin by 50%.\n- **Stress:** At ${stress}/10 cortisol is elevated and actively breaks down muscle. Identify the #1 stressor and limit it.\n- **Naps:** 20-minute nap after lunch recovers ~30% of lost sleep performance. Set an alarm.\n- **Food:** Do not skip meals even if appetite is low. Use shakes if solid food is too much.\n- **Supplements:** Magnesium glycinate 400mg before bed. Vitamin D 2000IU with breakfast. Zinc 15mg with dinner.\n- **No cardio:** Zero. Every calorie goes to recovery.,
-    1: **Moderate recovery — train smart, not hard.**\n\nEnergy ${energy}/10, sleep ${sLabel}. You can have good sessions but this is not the week for maxes.\n\n- **Sleep:** ${sleep === '5-6hrs' ? 'Below optimal — get to bed 45 min earlier than normal.' : 'Reasonable — keep the schedule consistent.'}\n- **Sessions:** Under 55 minutes. Longer spikes cortisol beyond recovery capacity.\n- **Rest periods:** 2–3 min between compounds. Do not rush.\n- **Supplements:** Creatine 5g daily. Magnesium glycinate 300mg before bed. Vitamin D 2000IU.\n- **Hydration:** 3.5L water daily. 2% dehydration measurably drops strength.,
-    2: **Strong recovery — make this week count.**\n\nEnergy ${energy}/10, sleep ${sLabel}, stress ${stLabel}. Ideal conditions for growth.\n\n- **Intent:** Know before every session which lift you want to push. Add weight to at least 2 exercises across the week.\n- **Sleep:** ${sleep} — protect it. Same schedule on weekends.\n- **Supplements:** Creatine 5g daily. Vitamin D 2000IU. Omega-3 2g with dinner. Optional: 100mg caffeine 30 min pre-workout.\n- **Pre-workout window:** Meal 4 exactly 60–90 min before training.\n- **Post-workout:** Eat meal 5 within 60 min. Protein synthesis peaks here.\n- **Progressive overload:** If you hit the top of a rep range, add weight next session. Do not stay comfortable.
+    0: `**⚠ Recovery week — this IS your training.**\n\nEnergy ${energy}/10, sleep ${sLabel}, stress ${stLabel}. Your body cannot grow right now. Training hard will make things worse.\n\n- **Sleep:** Hard bedtime tonight. 8.5 hours in bed. No screens 45 min before — blue light cuts melatonin by 50%.\n- **Stress:** At ${stress}/10 cortisol is elevated and actively breaks down muscle. Identify the #1 stressor and limit it.\n- **Naps:** 20-minute nap after lunch recovers ~30% of lost sleep performance. Set an alarm.\n- **Food:** Do not skip meals even if appetite is low. Use shakes if solid food is too much.\n- **Supplements:** Magnesium glycinate 400mg before bed. Vitamin D 2000IU with breakfast. Zinc 15mg with dinner.\n- **No cardio:** Zero. Every calorie goes to recovery.`,
+    1: `**Moderate recovery — train smart, not hard.**\n\nEnergy ${energy}/10, sleep ${sLabel}. You can have good sessions but this is not the week for maxes.\n\n- **Sleep:** ${sleep === '5-6hrs' ? 'Below optimal — get to bed 45 min earlier than normal.' : 'Reasonable — keep the schedule consistent.'}\n- **Sessions:** Under 55 minutes. Longer spikes cortisol beyond recovery capacity.\n- **Rest periods:** 2–3 min between compounds. Do not rush.\n- **Supplements:** Creatine 5g daily. Magnesium glycinate 300mg before bed. Vitamin D 2000IU.\n- **Hydration:** 3.5L water daily. 2% dehydration measurably drops strength.`,
+    2: `**Strong recovery — make this week count.**\n\nEnergy ${energy}/10, sleep ${sLabel}, stress ${stLabel}. Ideal conditions for growth.\n\n- **Intent:** Know before every session which lift you want to push. Add weight to at least 2 exercises across the week.\n- **Sleep:** ${sleep} — protect it. Same schedule on weekends.\n- **Supplements:** Creatine 5g daily. Vitamin D 2000IU. Omega-3 2g with dinner. Optional: 100mg caffeine 30 min pre-workout.\n- **Pre-workout window:** Meal 4 exactly 60–90 min before training.\n- **Post-workout:** Eat meal 5 within 60 min. Protein synthesis peaks here.\n- **Progressive overload:** If you hit the top of a rep range, add weight next session. Do not stay comfortable.`
   }[tier];
 
   // Build structured plan object
@@ -886,15 +906,15 @@ function renderPlan(planData) {
     ]},
   ];
 
-  let trainingHtml = <h2>Training Plan</h2><p><strong>${cfg.label}</strong> — ${cfg.sets} sets · ${cfg.note}</p>;
+  let trainingHtml = `<h2>Training Plan</h2><p><strong>${cfg.label}</strong> — ${cfg.sets} sets · ${cfg.note}</p>`;
   days.forEach(d => {
-    trainingHtml += <h3>${d.day} <span style="color:var(--muted);font-size:10px">${d.focus}</span></h3><ul>;
+    trainingHtml += `<h3>${d.day} <span style="color:var(--muted);font-size:10px">${d.focus}</span></h3><ul>`;
     d.ex.forEach(([name, scheme]) => {
-      trainingHtml += <li><span>${name}</span><span style="color:var(--acc);font-size:11px">${scheme}</span></li>;
+      trainingHtml += `<li><span>${name}</span><span style="color:var(--acc);font-size:11px">${scheme}</span></li>`;
     });
     trainingHtml += '</ul>';
   });
-  trainingHtml += <p style="margin-top:12px;color:var(--muted)">Rest days: Wed, Sat, Sun. Light 20-min walk on Wednesday is fine. Hit all 6 meals on rest days.</p>;
+  trainingHtml += `<p style="margin-top:12px;color:var(--muted)">Rest days: Wed, Sat, Sun. Light 20-min walk on Wednesday is fine. Hit all 6 meals on rest days.</p>`;
   document.getElementById('training-text').innerHTML = trainingHtml;
 
   // Diet tab — collapsible meal blocks
@@ -920,18 +940,18 @@ function renderPlan(planData) {
       </div>
       <div class="meal-body">
         <ul class="meal-items">
-          ${m.items.map(([food,qty]) => <li><span>${food}</span><span>${qty}</span></li>).join('')}
+          ${m.items.map(([food,qty]) => `<li><span>${food}</span><span>${qty}</span></li>`).join('')}
         </ul>
       </div>
     </div>`;
   });
 
   const totalMealKcal = meals.reduce((s,m) => s+m.kcal, 0);
-  dietHtml += <p style="margin-top:12px;font-size:11px;color:var(--muted)">Meal total: ~${totalMealKcal} kcal</p>;
+  dietHtml += `<p style="margin-top:12px;font-size:11px;color:var(--muted)">Meal total: ~${totalMealKcal} kcal</p>`;
   document.getElementById('diet-text').innerHTML = dietHtml;
 
   // Recovery tab
-  document.getElementById('recovery-text').innerHTML = <h2>Recovery Protocol</h2> + markdownToHtml(recovery);
+  document.getElementById('recovery-text').innerHTML = `<h2>Recovery Protocol</h2>` + markdownToHtml(recovery);
 
   // Set date & reset tabs
   document.getElementById('planDate').textContent = currentData.date || '';
@@ -959,7 +979,7 @@ function markdownToHtml(md) {
   for (let line of lines) {
     if (line.startsWith('### ')) { if(inList){html+='</ul>';inList=false;} html += '<h3>'+inl(line.slice(4))+'</h3>'; }
     else if (line.startsWith('## '))  { if(inList){html+='</ul>';inList=false;} html += '<h2>'+inl(line.slice(3))+'</h2>'; }
-    else if (/^[-] /.test(line))     { if(!inList){html+='<ul>';inList=true;} html += '<li>'+inl(line.replace(/^[-] /,''))+'</li>'; }
+    else if (/^[-*] /.test(line))     { if(!inList){html+='<ul>';inList=true;} html += '<li>'+inl(line.replace(/^[-*] /,''))+'</li>'; }
     else if (line.trim() === '')       { if(inList){html+='</ul>';inList=false;} }
     else                               { if(inList){html+='</ul>';inList=false;} html += '<p>'+inl(line)+'</p>'; }
   }
@@ -967,7 +987,7 @@ function markdownToHtml(md) {
   return html;
 }
 function inl(t) {
-  return t.replace(/\\(.+?)\\/g,'<strong>$1</strong>').replace(/\(.+?)\/g,'<em>$1</em>');
+  return t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>');
 }
 
 // ── HISTORY ──
