@@ -524,7 +524,7 @@ border: 1px solid var(–border); color: var(–muted); margin-left: auto;
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut as fbSignOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, getRedirectResult, getRedirectResult, signInWithRedirect, signOut as fbSignOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
