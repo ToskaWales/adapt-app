@@ -606,7 +606,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
           <button class="sign-out-btn" onclick="signOut()">Sign out</button>
         </div>
       </div>
-      <div class="hero-greeting" id="heroGreeting">Hey 👋</div>
+      <div class="hero-greeting" id="heroGreeting">Hey </div>
       <div class="hero-sub" id="heroSub">Ready for this week?</div>
       <div class="hero-badges" id="heroBadges"></div>
     </div>
@@ -1029,9 +1029,11 @@ function selDay(el,n){
   el.classList.add('sel');
   obAnswers.days=n;
   document.getElementById('ob4next').disabled=false;
-  const splits={1:'Full Body',2:'Full Body A/B',3:'Push / Pull / Legs',4:'Upper / Lower',5:'Upper / Lower + Focus',6:'PPL × 2',7:'PPL + Focus + Full Body'};
+  const splits={1:'Full Body',2:'Full Body A/B',3:'Push / Pull / Legs',4:'Upper / Lower',5:'Upper / Lower + Focus',6:'PPL x 2',7:'PPL + Focus + Full Body'};
+  const hourglassSplits={1:'Lower (Glute Focus)',2:'Lower A / Lower B',3:'Lower A / Lower B / Upper',4:'Lower A / Upper / Lower B / Upper',5:'Lower x3 / Upper x2',6:'Lower x4 / Upper x2',7:'Lower x4 / Upper x2 / Focus'};
   const schedules={1:'Mon',2:'Mon · Thu',3:'Mon · Wed · Fri',4:'Mon · Tue · Thu · Fri',5:'Mon · Tue · Thu · Fri · Sat',6:'Mon · Tue · Wed · Fri · Sat · Sun',7:'Every day'};
-  document.getElementById('splitText').textContent=splits[n]||'';
+  const isHourglass=obAnswers.goal==='hourglass';
+  document.getElementById('splitText').textContent=(isHourglass?hourglassSplits:splits)[n]||'';
   document.getElementById('splitDays').textContent=schedules[n]||'';
   document.getElementById('splitSug').style.display='block';
 }
@@ -1181,7 +1183,7 @@ function renderStreak(){
     document.getElementById('streakWrap').innerHTML=`
       <div class="streak-banner">
         <div class="streak-num">${streak}</div>
-        <div class="streak-label"><strong>${streak} week streak 🔥</strong>Consistency is everything. Keep it going.</div>
+        <div class="streak-label"><strong>${streak} week streak</strong>Consistency is everything. Keep it going.</div>
       </div>`;
   });
 }
@@ -1298,8 +1300,33 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[]){
     return w+' kg';
   }
 
-  const EX=exLib(equipment,goal,focusMuscles,cReps,iReps,sets);
-  const splitDays=buildSplit(days,goal,focusMuscles,EX,sessionLen,sets,cReps,iReps,tier,suggestWeight);
+  // ── PERIODISATION BLOCK ──
+  // Determine current block (hypertrophy or strength) based on check-in history
+  // Cycle: 5 weeks hypertrophy → 3 weeks strength → repeat
+  const BLOCK_CYCLE = 8; // total weeks per cycle
+  const HYPERTROPHY_WEEKS = 5;
+  const weekNum = pastCheckins.length; // use number of past check-ins as week counter
+  const positionInCycle = weekNum % BLOCK_CYCLE;
+  const isStrengthBlock = positionInCycle >= HYPERTROPHY_WEEKS;
+  const blockWeek = isStrengthBlock ? positionInCycle - HYPERTROPHY_WEEKS + 1 : positionInCycle + 1;
+  const blockTotal = isStrengthBlock ? BLOCK_CYCLE - HYPERTROPHY_WEEKS : HYPERTROPHY_WEEKS;
+  const blockName = isStrengthBlock ? 'Strength' : 'Hypertrophy';
+
+  // Override rep ranges based on block
+  // Strength block: lower reps, heavier weight, fewer sets with more rest
+  // Hypertrophy block: normal ranges from experience level
+  let blockCompReps, blockIsoReps, blockSets;
+  if(isStrengthBlock){
+    const strengthRanges={beginner:{comp:'6–8',iso:'8–10'},intermediate:{comp:'3–6',iso:'6–8'},advanced:{comp:'1–5',iso:'4–6'}};
+    const sr=strengthRanges[experience]||strengthRanges.intermediate;
+    blockCompReps = tier===0?'8–10':sr.comp; // deload overrides strength
+    blockIsoReps  = tier===0?'12':sr.iso;
+    blockSets     = tier===0?2:Math.max(sets-1,2); // strength = fewer sets, more weight
+  } else {
+    blockCompReps = cReps;
+    blockIsoReps  = iReps;
+    blockSets     = sets;
+  }
 
   // Calories — corrected Mifflin-St Jeor
   const sexAdj=sex==='female'?-161:5;
@@ -1371,12 +1398,15 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[]){
   const fat=Math.round(fatKcal/9);
   const carbs=Math.round((kcal-protein*4-fatKcal)/4);
 
+  const EX=exLib(equipment,goal,focusMuscles,blockCompReps,blockIsoReps,blockSets);
+  const splitDays=buildSplit(days,goal,focusMuscles,EX,sessionLen,blockSets,blockCompReps,blockIsoReps,tier,suggestWeight,isStrengthBlock);
+
   const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
   const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,dietGoal);
 
   return{
     summary:{tier,kcal,protein,carbs,fat,days,goal},
-    analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg,trendAdj},
+    analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg,trendAdj,blockName,blockWeek,blockTotal,isStrengthBlock},
     splitDays,meals,tier,focusMuscles,experience,sessionIndex
   };
 }
@@ -1406,9 +1436,12 @@ function exLib(eq,goal,focus,cR,iR,s){
 }
 
 // ── SPLIT BUILDER ──
-function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestFn){
+function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestFn,isStrengthBlock=false){
   const limit={30:4,45:6,60:8,90:12}[sessionLen]||8;
   const isFocus=m=>focus.includes(m);
+
+  // Strength block coaching note
+  const strengthNote=isStrengthBlock?'Strength block — heavier weight, longer rest (3–4 min between sets). Stop 1 rep before failure on every set.':'';
 
   function addSuggest(exArr){
     return exArr.map(([n,s,m])=>{
@@ -1418,11 +1451,10 @@ function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestF
   }
 
   function makeDay(name,tag,rawEx){
-    // Focus muscles first, then rest
-    const focusEx=rawEx.filter(([,, m])=>isFocus(m));
+    const focusEx=rawEx.filter(([,,m])=>isFocus(m));
     const restEx=rawEx.filter(([,,m])=>!isFocus(m));
     const sorted=[...focusEx,...restEx].slice(0,limit);
-    return{name,tag,exercises:addSuggest(sorted)};
+    return{name,tag,exercises:addSuggest(sorted),strengthNote};
   }
 
   function upperA(){
@@ -1493,7 +1525,36 @@ function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestF
     ex.push(...EX.legs.calves.slice(0,1));
     return makeDay('Legs & Glutes','lower',ex);
   }
-  function fullBody(){
+  function hourglassLowerA(){
+    // Glute focus — hip thrusts, abductors, glute isolation
+    let ex=[];
+    ex.push(...EX.legs.glutes.slice(0,4));
+    ex.push(...EX.legs.quads.slice(0,2));
+    ex.push(...EX.legs.calves.slice(0,1));
+    ex.push(EX.core[0]);
+    return makeDay('Lower A — Glute Focus','lower',ex);
+  }
+  function hourglassLowerB(){
+    // Hamstring & quad — deadlifts, lunges, leg curl
+    let ex=[];
+    ex.push(...EX.hinge.slice(0,1));
+    ex.push(...EX.legs.hamstrings.slice(0,2));
+    ex.push(...EX.legs.quads.slice(0,2));
+    ex.push(...EX.legs.glutes.slice(1,2)); // secondary glute
+    ex.push(...EX.legs.calves.slice(0,1));
+    ex.push(EX.core[1]||EX.core[0]);
+    return makeDay('Lower B — Hamstring & Quad','lower',ex);
+  }
+  function hourglassUpper(){
+    // Shoulders wide + back for contrast, minimal chest/arms
+    let ex=[];
+    ex.push(...EX.push.shoulders.slice(0,3));
+    ex.push(...EX.pull.back.slice(0,2));
+    ex.push(...EX.pull.biceps.slice(0,1));
+    ex.push(...EX.push.triceps.slice(0,1));
+    ex.push(EX.core[0]);
+    return makeDay('Upper — Shoulders & Back','upper',ex);
+  }
     let ex=[];
     ex.push(EX.push.chest[0]);
     ex.push(EX.pull.back[0]);
@@ -1523,14 +1584,15 @@ function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestF
   const trainingDays=SCHEDULES[days]||SCHEDULES[4];
   const allDayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
+  const isHourglass = goal==='hourglass';
   let templates=[];
-  if(days===1)templates=[fullBody()];
-  else if(days===2)templates=[fullBody(),fullBody()];
-  else if(days===3)templates=[pushDay(),pullDay(),legDay()];
-  else if(days===4)templates=[upperA(),lowerA(),upperB(),lowerB()];
-  else if(days===5)templates=[upperA(),lowerA(),upperB(),lowerB(),focusDay()];
-  else if(days===6)templates=[pushDay(),pullDay(),legDay(),pushDay(),pullDay(),legDay()];
-  else templates=[pushDay(),pullDay(),legDay(),fullBody(),pushDay(),pullDay(),focusDay()];
+  if(days===1) templates=[isHourglass?hourglassLowerA():fullBody()];
+  else if(days===2) templates=isHourglass?[hourglassLowerA(),hourglassLowerB()]:[fullBody(),fullBody()];
+  else if(days===3) templates=isHourglass?[hourglassLowerA(),hourglassLowerB(),hourglassUpper()]:[pushDay(),pullDay(),legDay()];
+  else if(days===4) templates=isHourglass?[hourglassLowerA(),hourglassUpper(),hourglassLowerB(),hourglassUpper()]:[upperA(),lowerA(),upperB(),lowerB()];
+  else if(days===5) templates=isHourglass?[hourglassLowerA(),hourglassUpper(),hourglassLowerB(),hourglassLowerA(),hourglassUpper()]:[upperA(),lowerA(),upperB(),lowerB(),focusDay()];
+  else if(days===6) templates=isHourglass?[hourglassLowerA(),hourglassUpper(),hourglassLowerB(),hourglassLowerA(),hourglassUpper(),hourglassLowerB()]:[pushDay(),pullDay(),legDay(),pushDay(),pullDay(),legDay()];
+  else templates=isHourglass?[hourglassLowerA(),hourglassUpper(),hourglassLowerB(),hourglassLowerA(),hourglassUpper(),hourglassLowerB(),focusDay()]:[pushDay(),pullDay(),legDay(),fullBody(),pushDay(),pullDay(),focusDay()];
 
   // Deload: label exercises as (light) on tier 0
   if(tier===0){
@@ -1570,7 +1632,7 @@ function buildMeals(kcal,protein,carbs,fat,count,restrictions,dietGoal){
 // ── RENDER PLAN ──
 function renderPlan(plan){
   const{analysis,splitDays,meals,tier,focusMuscles,experience}=plan;
-  const{energy,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg,trendAdj}=analysis;
+  const{energy,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg,trendAdj,blockName,blockWeek,blockTotal,isStrengthBlock}=analysis;
   const p=window.userProfile||{};
 
   // Overview
@@ -1581,6 +1643,17 @@ function renderPlan(plan){
       <div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal</div></div>
       <div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div>
       <div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div>
+    </div>
+    <div style="padding:12px 14px;background:${isStrengthBlock?'rgba(0,212,255,0.06)':'rgba(200,255,0,0.06)'};border:1px solid ${isStrengthBlock?'rgba(0,212,255,0.2)':'rgba(200,255,0,0.2)'};border-radius:10px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:11px;color:${isStrengthBlock?'#00d4ff':'#c8ff00'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">Current Block</div>
+        <div style="font-size:16px;font-weight:700;font-family:'Syne',-apple-system,sans-serif;">${blockName} Block</div>
+        <div style="font-size:12px;color:#888;margin-top:2px;">${isStrengthBlock?'Lower reps, heavier weight, longer rest':'Higher reps, moderate weight, more volume'}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'Syne',-apple-system,sans-serif;font-weight:800;font-size:26px;color:${isStrengthBlock?'#00d4ff':'#c8ff00'};">${blockWeek}<span style="font-size:14px;font-weight:400;color:#888;">/${blockTotal}</span></div>
+        <div style="font-size:11px;color:#888;">weeks</div>
+      </div>
     </div>
     <h2>Weekly Analysis</h2>
     <p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>
@@ -1639,7 +1712,8 @@ function renderPlan(plan){
         </div>
       </div>`;
     });
-    th+=`${isRest?'<div style="padding:10px 16px;font-size:12px;color:#888;">Eat all your meals on rest days — muscle is built at rest.</div>':''}</div></div>`;
+    th+=`${isRest?'<div style="padding:10px 16px;font-size:12px;color:#888;">Eat all your meals on rest days — muscle is built at rest.</div>':day.strengthNote?`<div style="padding:10px 16px;font-size:12px;color:#00d4ff;border-top:1px solid #2a2a2a;">${day.strengthNote}</div>`:''}
+    </div></div>`;
   });
   document.getElementById('tab-training').innerHTML=th;
 
