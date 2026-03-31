@@ -10,8 +10,6 @@
 <meta name="apple-mobile-web-app-title" content="ADAPT">
 <link rel="manifest" href="manifest.json">
 <title>ADAPT</title>
-<!-- Adaptive Planning Engine -->
-<script src="adaptive-planning-engine.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&display=swap" rel="stylesheet">
@@ -113,7 +111,6 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 .login-desc{color:#888;font-size:13px;line-height:1.7;margin-bottom:36px;}
 .btn-google{display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;color:#111;font-family:‘Syne’,-apple-system,sans-serif;font-weight:700;font-size:14px;padding:16px 24px;border:none;cursor:pointer;border-radius:12px;width:100%;}
 .btn-google:active{background:#eee;transform:scale(0.97);}
-.btn-google:disabled{background:#ddd;color:#999;cursor:wait;opacity:0.7;}
 .g-icon{width:20px;height:20px;flex-shrink:0;}
 .login-note{margin-top:14px;font-size:11px;color:#888;}
 
@@ -325,7 +322,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
     <div class="logo-tag"><span class="logo-dot"></span> Adaptive Training</div>
     <h1 class="login-title">YOUR PLAN<br><span class="hi">EVOLVES</span><span class="lo">with your body</span></h1>
     <p class="login-desc">Personalised training & diet that adapts every week based on your results.</p>
-    <button class="btn-google" id="googleLoginBtn" onclick="window.signInWithGoogle?.() || alert('Loading... Please wait a moment and try again')">
+    <button class="btn-google" onclick="signInWithGoogle()">
       <svg class="g-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
       Continue with Google
     </button>
@@ -346,14 +343,10 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
       <div class="ob-q">What's your main goal?</div>
       <div class="ob-sub">This shapes your entire training plan.</div>
       <div class="opt-grid">
-        <div class="opt-card" onclick="obSel(this,'goal','muscle_gain')"><div class="opt-icon">💪</div><div class="opt-label">Muscle Gain</div><div class="opt-desc">Hypertrophy & definition</div></div>
-        <div class="opt-card" onclick="obSel(this,'goal','vtaper')"><div class="opt-icon">🏔️</div><div class="opt-label">V-Taper</div><div class="opt-desc">Wide shoulders, narrow waist</div></div>
-        <div class="opt-card" onclick="obSel(this,'goal','hourglass')"><div class="opt-icon">⌛</div><div class="opt-label">Hourglass</div><div class="opt-desc">Glutes & shoulders, defined waist</div></div>
-        <div class="opt-card" onclick="obSel(this,'goal','strength')"><div class="opt-icon">⚡</div><div class="opt-label">Strength</div><div class="opt-desc">Raw power & heavy lifts</div></div>
-        <div class="opt-card" onclick="obSel(this,'goal','fat_loss')"><div class="opt-icon">🔥</div><div class="opt-label">Fat Loss</div><div class="opt-desc">Lean muscle preservation</div></div>
-        <div class="opt-card" onclick="obSel(this,'goal','endurance')"><div class="opt-icon">🏃</div><div class="opt-label">Endurance</div><div class="opt-desc">Cardio & fitness</div></div>
-        <div class="opt-card" onclick="obSel(this,'goal','athletic_performance')"><div class="opt-icon">🎯</div><div class="opt-label">Athletic</div><div class="opt-desc">Sport-specific power</div></div>
-        <div class="opt-card" onclick="obSel(this,'goal','general_fitness')"><div class="opt-icon">🏆</div><div class="opt-label">General Fitness</div><div class="opt-desc">Balanced overall health</div></div>
+        <div class="opt-card" onclick="obSel(this,'goal','vtaper')"><div class="opt-icon">️</div><div class="opt-label">V-Taper / Athletic</div><div class="opt-desc">Broad shoulders, wide back, defined chest</div></div>
+        <div class="opt-card" onclick="obSel(this,'goal','hourglass')"><div class="opt-icon"></div><div class="opt-label">Hourglass / Curves</div><div class="opt-desc">Glutes, hips, waist, shoulders</div></div>
+        <div class="opt-card" onclick="obSel(this,'goal','strength')"><div class="opt-icon"></div><div class="opt-label">Strength & Power</div><div class="opt-desc">Compound lifts and raw performance</div></div>
+        <div class="opt-card" onclick="obSel(this,'goal','general')"><div class="opt-icon"></div><div class="opt-label">General Fitness</div><div class="opt-desc">Balanced full body health</div></div>
       </div>
     </div>
     <div class="foot"><button class="btn btn-acc" onclick="obNext(1)" id="ob1next" disabled>Continue →</button></div>
@@ -876,9 +869,6 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
   <div id="swapOptions"></div>
 </div>
 
-<!-- ADAPTIVE PLANNING ENGINE -->
-<script src="adaptive-planning-engine.js"></script>
-
 <!-- FIREBASE -->
 
 <script type="module">
@@ -896,29 +886,12 @@ const prov=new GoogleAuthProvider();
 prov.setCustomParameters({prompt:'select_account'});
 
 window.signInWithGoogle=async()=>{
-  const btn=document.querySelector('#googleLoginBtn');
-  if(!btn) return;
-  
-  // Check if auth is initialized
-  if(!window.currentUser===undefined){alert('Auth still loading... Please wait and try again');return;}
-  
-  btn.textContent='Signing in…';
-  btn.disabled=true;
-  try{
-    await signInWithPopup(auth,prov);
-  }
+  const btn=document.querySelector('.btn-google');
+  if(btn){btn.textContent='Signing in…';btn.disabled=true;}
+  try{await signInWithPopup(auth,prov);}
   catch(e){
-    console.error('Auth Error:',e.code,e.message);
-    
-    let msg='Sign in failed';
-    if(e.code==='auth/popup-closed-by-user'){msg='Sign in cancelled';}
-    else if(e.code==='auth/popup-blocked'){msg='Popup blocked. Allow popups and retry';}
-    else if(e.code==='auth/network-request-failed'){msg='Network error. Check your connection';}
-    else if(e.code==='auth/invalid-api-key'){msg='Configuration error. Contact support';}
-    
-    alert(msg);
-    btn.innerHTML='<svg class="g-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Continue with Google';
-    btn.disabled=false;
+    if(btn){btn.innerHTML='<svg class="g-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Continue with Google';btn.disabled=false;}
+    if(e.code!=='auth/popup-closed-by-user') console.error(e);
   }
 };
 
@@ -988,24 +961,6 @@ window.currentUser=null;
 window.userProfile=null;
 window.currentPlanData=null;
 window.currentCheckin=null;
-window.authReady=false;
-
-// Wait for Firebase module to load
-let authWaitCount=0;
-const authReadyCheck=setInterval(()=>{
-  if(window.signInWithGoogle){
-    window.authReady=true;
-    clearInterval(authReadyCheck);
-    const btn=document.querySelector('#googleLoginBtn');
-    if(btn) btn.disabled=false;
-  }
-  authWaitCount++;
-  if(authWaitCount>100){
-    clearInterval(authReadyCheck);
-    alert('Firebase failed to load. Page may need refresh. Check browser console.');
-  }
-},50);
-
 let obAnswers={};
 let selectedMuscles=[];
 let selectedRestricts=['none'];
@@ -1074,11 +1029,9 @@ function selDay(el,n){
   el.classList.add('sel');
   obAnswers.days=n;
   document.getElementById('ob4next').disabled=false;
-  const splits={1:'Full Body',2:'Full Body A/B',3:'Push / Pull / Legs',4:'Upper / Lower',5:'Upper / Lower + Focus',6:'PPL x 2',7:'PPL + Focus + Full Body'};
-  const hourglassSplits={1:'Lower (Glute Focus)',2:'Lower A / Lower B',3:'Lower A / Lower B / Upper',4:'Lower A / Upper / Lower B / Upper',5:'Lower x3 / Upper x2',6:'Lower x4 / Upper x2',7:'Lower x4 / Upper x2 / Focus'};
+  const splits={1:'Full Body',2:'Full Body A/B',3:'Push / Pull / Legs',4:'Upper / Lower',5:'Upper / Lower + Focus',6:'PPL × 2',7:'PPL + Focus + Full Body'};
   const schedules={1:'Mon',2:'Mon · Thu',3:'Mon · Wed · Fri',4:'Mon · Tue · Thu · Fri',5:'Mon · Tue · Thu · Fri · Sat',6:'Mon · Tue · Wed · Fri · Sat · Sun',7:'Every day'};
-  const isHourglass=obAnswers.goal==='hourglass';
-  document.getElementById('splitText').textContent=(isHourglass?hourglassSplits:splits)[n]||'';
+  document.getElementById('splitText').textContent=splits[n]||'';
   document.getElementById('splitDays').textContent=schedules[n]||'';
   document.getElementById('splitSug').style.display='block';
 }
@@ -1198,7 +1151,7 @@ function checkReminder(){
 function updateHomeUI(){
   const p=window.userProfile;
   if(!p||!p.setupComplete)return;
-  const gl={muscle_gain:'Muscle Gain',vtaper:'V-Taper',hourglass:'Hourglass',strength:'Strength',fat_loss:'Fat Loss',endurance:'Endurance',athletic_performance:'Athletic',general_fitness:'General Fitness'};
+  const gl={vtaper:'V-Taper / Athletic',hourglass:'Hourglass',strength:'Strength',general:'General Fitness'};
   const name=(window.currentUser?.displayName||'').split(' ')[0]||'there';
   document.getElementById('heroGreeting').textContent='Hey '+name+' ';
   document.getElementById('heroSub').textContent=(gl[p.goal]||'Personalised')+' plan active';
@@ -1247,64 +1200,26 @@ function renderPWABanner(){
 
 // ── CHECK-IN ──
 function submitCheckin(){
-  try {
-    const energy = parseInt(document.getElementById('energySlider').value);
-    const stress = parseInt(document.getElementById('stressSlider').value);
-    const weight = document.getElementById('ciWeight').value ? parseFloat(document.getElementById('ciWeight').value) : null;
-    const notes = document.getElementById('ciNotes').value || '';
-    const sleep = document.querySelector('#sleepChips .chip.sel')?.dataset.val || '7-8hrs';
-    const lifts = document.querySelector('#liftChips .chip.sel')?.dataset.val || 'same';
-    const diet = document.querySelector('#dietChips .chip.sel')?.dataset.val || 'under';
-
-    // Validate check-in data
-    if (isNaN(energy) || energy < 1 || energy > 10) {
-      alert('Please set your energy level (1-10)');
-      return;
-    }
-    if (isNaN(stress) || stress < 1 || stress > 10) {
-      alert('Please set your stress level (1-10)');
-      return;
-    }
-    if (weight && (isNaN(weight) || weight < 20 || weight > 300)) {
-      alert('Please enter a valid weight (20-300 kg)');
-      return;
-    }
-
-    window.currentCheckin = { energy, stress, weight, notes, sleep, lifts, diet, date: new Date().toLocaleDateString('en-GB') };
-    goTo('generating');
-    runSteps();
-
-    setTimeout(async () => {
-      try {
-        finishSteps();
-        const lastSessions = window.loadAllSessions ? await window.loadAllSessions() : [];
-        const pastCheckins = window.loadCheckins ? await window.loadCheckins() : [];
-
-        if (!window.userProfile) {
-          alert('Profile not set. Please complete onboarding first.');
-          goTo('onboarding');
-          return;
-        }
-
-        const plan = buildPlan(window.userProfile, window.currentCheckin, lastSessions, pastCheckins);
-        if (!plan || !plan.splitDays) throw new Error('Failed to generate plan');
-
-        window.currentPlanData = plan;
-        if (window.saveCheckin) {
-          await window.saveCheckin({ ...window.currentCheckin, planSummary: plan.summary });
-        }
-        renderPlan(plan);
-        goTo('result');
-      } catch (error) {
-        console.error('Plan generation error:', error);
-        alert('Error generating plan: ' + error.message);
-        goTo('home');
-      }
-    }, 5000);
-  } catch (error) {
-    console.error('Check-in error:', error);
-    alert('Error processing check-in: ' + error.message);
-  }
+  const energy=parseInt(document.getElementById('energySlider').value);
+  const stress=parseInt(document.getElementById('stressSlider').value);
+  const weight=document.getElementById('ciWeight').value?parseFloat(document.getElementById('ciWeight').value):null;
+  const notes=document.getElementById('ciNotes').value||'';
+  const sleep=document.querySelector('#sleepChips .chip.sel')?.dataset.val||'7-8hrs';
+  const lifts=document.querySelector('#liftChips .chip.sel')?.dataset.val||'same';
+  const diet=document.querySelector('#dietChips .chip.sel')?.dataset.val||'under';
+  window.currentCheckin={energy,stress,weight,notes,sleep,lifts,diet,date:new Date().toLocaleDateString('en-GB')};
+  goTo('generating');
+  runSteps();
+  setTimeout(async()=>{
+    finishSteps();
+    const lastSessions=window.loadAllSessions?await window.loadAllSessions():[];
+    const pastCheckins=window.loadCheckins?await window.loadCheckins():[];
+    const plan=buildPlan(window.userProfile,window.currentCheckin,lastSessions,pastCheckins);
+    window.currentPlanData=plan;
+    if(window.saveCheckin)await window.saveCheckin({...window.currentCheckin,planSummary:plan.summary});
+    renderPlan(plan);
+    goTo('result');
+  },5000);
 }
 window.submitCheckin=submitCheckin;
 
@@ -1336,68 +1251,8 @@ window.switchTab=switchTab;
 // ──────────────────────────────────────────
 // ── PLAN ENGINE ──
 // ──────────────────────────────────────────
-
-/**
- * Validate user profile data
-/**
- * Legacy plan builder (fallback)
- */
-function buildPlanLegacy(profile, checkin, lastSessions = [], pastCheckins = []) {
-  const { goal = 'general_fitness', experience = 'beginner', days = 3, sessionLen = 60, focusMuscles = [], equipment = 'full', dietGoal = 'maintain', restrictions = ['none'], weight: pw, height = 175, age = 25, sex = 'male' } = 
-function validateProfile(profile) {
-  const errors = [];
-  if (!profile.goal) errors.push('Goal is required');
-  if (!profile.days || profile.days < 1 || profile.days > 7) errors.push('Training days must be between 1-7');
-  if (!['beginner', 'intermediate', 'advanced'].includes(profile.experience)) errors.push('Invalid experience level');
-  if (!['male', 'female', 'other'].includes(profile.sex)) errors.push('Invalid sex selection');
-  if (!profile.weight || profile.weight < 20 || profile.weight > 300) errors.push('Weight must be between 20-300 kg');
-  if (!profile.height || profile.height < 100 || profile.height > 250) errors.push('Height must be between 100-250 cm');
-  if (!profile.age || profile.age < 13 || profile.age > 120) errors.push('Age must be between 13-120');
-  if (errors.length > 0) console.warn('Profile validation warnings:', errors);
-  return errors.length === 0;
-}
-
-/**
- * Use adaptive engine if available, otherwise fallback to legacy plan builder
- */
-function buildPlan(profile, checkin, lastSessions = [], pastCheckins = []) {
-  try {
-    // Fallback: use default profile if none provided
-    if (!profile) {
-      profile = {
-        goal: 'general_fitness',
-        experience: 'intermediate',
-        days: 4,
-        sessionLen: 60,
-        focusMuscles: ['chest', 'back'],
-        equipment: 'full',
-        dietGoal: 'maintain',
-        restrictions: ['none'],
-        weight: 75,
-        height: 175,
-        age: 25,
-        sex: 'male'
-      };
-    }
-
-    // Validate profile
-    if (!validateProfile(profile)) {
-      console.warn('Profile validation failed, using fallback');
-    }
-
-    // Try to use adaptive engine if available
-    if (window.AdaptivePlanningEngine) {
-      return buildPlanWithEngine(profile, checkin, lastSessions, pastCheckins);
-    } else {
-      console.warn('Adaptive engine not loaded, using legacy builder');
-      return buildPlanLegacy(profile, checkin, lastSessions, pastCheckins);
-    }
-  } catch (error) {
-    console.error('Error building plan:', error);
-    // Return basic fallback plan
-    return buildFallbackPlan(profile, checkin);
-  }
-}
+function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[]){
+  if(!profile)return buildPlan({goal:'general',experience:'intermediate',days:4,sessionLen:60,focusMuscles:['chest','back'],equipment:'full',dietGoal:'maintain',restrictions:['none'],weight:75,height:175,age:25,sex:'male'},checkin,lastSessions,pastCheckins);
 
   const {goal='general',experience='beginner',days=3,sessionLen=60,focusMuscles=[],equipment='full',dietGoal='maintain',restrictions=['none'],weight:pw,height=175,age=25,sex='male'}=profile;
   const {energy,stress,sleep,lifts,diet,weight:cw}=checkin;
@@ -1443,33 +1298,8 @@ function buildPlan(profile, checkin, lastSessions = [], pastCheckins = []) {
     return w+' kg';
   }
 
-  // ── PERIODISATION BLOCK ──
-  // Determine current block (hypertrophy or strength) based on check-in history
-  // Cycle: 5 weeks hypertrophy → 3 weeks strength → repeat
-  const BLOCK_CYCLE = 8; // total weeks per cycle
-  const HYPERTROPHY_WEEKS = 5;
-  const weekNum = pastCheckins.length; // use number of past check-ins as week counter
-  const positionInCycle = weekNum % BLOCK_CYCLE;
-  const isStrengthBlock = positionInCycle >= HYPERTROPHY_WEEKS;
-  const blockWeek = isStrengthBlock ? positionInCycle - HYPERTROPHY_WEEKS + 1 : positionInCycle + 1;
-  const blockTotal = isStrengthBlock ? BLOCK_CYCLE - HYPERTROPHY_WEEKS : HYPERTROPHY_WEEKS;
-  const blockName = isStrengthBlock ? 'Strength' : 'Hypertrophy';
-
-  // Override rep ranges based on block
-  // Strength block: lower reps, heavier weight, fewer sets with more rest
-  // Hypertrophy block: normal ranges from experience level
-  let blockCompReps, blockIsoReps, blockSets;
-  if(isStrengthBlock){
-    const strengthRanges={beginner:{comp:'6–8',iso:'8–10'},intermediate:{comp:'3–6',iso:'6–8'},advanced:{comp:'1–5',iso:'4–6'}};
-    const sr=strengthRanges[experience]||strengthRanges.intermediate;
-    blockCompReps = tier===0?'8–10':sr.comp; // deload overrides strength
-    blockIsoReps  = tier===0?'12':sr.iso;
-    blockSets     = tier===0?2:Math.max(sets-1,2); // strength = fewer sets, more weight
-  } else {
-    blockCompReps = cReps;
-    blockIsoReps  = iReps;
-    blockSets     = sets;
-  }
+  const EX=exLib(equipment,goal,focusMuscles,cReps,iReps,sets);
+  const splitDays=buildSplit(days,goal,focusMuscles,EX,sessionLen,sets,cReps,iReps,tier,suggestWeight);
 
   // Calories — corrected Mifflin-St Jeor
   const sexAdj=sex==='female'?-161:5;
@@ -1537,88 +1367,16 @@ function buildPlan(profile, checkin, lastSessions = [], pastCheckins = []) {
   kcal=Math.round(kcal/50)*50;
 
   const protein=Math.round(weight*(dietGoal==='cut'?2.4:2.0));
-  const fa = exLib(equipment, goal, focusMuscles, blockCompReps, blockIsoReps, blockSets);
-  const splitDays = buildSplit(days, goal, focusMuscles, EX, sessionLen, blockSets, blockCompReps, blockIsoReps, tier, suggestWeight, isStrengthBlock);
+  const fatKcal=Math.round(kcal*0.28);
+  const fat=Math.round(fatKcal/9);
+  const carbs=Math.round((kcal-protein*4-fatKcal)/4);
 
-  const mealCount = kcal < 2000 ? 3 : kcal < 2800 ? 4 : kcal < 3600 ? 5 : 6;
-  const meals = buildMeals(kcal, protein, carbs, fat, mealCount, restrictions, dietGoal);
+  const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
+  const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,dietGoal);
 
   return{
-    summary: { tier, kcal, protein, carbs, fat, days, goal },
-    analysis: { energy, stress, sleep, tier, lifts, diet, kcal, protein, carbs, fat, dietGoal, weight, tdee, trendMsg, trendAdj, blockName, blockWeek, blockTotal, isStrengthBlock },
-    splitDays, meals, tier, focusMuscles, experience, sessionIndex
-  };
-}
-
-/**
- * Build plan using adaptive engine
- */
-function buildPlanWithEngine(profile, checkin, lastSessions = [], pastCheckins = []) {
-  const engine = window.AdaptivePlanningEngine;
-  const { goal, days, experience = 'intermediate', weight = 75, height = 175, age = 25, sex = 'male', equipment = 'full', dietGoal = 'maintain', restrictions = ['none'], focusMuscles = [] } = profile;
-  const { energy = 5, stress = 5, weight: checkInWeight = null } = checkin;
-
-  try {
-    // Calculate recovery tier (0-2)
-    let tier = 1; // default moderate
-    if (energy <= 3) tier = 0; // deload
-    else if (energy >= 7) tier = 2; // strong
-    else tier = 1; // moderate
-
-    // Use engine for set budget and muscle allocation
-    const weeklyBudget = engine.calculateWeeklyBudget(goal, tier);
-    const setsPerSession = engine.calculateSetsPerSession(weeklyBudget, days);
-    const split = engine.getRecommendedSplit(days, goal);
-    const muscleAllocation = engine.getMuscleAllocation(goal, focusMuscles);
-    const repRange = engine.getRepRange(goal, experience);
-
-    // Calorie calculation (same as legacy)
-    const sexAdj = sex === 'female' ? -161 : 5;
-    const bmr = Math.round(10 * weight + 6.25 * height - 5 * age + sexAdj);
-    const tdee = Math.round(bmr * 1.55);
-    const kcal = { bulk: tdee + 350, maintain: tdee, cut: tdee - 400 }[dietGoal] || tdee;
-    const protein = Math.round(weight * (dietGoal === 'cut' ? 2.4 : 2.0));
-    const fatKcal = Math.round(kcal * 0.28);
-    const fat = Math.round(fatKcal / 9);
-    const carbs = Math.round((kcal - protein * 4 - fatKcal) / 4);
-
-    // Build split using legacy function (compatible)
-    const EX = exLib(equipment, goal, focusMuscles, repRange, repRange, Math.ceil(setsPerSession / 3));
-    const splitDays = buildSplit(days, goal, focusMuscles, EX, 60, Math.ceil(setsPerSession / 3), repRange, repRange, tier, null, false);
-
-    const meals = buildMeals(kcal, protein, carbs, fat, 4, restrictions, dietGoal);
-
-    return {
-      summary: { tier, kcal, protein, carbs, fat, days, goal, weeklyBudget, setsPerSession, split: split.name },
-      analysis: { energy, stress, tier, kcal, protein, carbs, fat, dietGoal, weight, tdee, blockName: 'Adaptive', muscleAllocation },
-      splitDays, meals, tier, focusMuscles, experience, sessionIndex: {}
-    };
-  } catch (error) {
-    console.error('Engine error:', error);
-    // Fallback to legacy builder
-    return buildPlanLegacy(profile, checkin, lastSessions, pastCheckins);
-  }
-}
-
-/**
- * Minimal fallback plan when everything fails
- */
-function buildFallbackPlan(profile, checkin) {
-  const { weight = 75, height = 175, age = 25, sex = 'male', dietGoal = 'maintain' } = profile || {};
-  const sexAdj = sex === 'female' ? -161 : 5;
-  const bmr = Math.round(10 * weight + 6.25 * height - 5 * age + sexAdj);
-  const tdee = Math.round(bmr * 1.55);
-  const kcal = { bulk: tdee + 350, maintain: tdee, cut: tdee - 400 }[dietGoal] || tdee;
-
-  return {
-    summary: { tier: 1, kcal, protein: Math.round(weight * 2), carbs: Math.round(kcal / 2 / 4), fat: Math.round(kcal * 0.3 / 9), days: 3, goal: 'general_fitness' },
-    analysis: { kcal, protein: Math.round(weight * 2), tdee },
-    splitDays: [{ day: 'Monday', name: 'Full Body', tag: 'full', exercises: [['Rest day (fallback plan)', '—', 'core']] }],
-    meals: []
-  };
-}turn{
     summary:{tier,kcal,protein,carbs,fat,days,goal},
-    analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg,trendAdj,blockName,blockWeek,blockTotal,isStrengthBlock},
+    analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg,trendAdj},
     splitDays,meals,tier,focusMuscles,experience,sessionIndex
   };
 }
@@ -1648,12 +1406,9 @@ function exLib(eq,goal,focus,cR,iR,s){
 }
 
 // ── SPLIT BUILDER ──
-function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestFn,isStrengthBlock=false){
+function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestFn){
   const limit={30:4,45:6,60:8,90:12}[sessionLen]||8;
   const isFocus=m=>focus.includes(m);
-
-  // Strength block coaching note
-  const strengthNote=isStrengthBlock?'Strength block — heavier weight, longer rest (3–4 min between sets). Stop 1 rep before failure on every set.':'';
 
   function addSuggest(exArr){
     return exArr.map(([n,s,m])=>{
@@ -1663,10 +1418,11 @@ function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestF
   }
 
   function makeDay(name,tag,rawEx){
-    const focusEx=rawEx.filter(([,,m])=>isFocus(m));
+    // Focus muscles first, then rest
+    const focusEx=rawEx.filter(([,, m])=>isFocus(m));
     const restEx=rawEx.filter(([,,m])=>!isFocus(m));
     const sorted=[...focusEx,...restEx].slice(0,limit);
-    return{name,tag,exercises:addSuggest(sorted),strengthNote};
+    return{name,tag,exercises:addSuggest(sorted)};
   }
 
   function upperA(){
@@ -1737,36 +1493,7 @@ function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestF
     ex.push(...EX.legs.calves.slice(0,1));
     return makeDay('Legs & Glutes','lower',ex);
   }
-  function hourglassLowerA(){
-    // Glute focus — hip thrusts, abductors, glute isolation
-    let ex=[];
-    ex.push(...EX.legs.glutes.slice(0,4));
-    ex.push(...EX.legs.quads.slice(0,2));
-    ex.push(...EX.legs.calves.slice(0,1));
-    ex.push(EX.core[0]);
-    return makeDay('Lower A — Glute Focus','lower',ex);
-  }
-  function hourglassLowerB(){
-    // Hamstring & quad — deadlifts, lunges, leg curl
-    let ex=[];
-    ex.push(...EX.hinge.slice(0,1));
-    ex.push(...EX.legs.hamstrings.slice(0,2));
-    ex.push(...EX.legs.quads.slice(0,2));
-    ex.push(...EX.legs.glutes.slice(1,2)); // secondary glute
-    ex.push(...EX.legs.calves.slice(0,1));
-    ex.push(EX.core[1]||EX.core[0]);
-    return makeDay('Lower B — Hamstring & Quad','lower',ex);
-  }
-  function hourglassUpper(){
-    // Shoulders wide + back for contrast, minimal chest/arms
-    let ex=[];
-    ex.push(...EX.push.shoulders.slice(0,3));
-    ex.push(...EX.pull.back.slice(0,2));
-    ex.push(...EX.pull.biceps.slice(0,1));
-    ex.push(...EX.push.triceps.slice(0,1));
-    ex.push(EX.core[0]);
-    return makeDay('Upper — Shoulders & Back','upper',ex);
-  }
+  function fullBody(){
     let ex=[];
     ex.push(EX.push.chest[0]);
     ex.push(EX.pull.back[0]);
@@ -1796,15 +1523,14 @@ function buildSplit(days,goal,focus,EX,sessionLen,sets,cReps,iReps,tier,suggestF
   const trainingDays=SCHEDULES[days]||SCHEDULES[4];
   const allDayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-  const isHourglass = goal==='hourglass';
   let templates=[];
-  if(days===1) templates=[isHourglass?hourglassLowerA():fullBody()];
-  else if(days===2) templates=isHourglass?[hourglassLowerA(),hourglassLowerB()]:[fullBody(),fullBody()];
-  else if(days===3) templates=isHourglass?[hourglassLowerA(),hourglassLowerB(),hourglassUpper()]:[pushDay(),pullDay(),legDay()];
-  else if(days===4) templates=isHourglass?[hourglassLowerA(),hourglassUpper(),hourglassLowerB(),hourglassUpper()]:[upperA(),lowerA(),upperB(),lowerB()];
-  else if(days===5) templates=isHourglass?[hourglassLowerA(),hourglassUpper(),hourglassLowerB(),hourglassLowerA(),hourglassUpper()]:[upperA(),lowerA(),upperB(),lowerB(),focusDay()];
-  else if(days===6) templates=isHourglass?[hourglassLowerA(),hourglassUpper(),hourglassLowerB(),hourglassLowerA(),hourglassUpper(),hourglassLowerB()]:[pushDay(),pullDay(),legDay(),pushDay(),pullDay(),legDay()];
-  else templates=isHourglass?[hourglassLowerA(),hourglassUpper(),hourglassLowerB(),hourglassLowerA(),hourglassUpper(),hourglassLowerB(),focusDay()]:[pushDay(),pullDay(),legDay(),fullBody(),pushDay(),pullDay(),focusDay()];
+  if(days===1)templates=[fullBody()];
+  else if(days===2)templates=[fullBody(),fullBody()];
+  else if(days===3)templates=[pushDay(),pullDay(),legDay()];
+  else if(days===4)templates=[upperA(),lowerA(),upperB(),lowerB()];
+  else if(days===5)templates=[upperA(),lowerA(),upperB(),lowerB(),focusDay()];
+  else if(days===6)templates=[pushDay(),pullDay(),legDay(),pushDay(),pullDay(),legDay()];
+  else templates=[pushDay(),pullDay(),legDay(),fullBody(),pushDay(),pullDay(),focusDay()];
 
   // Deload: label exercises as (light) on tier 0
   if(tier===0){
@@ -1844,7 +1570,7 @@ function buildMeals(kcal,protein,carbs,fat,count,restrictions,dietGoal){
 // ── RENDER PLAN ──
 function renderPlan(plan){
   const{analysis,splitDays,meals,tier,focusMuscles,experience}=plan;
-  const{energy,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg,trendAdj,blockName,blockWeek,blockTotal,isStrengthBlock}=analysis;
+  const{energy,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg,trendAdj}=analysis;
   const p=window.userProfile||{};
 
   // Overview
@@ -1855,17 +1581,6 @@ function renderPlan(plan){
       <div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal</div></div>
       <div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div>
       <div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div>
-    </div>
-    <div style="padding:12px 14px;background:${isStrengthBlock?'rgba(0,212,255,0.06)':'rgba(200,255,0,0.06)'};border:1px solid ${isStrengthBlock?'rgba(0,212,255,0.2)':'rgba(200,255,0,0.2)'};border-radius:10px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
-      <div>
-        <div style="font-size:11px;color:${isStrengthBlock?'#00d4ff':'#c8ff00'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">Current Block</div>
-        <div style="font-size:16px;font-weight:700;font-family:'Syne',-apple-system,sans-serif;">${blockName} Block</div>
-        <div style="font-size:12px;color:#888;margin-top:2px;">${isStrengthBlock?'Lower reps, heavier weight, longer rest':'Higher reps, moderate weight, more volume'}</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-family:'Syne',-apple-system,sans-serif;font-weight:800;font-size:26px;color:${isStrengthBlock?'#00d4ff':'#c8ff00'};">${blockWeek}<span style="font-size:14px;font-weight:400;color:#888;">/${blockTotal}</span></div>
-        <div style="font-size:11px;color:#888;">weeks</div>
-      </div>
     </div>
     <h2>Weekly Analysis</h2>
     <p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>
@@ -1924,8 +1639,7 @@ function renderPlan(plan){
         </div>
       </div>`;
     });
-    th+=`${isRest?'<div style="padding:10px 16px;font-size:12px;color:#888;">Eat all your meals on rest days — muscle is built at rest.</div>':day.strengthNote?`<div style="padding:10px 16px;font-size:12px;color:#00d4ff;border-top:1px solid #2a2a2a;">${day.strengthNote}</div>`:''}
-    </div></div>`;
+    th+=`${isRest?'<div style="padding:10px 16px;font-size:12px;color:#888;">Eat all your meals on rest days — muscle is built at rest.</div>':''}</div></div>`;
   });
   document.getElementById('tab-training').innerHTML=th;
 
