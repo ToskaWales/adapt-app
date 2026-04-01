@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#080808">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ADAPT">
-<title>ADAPT</title>
+<meta name="apple-mobile-web-app-title" content="ADDAPT">
+<title>ADDAPT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
@@ -84,7 +84,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 .intro-pill{padding:6px 10px;border-radius:999px;background:#111;border:1px solid #2a2a2a;font-size:11px;color:#aaa;}
 .quiet-note{font-size:11px;color:#777;line-height:1.55;margin-top:12px;}
 #login{justify-content:center;align-items:center;padding:40px 24px;text-align:center;position:relative;overflow:hidden;}
-#login::after{content:'ADAPT';position:absolute;font-family:'Syne',-apple-system,sans-serif;font-weight:800;font-size:clamp(90px,28vw,200px);color:transparent;-webkit-text-stroke:1px #181818;pointer-events:none;top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;z-index:0;}
+#login::after{content:'ADDAPT';position:absolute;font-family:'Syne',-apple-system,sans-serif;font-weight:800;font-size:clamp(90px,28vw,200px);color:transparent;-webkit-text-stroke:1px #181818;pointer-events:none;top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;z-index:0;}
 .login-inner{position:relative;z-index:1;max-width:340px;width:100%;}
 .logo-tag{display:inline-flex;align-items:center;gap:8px;background:#181818;border:1px solid #2a2a2a;padding:6px 14px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#c8ff00;margin-bottom:28px;border-radius:20px;}
 .logo-dot{width:6px;height:6px;background:#c8ff00;border-radius:50%;animation:pulse 2s infinite;}
@@ -379,7 +379,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 <!-- LOGIN -->
 <div id="login" class="screen active">
   <div class="login-inner">
-    <div class="logo-tag"><span class="logo-dot"></span> Adaptive Training</div>
+    <div class="logo-tag"><span class="logo-dot"></span> Addaptive Training</div>
     <h1 class="login-title">YOUR PLAN<br><span class="hi">EVOLVES</span><span class="lo">with your body</span></h1>
     <p class="login-desc">Personalised training, adaptive nutrition, strength tracking and recovery tools that evolve with your real results.</p>
     <button class="btn-google" onclick="signInWithGoogle()">
@@ -393,7 +393,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 <!-- ONBOARDING -->
 <div id="onboarding" class="screen">
   <div class="ob-prog"><div class="ob-bar" id="obBar" style="width:8%"></div></div>
-  <div class="ob-step active" id="ob1"><div class="ob-sb"><div class="ob-num">1 of 12</div><div class="ob-q">What is your main goal?</div><div class="ob-sub">This shapes your training split, exercise selection and the way ADAPT rebuilds your plan after every check-in.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'goal','vtaper')"><div class="opt-label">V-Taper / Athletic</div><div class="opt-desc">Wide back, broad shoulders, defined chest.</div></div><div class="opt-card" onclick="obSel(this,'goal','hourglass')"><div class="opt-label">Hourglass / Curves</div><div class="opt-desc">Glutes, hips, shoulder width for contrast, waist definition.</div></div><div class="opt-card" onclick="obSel(this,'goal','strength')"><div class="opt-label">Strength and Power</div><div class="opt-desc">Squat, bench, deadlift. Raw strength and performance.</div></div><div class="opt-card" onclick="obSel(this,'goal','general')"><div class="opt-label">General Fitness</div><div class="opt-desc">Balanced full-body health and conditioning.</div></div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.hero.kicker">Why ADAPT Hits Different</div><div class="intro-title" data-i18n="intro.hero.title">One app for your plan, progress, food and recovery</div><div class="intro-copy" data-i18n="intro.hero.copy">Instead of giving you one fixed routine, ADAPT keeps updating your training and diet from your real check-ins, saved lifts, bodyweight trend and recovery score.</div><div class="intro-pill-row"><div class="intro-pill" data-i18n="intro.hero.pill1">Adaptive training split</div><div class="intro-pill" data-i18n="intro.hero.pill2">Auto calorie shifts</div><div class="intro-pill" data-i18n="intro.hero.pill3">Weight analytics</div><div class="intro-pill" data-i18n="intro.hero.pill4">Goal-based sauna guide</div></div></div></div><div class="foot"><button class="btn btn-acc" onclick="obNext(1)" id="ob1n" disabled>Continue</button></div></div>
+  <div class="ob-step active" id="ob1"><div class="ob-sb"><div class="ob-num">1 of 12</div><div class="ob-q">What is your main goal?</div><div class="ob-sub">This shapes your training split, exercise selection and the way ADDAPT rebuilds your plan after every check-in.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'goal','vtaper')"><div class="opt-label">V-Taper / Athletic</div><div class="opt-desc">Wide back, broad shoulders, defined chest.</div></div><div class="opt-card" onclick="obSel(this,'goal','hourglass')"><div class="opt-label">Hourglass / Curves</div><div class="opt-desc">Glutes, hips, shoulder width for contrast, waist definition.</div></div><div class="opt-card" onclick="obSel(this,'goal','strength')"><div class="opt-label">Strength and Power</div><div class="opt-desc">Squat, bench, deadlift. Raw strength and performance.</div></div><div class="opt-card" onclick="obSel(this,'goal','general')"><div class="opt-label">General Fitness</div><div class="opt-desc">Balanced full-body health and conditioning.</div></div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.hero.kicker">Why ADDAPT Hits Different</div><div class="intro-title" data-i18n="intro.hero.title">One app for your plan, progress, food and recovery</div><div class="intro-copy" data-i18n="intro.hero.copy">Instead of giving you one fixed routine, ADDAPT keeps updating your training and diet from your real check-ins, saved lifts, bodyweight trend and recovery score.</div><div class="intro-pill-row"><div class="intro-pill" data-i18n="intro.hero.pill1">Addaptive training split</div><div class="intro-pill" data-i18n="intro.hero.pill2">Auto calorie shifts</div><div class="intro-pill" data-i18n="intro.hero.pill3">Weight analytics</div><div class="intro-pill" data-i18n="intro.hero.pill4">Goal-based sauna guide</div></div></div></div><div class="foot"><button class="btn btn-acc" onclick="obNext(1)" id="ob1n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob2"><div class="ob-sb"><div class="ob-num">2 of 12</div><div class="ob-q">Biological sex?</div><div class="ob-sub">Used only for accurate calorie calculation.</div><div class="opt-grid c3"><div class="opt-card" onclick="obSel(this,'sex','male')"><div class="opt-label">Male</div></div><div class="opt-card" onclick="obSel(this,'sex','female')"><div class="opt-label">Female</div></div><div class="opt-card" onclick="obSel(this,'sex','other')"><div class="opt-label">Other</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(2)">Back</button><button class="btn btn-acc" onclick="obNext(2)" id="ob2n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob3"><div class="ob-sb"><div class="ob-num">3 of 12</div><div class="ob-q">Training experience?</div><div class="ob-sub">Sets your rep ranges and exercise complexity.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'experience','beginner')"><div class="opt-label">Beginner</div><div class="opt-desc">Under 1 year. Still learning the movements.</div></div><div class="opt-card" onclick="obSel(this,'experience','intermediate')"><div class="opt-label">Intermediate</div><div class="opt-desc">1–3 years. Comfortable with main compounds.</div></div><div class="opt-card" onclick="obSel(this,'experience','advanced')"><div class="opt-label">Advanced</div><div class="opt-desc">3+ years. Strong technique and movement patterns.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(3)">Back</button><button class="btn btn-acc" onclick="obNext(3)" id="ob3n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob4"><div class="ob-sb"><div class="ob-num">4 of 12</div><div class="ob-q">Days per week?</div><div class="ob-sub">How many days can you realistically commit to each week?</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="daysSel"><div class="day-btn" onclick="selDay(this,1)">1</div><div class="day-btn" onclick="selDay(this,2)">2</div><div class="day-btn" onclick="selDay(this,3)">3</div><div class="day-btn" onclick="selDay(this,4)">4</div><div class="day-btn" onclick="selDay(this,5)">5</div><div class="day-btn" onclick="selDay(this,6)">6</div><div class="day-btn" onclick="selDay(this,7)">7</div></div><div id="splitSug" class="info-box" style="display:none;"><div class="info-lbl">Recommended split</div><div class="info-val" id="splitText"></div><div style="font-size:12px;color:#888;margin-top:3px;" id="splitDaysText"></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(4)">Back</button><button class="btn btn-acc" onclick="obNext(4)" id="ob4n" disabled>Continue</button></div></div>
@@ -404,7 +404,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
   <div class="ob-step" id="ob9"><div class="ob-sb"><div class="ob-num">9 of 12</div><div class="ob-q">Goal weight?</div><div class="ob-sub">Where do you want to end up? Used for your progress graph.</div><div class="wt-row" style="margin-bottom:14px;"><input type="number" class="wt-in" id="obGW" placeholder="80" oninput="checkOb9()"><span class="wt-unit">kg</span></div><div id="gwPreview" class="info-box" style="display:none;"><div class="info-lbl">Estimated timeline</div><div class="info-val" id="gwText"></div><canvas id="gwChart" style="width:100%;height:90px;margin-top:12px;display:block;"></canvas></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(9)">Back</button><button class="btn btn-acc" onclick="obNext(9)" id="ob9n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob10"><div class="ob-sb"><div class="ob-num">10 of 12</div><div class="ob-q">Diet goal?</div><div class="ob-sub">Sets your calorie target and macro split.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'dietGoal','bulk')"><div class="opt-label">Bulk</div><div class="opt-desc">Calorie surplus. Build muscle faster.</div></div><div class="opt-card" onclick="obSel(this,'dietGoal','maintain')"><div class="opt-label">Maintain</div><div class="opt-desc">Near maintenance. Slow recomposition.</div></div><div class="opt-card" onclick="obSel(this,'dietGoal','cut')"><div class="opt-label">Cut</div><div class="opt-desc">Calorie deficit. Lose fat, keep muscle.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(10)">Back</button><button class="btn btn-acc" onclick="obNext(10)" id="ob10n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob11"><div class="ob-sb"><div class="ob-num">11 of 12</div><div class="ob-q">Food restrictions?</div><div class="ob-sub">Select all that apply.</div><div class="chip-wrap" id="restrictChips"><div class="chip sel" onclick="selRestrict(this,'none')">None</div><div class="chip" onclick="selRestrict(this,'vegetarian')">Vegetarian</div><div class="chip" onclick="selRestrict(this,'vegan')">Vegan</div><div class="chip" onclick="selRestrict(this,'dairy_free')">Dairy-free</div><div class="chip" onclick="selRestrict(this,'gluten_free')">Gluten-free</div><div class="chip" onclick="selRestrict(this,'halal')">Halal</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(11)">Back</button><button class="btn btn-acc" onclick="obNext(11)" id="ob11n">Continue</button></div></div>
-  <div class="ob-step" id="ob12"><div class="ob-sb"><div class="ob-num">12 of 12</div><div class="ob-q">Notifications and quick tour</div><div class="ob-sub">You are about to unlock the full app. This is the fastest way to get value from it on day one.</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'notifications',true)"><div class="opt-label">Yes please</div><div class="opt-desc">Nudge if you haven't checked in after 7 days.</div></div><div class="opt-card" onclick="obSel(this,'notifications',false)"><div class="opt-label">No thanks</div><div class="opt-desc">I'll remember on my own.</div></div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.tour.kicker">How To Use ADAPT</div><div class="intro-title" data-i18n="intro.tour.title">Check in, train, log, improve</div><div class="intro-copy" data-i18n="intro.tour.copy">The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADAPT adjust the next block around what actually happened.</div></div><div class="intro-feature-list"><div class="intro-feature"><div class="intro-num">1</div><div><div class="intro-feature-title" data-i18n="intro.tour.f1.title">Check-In drives the plan</div><div class="intro-feature-copy" data-i18n="intro.tour.f1.copy">Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.</div></div></div><div class="intro-feature"><div class="intro-num">2</div><div><div class="intro-feature-title" data-i18n="intro.tour.f2.title">Training and analytics stay connected</div><div class="intro-feature-copy" data-i18n="intro.tour.f2.copy">Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.</div></div></div><div class="intro-feature"><div class="intro-num">3</div><div><div class="intro-feature-title" data-i18n="intro.tour.f3.title">Recovery gets its own system</div><div class="intro-feature-copy" data-i18n="intro.tour.f3.copy">Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.</div></div></div></div><div class="info-box" style="margin-top:14px;"><div style="font-size:13px;color:#888;line-height:1.6;" data-i18n="intro.tour.safari">In Safari: tap Share then Add to Home Screen for the full native app experience.</div><div class="quiet-note" data-i18n="intro.tour.legal">Built for general fitness and recovery planning. If you are dealing with injury, symptoms, or treatment decisions, use a qualified clinician for that part.</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(12)">Back</button><button class="btn btn-acc" onclick="finishOnboarding()">Build My Plan</button></div></div>
+  <div class="ob-step" id="ob12"><div class="ob-sb"><div class="ob-num">12 of 12</div><div class="ob-q">Notifications and quick tour</div><div class="ob-sub">You are about to unlock the full app. This is the fastest way to get value from it on day one.</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'notifications',true)"><div class="opt-label">Yes please</div><div class="opt-desc">Nudge if you haven't checked in after 7 days.</div></div><div class="opt-card" onclick="obSel(this,'notifications',false)"><div class="opt-label">No thanks</div><div class="opt-desc">I'll remember on my own.</div></div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.tour.kicker">How To Use ADDAPT</div><div class="intro-title" data-i18n="intro.tour.title">Check in, train, log, improve</div><div class="intro-copy" data-i18n="intro.tour.copy">The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADDAPT adjust the next block around what actually happened.</div></div><div class="intro-feature-list"><div class="intro-feature"><div class="intro-num">1</div><div><div class="intro-feature-title" data-i18n="intro.tour.f1.title">Check-In drives the plan</div><div class="intro-feature-copy" data-i18n="intro.tour.f1.copy">Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.</div></div></div><div class="intro-feature"><div class="intro-num">2</div><div><div class="intro-feature-title" data-i18n="intro.tour.f2.title">Training and analytics stay connected</div><div class="intro-feature-copy" data-i18n="intro.tour.f2.copy">Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.</div></div></div><div class="intro-feature"><div class="intro-num">3</div><div><div class="intro-feature-title" data-i18n="intro.tour.f3.title">Recovery gets its own system</div><div class="intro-feature-copy" data-i18n="intro.tour.f3.copy">Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.</div></div></div></div><div class="info-box" style="margin-top:14px;"><div style="font-size:13px;color:#888;line-height:1.6;" data-i18n="intro.tour.safari">In Safari: tap Share then Add to Home Screen for the full native app experience.</div><div class="quiet-note" data-i18n="intro.tour.legal">Built for general fitness and recovery planning. If you are dealing with injury, symptoms, or treatment decisions, use a qualified clinician for that part.</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(12)">Back</button><button class="btn btn-acc" onclick="finishOnboarding()">Build My Plan</button></div></div>
 </div>
 
 <!-- HOME -->
@@ -497,7 +497,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 <div id="sauna" class="screen">
   <div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Sauna Calculator</div></div>
   <div class="sb" style="padding:0;">
-    <div class="sauna-head"><div class="sauna-title">Sauna Calculator<small>by ADAPT</small></div><div class="sauna-beta">Beta</div></div>
+    <div class="sauna-head"><div class="sauna-title">Sauna Calculator<small>by ADDAPT</small></div><div class="sauna-beta">Beta</div></div>
     <div class="sauna-nav">
       <button class="sauna-nav-btn active" onclick="showSaunaPage('setup',this)">Setup</button>
       <button class="sauna-nav-btn" onclick="showSaunaPage('protocol',this)">Protocol</button>
@@ -646,18 +646,18 @@ const APP_I18N={
   en:{
     intro:{
       hero:{
-        kicker:'Why ADAPT Hits Different',
+        kicker:'Why ADDAPT Hits Different',
         title:'One app for your plan, progress, food and recovery',
-        copy:'Instead of giving you one fixed routine, ADAPT keeps updating your training and diet from your real check-ins, saved lifts, bodyweight trend and recovery score.',
-        pill1:'Adaptive training split',
+        copy:'Instead of giving you one fixed routine, ADDAPT keeps updating your training and diet from your real check-ins, saved lifts, bodyweight trend and recovery score.',
+        pill1:'Addaptive training split',
         pill2:'Auto calorie shifts',
         pill3:'Weight analytics',
         pill4:'Goal-based sauna guide'
       },
       tour:{
-        kicker:'How To Use ADAPT',
+        kicker:'How To Use ADDAPT',
         title:'Check in, train, log, improve',
-        copy:'The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADAPT adjust the next block around what actually happened.',
+        copy:'The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADDAPT adjust the next block around what actually happened.',
         f1:{title:'Check-In drives the plan',copy:'Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.'},
         f2:{title:'Training and analytics stay connected',copy:'Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.'},
         f3:{title:'Recovery gets its own system',copy:'Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.'},
@@ -688,7 +688,7 @@ const APP_I18N={
       finish:'Finish',
       checkin:{title:'Check-In',copy:'Start here most often. This updates your calories, recovery mode, training focus, and the next version of your plan from your real data.'},
       plan:{title:'Current Plan',copy:'This is your live split. It shows the exact sessions, set bank logic, frequency, and why the week is structured the way it is.'},
-      log:{title:'Log Session',copy:'Store your lifts after training so ADAPT can keep building suggestions from your actual performance, not guesses.'},
+      log:{title:'Log Session',copy:'Store your lifts after training so ADDAPT can keep building suggestions from your actual performance, not guesses.'},
       strength:{title:'Strength Progress',copy:'Track PRs, exercise load trends, volume, and bodyweight changes so progress is visible and measurable.'},
       sauna:{title:'Sauna Calculator',copy:'Use goal-specific sauna guidance for recovery, cardio, stress relief or longevity with protocol, timer, hydration and weekly planning.'},
       history:{title:'Check-In History',copy:'Look back at bodyweight, old check-ins and plan changes so you can spot trends across whole blocks, not just single days.'},
@@ -715,7 +715,7 @@ const APP_I18N={
     },
     history:{loading:'Loading...',empty:'No check-ins yet.',today:'Today',yesterday:'Yesterday',daysAgo:'{days} days ago',energy:'energy'},
     toast:{
-      welcome:{title:'Welcome to ADAPT',body:'Your personalised plan is ready.'},
+      welcome:{title:'Welcome to ADDAPT',body:'Your personalised plan is ready.'},
       resetFail:{title:'Reset failed',body:'Your data could not be cleared right now.'},
       resetDone:{title:'Data reset',body:'Your account is ready for a fresh start.'}
     },
@@ -733,18 +733,18 @@ const APP_I18N={
   de:{
     intro:{
       hero:{
-        kicker:'Warum ADAPT heraussticht',
+        kicker:'Warum ADDAPT heraussticht',
         title:'Eine App fuer Trainingsplan, Fortschritt, Ernaehrung und Regeneration',
-        copy:'Statt dir einmal einen festen Plan zu geben, passt ADAPT dein Training und deine Ernaehrung laufend an echte Check-ins, gespeicherte Lifts, Gewichtstrends und deinen Erholungsstatus an.',
-        pill1:'Adaptiver Trainingssplit',
+        copy:'Statt dir einmal einen festen Plan zu geben, passt ADDAPT dein Training und deine Ernaehrung laufend an echte Check-ins, gespeicherte Lifts, Gewichtstrends und deinen Erholungsstatus an.',
+        pill1:'Addaptiver Trainingssplit',
         pill2:'Automatische Kalorienanpassung',
         pill3:'Gewichtsanalyse',
         pill4:'Zielbasierter Sauna-Guide'
       },
       tour:{
-        kicker:'So nutzt du ADAPT',
+        kicker:'So nutzt du ADDAPT',
         title:'Einchecken, trainieren, loggen, verbessern',
-        copy:'Die App funktioniert am besten, wenn du diesen Kreislauf nutzt: Status updaten, Plan ausfuehren, Lifts loggen und den naechsten Block von ADAPT anhand deiner echten Woche anpassen lassen.',
+        copy:'Die App funktioniert am besten, wenn du diesen Kreislauf nutzt: Status updaten, Plan ausfuehren, Lifts loggen und den naechsten Block von ADDAPT anhand deiner echten Woche anpassen lassen.',
         f1:{title:'Der Check-In steuert den Plan',copy:'Energie, Schlaf, Ernaehrung, Lifts und Koerpergewicht fuettern die adaptive Engine, damit Kalorien und Trainingsmodus zu deiner echten Woche passen.'},
         f2:{title:'Training und Analytik greifen ineinander',copy:'Current Plan zeigt den Split, Log Session speichert die Leistung und Strength Progress macht daraus PR-Tracking, Charts und eine brauchbare Gewichtshistorie.'},
         f3:{title:'Regeneration bekommt ein eigenes System',copy:'Der Sauna Calculator liefert je nach Ziel einen Leitfaden fuer Cardio, Stress, Regeneration oder Langlebigkeit inklusive Protokoll, Timer, Hydration und Wochenplanung.'},
@@ -775,7 +775,7 @@ const APP_I18N={
       finish:'Fertig',
       checkin:{title:'Check-In',copy:'Hier startest du am haeufigsten. Dieser Bereich aktualisiert Kalorien, Erholungsmodus, Trainingsfokus und die naechste Version deines Plans anhand echter Daten.'},
       plan:{title:'Aktueller Plan',copy:'Das ist dein live adaptierter Split. Hier siehst du Sessions, Set-Bank-Logik, Frequenz und warum die Woche genau so aufgebaut ist.'},
-      log:{title:'Session loggen',copy:'Speichere nach dem Training deine Lifts, damit ADAPT Vorschlaege auf echter Leistung statt auf Schaetzungen aufbaut.'},
+      log:{title:'Session loggen',copy:'Speichere nach dem Training deine Lifts, damit ADDAPT Vorschlaege auf echter Leistung statt auf Schaetzungen aufbaut.'},
       strength:{title:'Kraftfortschritt',copy:'Verfolge PRs, Lasttrends, Volumen und Gewichtsentwicklung, damit Fortschritt sichtbar und messbar wird.'},
       sauna:{title:'Sauna Calculator',copy:'Nutze zielbasierte Sauna-Empfehlungen fuer Regeneration, Cardio, Stressabbau oder Langlebigkeit inklusive Protokoll, Timer, Hydration und Wochenplanung.'},
       history:{title:'Check-In-Verlauf',copy:'Sieh dir Gewicht, alte Check-ins und Planveraenderungen ueber ganze Bloecke hinweg an statt nur ueber einzelne Tage.'},
@@ -802,7 +802,7 @@ const APP_I18N={
     },
     history:{loading:'Wird geladen...',empty:'Noch keine Check-ins.',today:'Heute',yesterday:'Gestern',daysAgo:'vor {days} Tagen',energy:'Energie'},
     toast:{
-      welcome:{title:'Willkommen bei ADAPT',body:'Dein personalisierter Plan ist bereit.'},
+      welcome:{title:'Willkommen bei ADDAPT',body:'Dein personalisierter Plan ist bereit.'},
       resetFail:{title:'Zuruecksetzen fehlgeschlagen',body:'Deine Daten konnten gerade nicht geloescht werden.'},
       resetDone:{title:'Daten zurueckgesetzt',body:'Dein Account ist bereit fuer einen frischen Start.'}
     },
@@ -1053,7 +1053,7 @@ function updateHomeUI(){
   const p=window.userProfile;if(!p?.setupComplete)return;
   const name=(window.currentUser?.displayName||'').split(' ')[0]||'there';
   document.getElementById('heroGreeting').textContent=tf('home.greeting',{name});
-  document.getElementById('heroSub').textContent=tf('home.goalSub',{goal:goalLabel(p.goal)||'ADAPT'});
+  document.getElementById('heroSub').textContent=tf('home.goalSub',{goal:goalLabel(p.goal)||'ADDAPT'});
   window.fbLoadCheckins&&window.fbLoadCheckins().then(async checkins=>{
     const level=getLevel(checkins.length);
     document.getElementById('heroBadges').innerHTML=`<div class="badge g">${p.days}x/week</div><div class="badge b">${p.sessionLen}min</div><div class="badge">${trEnum('experience',p.experience)}</div>${(p.focusMuscles||[]).map(m=>`<div class="badge p">${trEnum('muscle',m)}</div>`).join('')}<div class="level-badge" style="color:${level.color};border-color:${level.color}50;background:${level.color}10;">${level.name}</div>`;
@@ -1387,307 +1387,460 @@ function buildSession(name,tag,exIds,equipment,sessionLen,sets,cReps,iReps,focus
 }
 function getEx(ids,eq){return ids.map(id=>EX_LIB[id]).filter(e=>e&&e.eq.includes(eq));}
 
-const MUSCLE_META={
-  chest:{bucket:'upper'},
-  back:{bucket:'upper'},
-  shoulders:{bucket:'upper'},
-  biceps:{bucket:'upper'},
-  triceps:{bucket:'upper'},
-  glutes:{bucket:'lower'},
-  quads:{bucket:'lower'},
-  hamstrings:{bucket:'lower'},
-  calves:{bucket:'lower'},
-  core:{bucket:'core'}
-};
-const SCIENCE_EX_BANK={
-  chest:{anchor:['bench','incline_bench','db_bench'],work:['incline_db','chest_press_m','pushup'],iso:['cable_fly_mid','pec_deck','db_fly']},
-  back:{anchor:['pullups','lat_pulldown','barbell_row'],work:['cable_row','db_row','close_pulldown'],iso:['straight_pulldown','pullover','machine_row']},
-  shoulders:{anchor:['ohp','db_ohp','arnold'],work:['lat_raise','cable_lat','rear_delt'],iso:['face_pull','cable_rear','lean_lat']},
-  biceps:{anchor:['chin_bw'],work:['ez_curl','db_curl','hammer_curl'],iso:['incline_curl','cable_curl','preacher_curl']},
-  triceps:{anchor:['cg_bench','dips_tri'],work:['rope_pushdown','skull_crush','overhead_ext'],iso:['bar_pushdown','cable_overhead','db_kickback']},
-  glutes:{anchor:['hip_thrust','sumo_squat','bss'],work:['glute_bridge','cable_kickback','abductor_m'],iso:['band_walk','clamshell','donkey_kick']},
-  quads:{anchor:['back_squat','front_squat','leg_press'],work:['hack_squat','bss','walking_lunge'],iso:['leg_ext','sissy_squat','wall_sit']},
-  hamstrings:{anchor:['rdl','deadlift','db_rdl'],work:['leg_curl','seated_curl','good_morning'],iso:['nordic','band_leg_curl','glute_ham']},
-  calves:{anchor:['standing_calf'],work:['standing_calf','seated_calf','leg_press_calf'],iso:['sl_calf','db_calf','bw_calf']},
-  core:{anchor:['ab_wheel'],work:['cable_crunch','leg_raise','pallof_press'],iso:['plank','side_plank','hollow_hold']}
-};
-function uniqList(arr){return [...new Set((arr||[]).filter(Boolean))];}
-function minusList(arr,remove){return (arr||[]).filter(x=>!remove.includes(x));}
-function weekDistance(a,b){const diff=Math.abs(a-b);return Math.min(diff,7-diff);}
-function getBucketForMuscle(profile,muscle){if(profile.priority.includes(muscle))return'priority';if(profile.secondary.includes(muscle))return'secondary';return'maintenance';}
-function buildGoalProfile(goal,focusMuscles=[],days=4){
-  const profiles={
-    vtaper:{priority:['back','shoulders'],secondary:['chest','biceps','triceps','core'],maintenance:['glutes','quads','hamstrings','calves'],fatigueSensitivity:'medium'},
-    hourglass:{priority:['glutes','shoulders'],secondary:['hamstrings','quads','back','core'],maintenance:['chest','biceps','triceps','calves'],fatigueSensitivity:'medium'},
-    strength:{priority:['quads','hamstrings','chest','back','shoulders'],secondary:['glutes','triceps','biceps','core'],maintenance:['calves'],fatigueSensitivity:'high'},
-    general:{priority:['back','quads'],secondary:['chest','shoulders','glutes','hamstrings','core'],maintenance:['biceps','triceps','calves'],fatigueSensitivity:'low'}
+// ════════════════════════════════════════════════════════════════
+// ADDAPT — UNIFIED PLAN ENGINE  (replaces buildSplit + buildAddaptiveSplitSystem)
+// ════════════════════════════════════════════════════════════════
+//
+// Architecture:
+//   1. getGoalProfile()      — priority / secondary / maintenance per goal
+//   2. getWeeklySetTargets() — how many sets each muscle gets per week
+//   3. getSessionTemplates() — explicit day names + ordered muscle list per session
+//   4. distributeVolume()    — split weekly sets across the sessions that train each muscle
+//   5. buildSession()        — pick exercises to fill the set budget for each muscle
+//   6. assembleSplitDays()   — map sessions onto Mon-Sun, fill rest days
+//
+  const adaptiveSplit=assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,suggestW,profile.trainingDayMap||profile.trainingSchedule);
+// are both removed.
+// ════════════════════════════════════════════════════════════════
+
+'use strict';
+
+// ── 1. GOAL PROFILE ─────────────────────────────────────────────
+// Returns which muscles to prioritise, keep secondary, or maintain.
+// focusMuscles override bumps any muscle into priority tier.
+
+function getGoalProfile(goal, focusMuscles = []) {
+  const base = {
+    vtaper:    { priority: ['back','shoulders'],           secondary: ['chest','triceps','biceps','core'],    maintenance: ['quads','hamstrings','glutes','calves'] },
+    hourglass: { priority: ['glutes','shoulders'],         secondary: ['hamstrings','quads','back','core'],   maintenance: ['chest','biceps','triceps','calves'] },
+    strength:  { priority: ['quads','hamstrings','chest','back','shoulders'], secondary: ['glutes','triceps','biceps','core'], maintenance: ['calves'] },
+    general:   { priority: ['back','quads'],               secondary: ['chest','shoulders','glutes','hamstrings','core'], maintenance: ['biceps','triceps','calves'] },
+  }[goal] || { priority: ['back','quads'], secondary: ['chest','shoulders','glutes','hamstrings','core'], maintenance: ['biceps','triceps','calves'] };
+
+  // Promote focusMuscles to priority, remove from lower tiers
+  const promoted = [...new Set([...focusMuscles, ...base.priority])];
+  const secondary = base.secondary.filter(m => !promoted.includes(m));
+  const maintenance = base.maintenance.filter(m => !promoted.includes(m) && !secondary.includes(m));
+  return { priority: promoted, secondary, maintenance };
+}
+
+// ── 2. WEEKLY SET TARGETS ────────────────────────────────────────
+// Evidence-based weekly set ranges per muscle tier.
+// Adjusted for session length and number of training days.
+
+function getWeeklySetTargets(profile, goal, days, sessionLen, tier) {
+  // tier 0 = deload, 1 = moderate, 2 = full
+  const deloadMult = tier === 0 ? 0.5 : tier === 1 ? 0.8 : 1.0;
+  const lenAdj = sessionLen <= 30 ? -3 : sessionLen <= 45 ? -1 : sessionLen >= 90 ? 2 : 0;
+  const trainDays = Math.min(days, 6);
+
+  // Base weekly sets by tier
+  const targets = {};
+  const allMuscles = [...profile.priority, ...profile.secondary, ...profile.maintenance];
+
+  for (const muscle of allMuscles) {
+    let base;
+    if (profile.priority.includes(muscle)) {
+      // Priority: 16–20 sets/week for hypertrophy, slightly less for strength (heavier = more fatigue)
+      base = goal === 'strength' ? 14 : 16;
+      // Extra volume for the user's explicit focus muscles
+      if (profile.priority.includes(muscle) && muscle !== 'back' && muscle !== 'quads') base += 2;
+    } else if (profile.secondary.includes(muscle)) {
+      base = 10;
+    } else {
+      // Maintenance: only needs 6–8 sets; fewer training days = tighter budget
+      base = trainDays <= 2 ? 6 : 8;
+    }
+
+    base += lenAdj;
+    base = Math.round(base * deloadMult);
+    // Hard floors so nothing disappears entirely
+    base = Math.max(profile.maintenance.includes(muscle) ? 4 : 6, base);
+    targets[muscle] = base;
+  }
+  return targets;
+}
+
+// ── 3. SESSION TEMPLATES ─────────────────────────────────────────
+// Each template has:
+//   name      — display name
+//   tag       — upper / lower / full / focus
+//   muscles   — ordered list (first = anchor, trained freshest)
+//
+// Templates are explicit per goal × days so the structure is
+// always intentional, never algorithmically guessed.
+
+function getSessionTemplates(goal, days) {
+  const d = Math.min(days === 7 ? 6 : days, 6);
+
+  const T = {
+    vtaper: {
+      1: [{ name:'Full Body — Width Bias',         tag:'full',  muscles:['back','shoulders','chest','quads','hamstrings','biceps','triceps','core'] }],
+      2: [{ name:'Upper — Lats + Delts',           tag:'upper', muscles:['back','shoulders','chest','biceps','triceps','core'] },
+          { name:'Lower + Upper Pump',             tag:'full',  muscles:['quads','hamstrings','glutes','back','shoulders','calves','core'] }],
+      3: [{ name:'Upper A — Width',                tag:'upper', muscles:['back','shoulders','biceps','chest','triceps','core'] },
+          { name:'Lower',                          tag:'lower', muscles:['quads','hamstrings','glutes','calves','core'] },
+          { name:'Upper B — Delts + Chest',        tag:'upper', muscles:['shoulders','chest','back','triceps','biceps'] }],
+      4: [{ name:'Upper A — Lats First',           tag:'upper', muscles:['back','shoulders','biceps','chest','core'] },
+          { name:'Lower A — Quads',                tag:'lower', muscles:['quads','hamstrings','glutes','calves','core'] },
+          { name:'Upper B — Chest + Delts',        tag:'upper', muscles:['shoulders','chest','triceps','back','biceps'] },
+          { name:'Lower B — Posterior Chain',      tag:'lower', muscles:['hamstrings','glutes','quads','calves','core'] }],
+      5: [{ name:'Upper A — Lats First',           tag:'upper', muscles:['back','shoulders','biceps','chest','core'] },
+          { name:'Lower A — Quads',                tag:'lower', muscles:['quads','hamstrings','glutes','calves','core'] },
+          { name:'Upper B — Chest + Delts',        tag:'upper', muscles:['shoulders','chest','triceps','back'] },
+          { name:'Lower B — Posterior Chain',      tag:'lower', muscles:['hamstrings','glutes','quads','calves','core'] },
+          { name:'Back + Arms Specialisation',     tag:'focus', muscles:['back','shoulders','biceps','triceps','core'] }],
+      6: [{ name:'Pull A — Lat Width',             tag:'upper', muscles:['back','biceps','shoulders','core'] },
+          { name:'Lower A — Quads',                tag:'lower', muscles:['quads','hamstrings','glutes','calves','core'] },
+          { name:'Push — Delts + Chest',           tag:'upper', muscles:['shoulders','chest','triceps','back'] },
+          { name:'Pull B — Thickness',             tag:'upper', muscles:['back','biceps','shoulders'] },
+          { name:'Lower B — Posterior Chain',      tag:'lower', muscles:['hamstrings','glutes','quads','calves','core'] },
+          { name:'Delts + Arms Specialisation',    tag:'focus', muscles:['shoulders','back','biceps','triceps','core'] }],
+    },
+    hourglass: {
+      1: [{ name:'Full Body — Glute Bias',         tag:'full',  muscles:['glutes','hamstrings','quads','shoulders','back','core','calves'] }],
+      2: [{ name:'Lower — Glute Focus',            tag:'lower', muscles:['glutes','hamstrings','quads','calves','core'] },
+          { name:'Upper + Ham',                    tag:'full',  muscles:['shoulders','back','glutes','hamstrings','core','calves'] }],
+      3: [{ name:'Lower A — Glute Bias',           tag:'lower', muscles:['glutes','hamstrings','quads','calves','core'] },
+          { name:'Upper — Delts + Back',           tag:'upper', muscles:['shoulders','back','chest','biceps','triceps','core'] },
+          { name:'Lower B — Glutes + Hams',        tag:'lower', muscles:['glutes','quads','hamstrings','calves','core'] }],
+      4: [{ name:'Lower A — Glute Bias',           tag:'lower', muscles:['glutes','hamstrings','quads','calves','core'] },
+          { name:'Upper A — Delts + Back',         tag:'upper', muscles:['shoulders','back','biceps','triceps','core'] },
+          { name:'Lower B — Glutes + Quads',       tag:'lower', muscles:['glutes','quads','hamstrings','calves','core'] },
+          { name:'Upper B — Shape Upper',          tag:'upper', muscles:['back','shoulders','chest','biceps','triceps'] }],
+      5: [{ name:'Lower A — Glute Bias',           tag:'lower', muscles:['glutes','hamstrings','quads','calves','core'] },
+          { name:'Upper A — Delts + Back',         tag:'upper', muscles:['shoulders','back','biceps','triceps','core'] },
+          { name:'Lower B — Glutes + Quads',       tag:'lower', muscles:['glutes','quads','hamstrings','calves'] },
+          { name:'Upper B — Shape Upper',          tag:'upper', muscles:['back','shoulders','chest','biceps','triceps'] },
+          { name:'Glute Pump Day',                 tag:'focus', muscles:['glutes','hamstrings','core','calves'] }],
+      6: [{ name:'Lower A — Glute Bias',           tag:'lower', muscles:['glutes','hamstrings','quads','calves','core'] },
+          { name:'Upper A — Delts + Back',         tag:'upper', muscles:['shoulders','back','biceps','triceps'] },
+          { name:'Glute Specialisation',           tag:'focus', muscles:['glutes','hamstrings','core','calves'] },
+          { name:'Lower B — Glutes + Quads',       tag:'lower', muscles:['glutes','quads','hamstrings','calves'] },
+          { name:'Upper B — Shape Upper',          tag:'upper', muscles:['back','shoulders','chest','biceps','triceps'] },
+          { name:'Glute Pump + Core',              tag:'focus', muscles:['glutes','hamstrings','core','calves'] }],
+    },
+    strength: {
+      1: [{ name:'Full Body Strength',             tag:'full',  muscles:['quads','hamstrings','chest','back','shoulders','triceps','core'] }],
+      2: [{ name:'Squat + Bench',                  tag:'full',  muscles:['quads','hamstrings','chest','back','triceps','core'] },
+          { name:'Deadlift + Press',               tag:'full',  muscles:['hamstrings','back','shoulders','chest','biceps','core'] }],
+      3: [{ name:'Squat Day',                      tag:'lower', muscles:['quads','hamstrings','glutes','core'] },
+          { name:'Bench Day',                      tag:'upper', muscles:['chest','shoulders','triceps','back'] },
+          { name:'Deadlift Day',                   tag:'lower', muscles:['hamstrings','back','glutes','quads','core'] }],
+      4: [{ name:'Squat Day',                      tag:'lower', muscles:['quads','hamstrings','glutes','core'] },
+          { name:'Bench Day',                      tag:'upper', muscles:['chest','shoulders','triceps','back'] },
+          { name:'Deadlift Day',                   tag:'lower', muscles:['hamstrings','back','glutes','core'] },
+          { name:'Press + Pull',                   tag:'upper', muscles:['shoulders','back','chest','biceps','triceps'] }],
+      5: [{ name:'Squat Day',                      tag:'lower', muscles:['quads','hamstrings','glutes','core'] },
+          { name:'Bench Day',                      tag:'upper', muscles:['chest','shoulders','triceps','back'] },
+          { name:'Deadlift Day',                   tag:'lower', muscles:['hamstrings','back','glutes','core'] },
+          { name:'Press Day',                      tag:'upper', muscles:['shoulders','chest','triceps','back'] },
+          { name:'Pull + Variation',               tag:'upper', muscles:['back','biceps','quads','core'] }],
+      6: [{ name:'Squat Day',                      tag:'lower', muscles:['quads','hamstrings','glutes','core'] },
+          { name:'Bench Day',                      tag:'upper', muscles:['chest','shoulders','triceps','back'] },
+          { name:'Deadlift Day',                   tag:'lower', muscles:['hamstrings','back','glutes','core'] },
+          { name:'Press Day',                      tag:'upper', muscles:['shoulders','chest','triceps','back'] },
+          { name:'Pull Day',                       tag:'upper', muscles:['back','biceps','shoulders','core'] },
+          { name:'Technique + Hypertrophy',        tag:'full',  muscles:['quads','hamstrings','chest','back','core'] }],
+    },
+    general: {
+      1: [{ name:'Full Body',                      tag:'full',  muscles:['quads','hamstrings','glutes','chest','back','shoulders','core','calves'] }],
+      2: [{ name:'Full Body A',                    tag:'full',  muscles:['quads','chest','back','shoulders','hamstrings','core'] },
+          { name:'Full Body B',                    tag:'full',  muscles:['hamstrings','glutes','back','chest','shoulders','core','calves'] }],
+      3: [{ name:'Push',                           tag:'upper', muscles:['chest','shoulders','triceps','core'] },
+          { name:'Pull',                           tag:'upper', muscles:['back','biceps','shoulders','core'] },
+          { name:'Legs',                           tag:'lower', muscles:['quads','hamstrings','glutes','calves','core'] }],
+      4: [{ name:'Upper A',                        tag:'upper', muscles:['chest','back','shoulders','biceps','triceps','core'] },
+          { name:'Lower A',                        tag:'lower', muscles:['quads','hamstrings','glutes','calves','core'] },
+          { name:'Upper B',                        tag:'upper', muscles:['back','shoulders','chest','biceps','triceps'] },
+          { name:'Lower B',                        tag:'lower', muscles:['hamstrings','glutes','quads','calves','core'] }],
+      5: [{ name:'Upper A',                        tag:'upper', muscles:['chest','back','shoulders','biceps','triceps'] },
+          { name:'Lower A',                        tag:'lower', muscles:['quads','hamstrings','glutes','calves','core'] },
+          { name:'Full Body — Athletic',           tag:'full',  muscles:['back','chest','quads','hamstrings','shoulders','core'] },
+          { name:'Upper B',                        tag:'upper', muscles:['shoulders','back','chest','biceps','triceps'] },
+          { name:'Lower B',                        tag:'lower', muscles:['hamstrings','glutes','quads','calves','core'] }],
+      6: [{ name:'Push A',                         tag:'upper', muscles:['chest','shoulders','triceps','core'] },
+          { name:'Pull A',                         tag:'upper', muscles:['back','biceps','shoulders','core'] },
+          { name:'Legs A',                         tag:'lower', muscles:['quads','hamstrings','glutes','calves','core'] },
+          { name:'Push B',                         tag:'upper', muscles:['shoulders','chest','triceps'] },
+          { name:'Pull B',                         tag:'upper', muscles:['back','biceps','shoulders','core'] },
+          { name:'Legs B',                         tag:'lower', muscles:['hamstrings','glutes','quads','calves','core'] }],
+    },
   };
-  const base=profiles[goal]||profiles.general;
-  const focus=uniqList(focusMuscles);
-  const priority=uniqList([...focus,...base.priority]);
-  const secondary=minusList(base.secondary,priority);
-  const maintenance=minusList(uniqList([...base.maintenance,...Object.keys(MUSCLE_META)]),uniqList([...priority,...secondary]));
-  const requiredFrequency={};
-  const trainDays=days===7?6:days;
-  for(const muscle of uniqList([...priority,...secondary,...maintenance])){
-    if(trainDays<=1){requiredFrequency[muscle]=1;continue;}
-    const focusBias=focus.includes(muscle)||(goal==='hourglass'&&muscle==='glutes')||(goal==='vtaper'&&(muscle==='back'||muscle==='shoulders'));
-    if(priority.includes(muscle)){requiredFrequency[muscle]=(trainDays>=4&&focusBias)?3:2;}
-    else requiredFrequency[muscle]=2;
+
+  return (T[goal] || T.general)[d] || T.general[4];
+}
+
+// ── 4. DISTRIBUTE VOLUME ─────────────────────────────────────────
+// For each muscle, count how many sessions include it,
+// then split its weekly sets as evenly as possible across those sessions.
+// Returns perSessionSets[sessionIndex][muscle] = sets
+
+function distributeVolume(templates, weeklyTargets) {
+  const perSession = templates.map(() => ({}));
+
+  for (const [muscle, totalSets] of Object.entries(weeklyTargets)) {
+    // Which sessions include this muscle?
+    const sessionIndices = templates
+      .map((t, i) => (t.muscles.includes(muscle) ? i : -1))
+      .filter(i => i >= 0);
+
+    if (!sessionIndices.length) continue;
+
+    // Distribute as evenly as possible; anchor session (first appearance) gets remainder
+    const perSession_ = Math.floor(totalSets / sessionIndices.length);
+    const remainder   = totalSets % sessionIndices.length;
+
+    sessionIndices.forEach((idx, rank) => {
+      perSession[idx][muscle] = perSession_ + (rank === 0 ? remainder : 0);
+    });
   }
-  return{priority,secondary,maintenance,focus,fatigueSensitivity:base.fatigueSensitivity,requiredFrequency};
+
+  return perSession;
 }
-function buildWeeklySetBank(goalProfile,goal,days,sessionLen){
-  const trainDays=days===7?6:days;
-  const lengthAdj=sessionLen<=30?-2:sessionLen<=45?-1:sessionLen>=90?1:0;
-  const fatigueAdj=goalProfile.fatigueSensitivity==='high'?-1:goalProfile.fatigueSensitivity==='low'?1:0;
-  const weeklySets={};
-  for(const muscle of [...goalProfile.priority,...goalProfile.secondary,...goalProfile.maintenance]){
-    let sets=6;
-    if(goalProfile.priority.includes(muscle)){
-      sets=(goal==='strength'?15:16)+lengthAdj+fatigueAdj+(goalProfile.focus.includes(muscle)?2:0);
-      sets=Math.max(14,Math.min(20,sets));
-    }else if(goalProfile.secondary.includes(muscle)){
-      sets=11+Math.max(-1,lengthAdj)+Math.min(0,fatigueAdj);
-      sets=Math.max(10,Math.min(14,sets));
-    }else{
-      sets=trainDays<=2?6:7;
-      sets=Math.max(6,Math.min(8,sets));
-    }
-    weeklySets[muscle]=sets;
-  }
-  return weeklySets;
-}
-function getScienceScheduleMap(trainDays){
-  return{1:['Mon'],2:['Mon','Thu'],3:['Mon','Wed','Fri'],4:['Mon','Wed','Fri','Sun'],5:['Mon','Tue','Thu','Sat','Sun'],6:['Mon','Tue','Wed','Fri','Sat','Sun']}[trainDays]||['Mon','Wed','Fri'];
-}
-function makeTemplate(name,tag,anchor,muscles){return{name,tag,anchor,muscles:uniqList(muscles)};}
-function getAdaptiveTemplates(goal,days){
-  const trainDays=days===7?6:days;
-  const map={
-    vtaper:{
-      1:[makeTemplate('Full Body — V-Taper Bias','full','back',['back','shoulders','chest','quads','hamstrings','biceps','triceps','core'])],
-      2:[makeTemplate('Full Body A — Lats First','full','back',['back','shoulders','chest','quads','hamstrings','biceps','core']),makeTemplate('Full Body B — Delts + Chest','full','shoulders',['shoulders','back','chest','glutes','quads','triceps','core'])],
-      3:[makeTemplate('Upper A — Lat Width','upper','back',['back','shoulders','biceps','chest','triceps','core']),makeTemplate('Lower — Maintenance','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Upper B — Delts + Chest','upper','shoulders',['shoulders','chest','back','triceps','biceps'])],
-      4:[makeTemplate('Upper A — Lat Width','upper','back',['back','shoulders','biceps','chest','core']),makeTemplate('Lower A — Quad Bias','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Upper B — Chest + Delts','upper','shoulders',['shoulders','chest','triceps','back','biceps']),makeTemplate('Lower B — Posterior Chain','lower','hamstrings',['hamstrings','glutes','quads','calves','core'])],
-      5:[makeTemplate('Upper A — Lat Width','upper','back',['back','shoulders','biceps','chest']),makeTemplate('Lower A — Quads + Hams','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Upper B — Chest + Delts','upper','shoulders',['shoulders','chest','triceps','back']),makeTemplate('Lower B — Posterior Chain','lower','hamstrings',['hamstrings','glutes','quads','calves','core']),makeTemplate('Upper C — Back + Arms','focus','back',['back','shoulders','biceps','triceps','core'])],
-      6:[makeTemplate('Pull A — Width','upper','back',['back','biceps','shoulders','core']),makeTemplate('Lower A — Quads','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Push — Delts + Chest','upper','shoulders',['shoulders','chest','triceps','back']),makeTemplate('Pull B — Thickness','upper','back',['back','biceps','shoulders']),makeTemplate('Lower B — Posterior Chain','lower','hamstrings',['hamstrings','glutes','quads','calves','core']),makeTemplate('Delts + Arms Specialisation','focus','shoulders',['shoulders','back','biceps','triceps','core'])]
-    },
-    hourglass:{
-      1:[makeTemplate('Full Body — Glute Bias','full','glutes',['glutes','hamstrings','quads','shoulders','back','core','calves'])],
-      2:[makeTemplate('Full Body A — Glutes','full','glutes',['glutes','hamstrings','quads','shoulders','back','core']),makeTemplate('Full Body B — Glutes + Upper','full','glutes',['glutes','quads','hamstrings','shoulders','back','core','calves'])],
-      3:[makeTemplate('Lower A — Glute Bias','lower','glutes',['glutes','hamstrings','quads','calves','core']),makeTemplate('Upper — Delts + Back','upper','shoulders',['shoulders','back','chest','biceps','triceps','core']),makeTemplate('Lower B — Glutes + Hams','lower','glutes',['glutes','hamstrings','quads','calves','core'])],
-      4:[makeTemplate('Lower A — Glute Bias','lower','glutes',['glutes','hamstrings','quads','calves','core']),makeTemplate('Upper A — Delts + Back','upper','shoulders',['shoulders','back','biceps','triceps','core']),makeTemplate('Lower B — Glutes + Quads','lower','glutes',['glutes','quads','hamstrings','calves','core']),makeTemplate('Upper B — Upper Shape','upper','back',['back','shoulders','chest','biceps','triceps'])],
-      5:[makeTemplate('Lower A — Glute Bias','lower','glutes',['glutes','hamstrings','quads','calves','core']),makeTemplate('Upper A — Delts + Back','upper','shoulders',['shoulders','back','biceps','triceps','core']),makeTemplate('Lower B — Glutes + Quads','lower','glutes',['glutes','quads','hamstrings','calves']),makeTemplate('Upper B — Shape Upper','upper','back',['back','shoulders','chest','biceps','triceps']),makeTemplate('Glute Pump Day','focus','glutes',['glutes','hamstrings','core','calves'])],
-      6:[makeTemplate('Lower A — Glute Bias','lower','glutes',['glutes','hamstrings','quads','calves','core']),makeTemplate('Upper A — Delts + Back','upper','shoulders',['shoulders','back','biceps','triceps']),makeTemplate('Glute Specialisation','focus','glutes',['glutes','hamstrings','core','calves']),makeTemplate('Lower B — Glutes + Quads','lower','glutes',['glutes','quads','hamstrings','calves']),makeTemplate('Upper B — Upper Shape','upper','back',['back','shoulders','chest','biceps','triceps']),makeTemplate('Glute Pump + Core','focus','glutes',['glutes','hamstrings','core','calves'])]
-    },
-    strength:{
-      1:[makeTemplate('Full Body Strength','full','quads',['quads','hamstrings','chest','back','shoulders','triceps','core'])],
-      2:[makeTemplate('Full Body A — Squat + Bench','full','quads',['quads','hamstrings','chest','back','triceps','core']),makeTemplate('Full Body B — Deadlift + Press','full','hamstrings',['hamstrings','back','shoulders','chest','biceps','core'])],
-      3:[makeTemplate('Squat + Bench','full','quads',['quads','chest','triceps','core']),makeTemplate('Deadlift + Pull','full','hamstrings',['hamstrings','back','biceps','core']),makeTemplate('Press + Variation','full','shoulders',['shoulders','chest','back','quads','triceps','core'])],
-      4:[makeTemplate('Squat Day','lower','quads',['quads','hamstrings','glutes','core']),makeTemplate('Bench Day','upper','chest',['chest','shoulders','triceps','back']),makeTemplate('Deadlift Day','lower','hamstrings',['hamstrings','back','glutes','quads','core']),makeTemplate('Press + Pull','upper','shoulders',['shoulders','back','chest','biceps','triceps'])],
-      5:[makeTemplate('Squat Day','lower','quads',['quads','hamstrings','glutes','core']),makeTemplate('Bench Day','upper','chest',['chest','shoulders','triceps','back']),makeTemplate('Deadlift Day','lower','hamstrings',['hamstrings','back','glutes','core']),makeTemplate('Press Day','upper','shoulders',['shoulders','chest','triceps','back']),makeTemplate('Pull + Variation','focus','back',['back','biceps','quads','core'])],
-      6:[makeTemplate('Squat Day','lower','quads',['quads','hamstrings','glutes','core']),makeTemplate('Bench Day','upper','chest',['chest','shoulders','triceps','back']),makeTemplate('Deadlift Day','lower','hamstrings',['hamstrings','back','glutes','core']),makeTemplate('Press Day','upper','shoulders',['shoulders','chest','triceps','back']),makeTemplate('Pull Day','upper','back',['back','biceps','shoulders','core']),makeTemplate('Technique + Hypertrophy','full','quads',['quads','hamstrings','chest','back','core'])]
-    },
-    general:{
-      1:[makeTemplate('Full Body','full','quads',['quads','hamstrings','glutes','chest','back','shoulders','core','calves'])],
-      2:[makeTemplate('Full Body A','full','quads',['quads','chest','back','shoulders','hamstrings','core']),makeTemplate('Full Body B','full','hamstrings',['hamstrings','glutes','back','chest','shoulders','core','calves'])],
-      3:[makeTemplate('Full Body A','full','quads',['quads','chest','back','shoulders','core']),makeTemplate('Full Body B','full','hamstrings',['hamstrings','glutes','back','shoulders','core','calves']),makeTemplate('Full Body C','full','chest',['chest','back','quads','hamstrings','shoulders','biceps','triceps'])],
-      4:[makeTemplate('Upper A','upper','chest',['chest','back','shoulders','biceps','triceps','core']),makeTemplate('Lower A','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Upper B','upper','back',['back','shoulders','chest','biceps','triceps']),makeTemplate('Lower B','lower','hamstrings',['hamstrings','glutes','quads','calves','core'])],
-      5:[makeTemplate('Upper A','upper','chest',['chest','back','shoulders','biceps','triceps']),makeTemplate('Lower A','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Full Body — Athletic','full','back',['back','chest','quads','hamstrings','shoulders','core']),makeTemplate('Upper B','upper','shoulders',['shoulders','back','chest','biceps','triceps']),makeTemplate('Lower B','lower','hamstrings',['hamstrings','glutes','quads','calves','core'])],
-      6:[makeTemplate('Push','upper','chest',['chest','shoulders','triceps','core']),makeTemplate('Pull','upper','back',['back','biceps','shoulders','core']),makeTemplate('Legs','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Upper — Balanced','upper','shoulders',['shoulders','chest','back','biceps','triceps']),makeTemplate('Lower — Posterior Chain','lower','hamstrings',['hamstrings','glutes','quads','calves','core']),makeTemplate('Full Body Pump','full','back',['back','chest','quads','shoulders','core'])]
-    }
-  };
-  const goalMap=map[goal]||map.general;
-  return (goalMap[trainDays]||goalMap[4]).map(t=>({...t,muscles:[...t.muscles]}));
-}
-function muscleFitsTag(muscle,tag){
-  if(tag==='full'||tag==='focus')return true;
-  if(tag==='upper')return MUSCLE_META[muscle]?.bucket==='upper'||muscle==='core';
-  if(tag==='lower')return MUSCLE_META[muscle]?.bucket==='lower'||muscle==='core';
-  return true;
-}
-function countMuscleExposure(templates,muscle){return templates.filter(t=>t.muscles.includes(muscle)).length;}
-function insertMuscleOrdered(template,muscle,goalProfile){
-  if(template.muscles.includes(muscle))return;
-  const bucketRank={priority:0,secondary:1,maintenance:2};
-  const bucket=getBucketForMuscle(goalProfile,muscle);
-  let idx=template.muscles.findIndex(m=>bucketRank[getBucketForMuscle(goalProfile,m)]>bucketRank[bucket]);
-  if(idx<0)idx=template.muscles.length;
-  template.muscles.splice(idx,0,muscle);
-}
-function ensureExposureTargets(templates,goalProfile,weekDays){
-  const ordered=uniqList([...goalProfile.priority,...goalProfile.secondary,...goalProfile.maintenance]);
-  for(const muscle of ordered){
-    const target=goalProfile.requiredFrequency[muscle]||1;
-    let current=countMuscleExposure(templates,muscle);
-    while(current<target){
-      const existing=templates.map((t,i)=>t.muscles.includes(muscle)?WEEKDAYS.indexOf(weekDays[i]):-1).filter(v=>v>=0);
-      const candidates=templates.map((template,i)=>({template,i,pos:WEEKDAYS.indexOf(weekDays[i])})).filter(({template,pos})=>!template.muscles.includes(muscle)&&muscleFitsTag(muscle,template.tag)&&existing.every(ep=>weekDistance(ep,pos)>=2)).sort((a,b)=>{
-        const score=x=>{
-          let s=0;
-          if(x.template.anchor===muscle)s+=5;
-          if(goalProfile.priority.includes(muscle)&&x.template.tag==='focus')s+=4;
-          if(MUSCLE_META[muscle]?.bucket==='upper'&&x.template.tag==='upper')s+=3;
-          if(MUSCLE_META[muscle]?.bucket==='lower'&&x.template.tag==='lower')s+=3;
-          s-=x.template.muscles.length*0.15;
-          return s;
-        };
-        return score(b)-score(a);
-      });
-      const pick=candidates[0];
-      if(!pick)break;
-      insertMuscleOrdered(pick.template,muscle,goalProfile);
-      current++;
+
+// ── 5. BUILD ONE SESSION ─────────────────────────────────────────
+// Given a template, its per-muscle set budget, and constraints,
+// pick exercises that exactly fill the budget.
+//
+// Selection rules:
+//   a) First muscle in template.muscles = anchor → always gets a compound first
+//   b) Priority muscles: compound first, then isolation if budget allows
+//   c) Secondary / maintenance: straight sets, simpler exercise
+//   d) Never exceed sessionLen-derived exercise cap
+//   e) Rep scheme driven by isStr + tier, consistent per session
+//
+// SCIENCE_EX_BANK provides ordered picks per muscle:
+//   anchor  → best compound for that muscle
+//   work    → secondary compound or machine
+//   iso     → isolation / cable / machine
+
+const SCIENCE_EX_BANK = {
+  chest:      { anchor:['bench','db_bench','pushup'],              work:['incline_bench','incline_db','chest_press_m'],     iso:['cable_fly_mid','pec_deck','db_fly','incline_db_fly'] },
+  back:       { anchor:['barbell_row','pullups','lat_pulldown'],    work:['cable_row','db_row','close_pulldown'],            iso:['straight_pulldown','pullover','machine_row','db_pullover'] },
+  shoulders:  { anchor:['ohp','db_ohp','arnold'],                  work:['lat_raise','cable_lat','rear_delt'],              iso:['face_pull','cable_rear','lean_lat','reverse_pec'] },
+  biceps:     { anchor:['chin_bw','barbell_curl'],                 work:['ez_curl','db_curl','hammer_curl'],                iso:['incline_curl','cable_curl','preacher_curl','conc_curl'] },
+  triceps:    { anchor:['cg_bench','dips_tri'],                    work:['rope_pushdown','skull_crush','overhead_ext'],     iso:['bar_pushdown','cable_overhead','db_kickback'] },
+  glutes:     { anchor:['hip_thrust','bss'],                       work:['glute_bridge','cable_kickback','abductor_m'],     iso:['band_walk','clamshell','donkey_kick','fire_hydrant'] },
+  quads:      { anchor:['back_squat','front_squat','leg_press'],   work:['hack_squat','bss','walking_lunge'],               iso:['leg_ext','sissy_squat','goblet_squat'] },
+  hamstrings: { anchor:['deadlift','rdl','db_rdl'],                work:['leg_curl','seated_curl','good_morning'],          iso:['nordic','band_leg_curl','single_rdl'] },
+  calves:     { anchor:['standing_calf'],                          work:['seated_calf','leg_press_calf'],                   iso:['sl_calf','db_calf','bw_calf'] },
+  core:       { anchor:['plank'],                                  work:['cable_crunch','leg_raise','ab_wheel'],            iso:['side_plank','hollow_hold','dead_bug','bicycle_crunch'] },
+};
+
+function pickExercise(muscle, kind, equipment, used) {
+  const bank = SCIENCE_EX_BANK[muscle] || {};
+  const order = kind === 'anchor' ? ['anchor','work','iso']
+              : kind === 'work'   ? ['work','iso','anchor']
+              :                     ['iso','work','anchor'];
+
+  for (const bucket of order) {
+    for (const id of (bank[bucket] || [])) {
+      const ex = EX_LIB[id];
+      if (ex && ex.eq.includes(equipment) && !used.has(ex.name)) return { id, ...ex };
     }
   }
-  return templates;
-}
-function validateTemplates(templates,goalProfile,weekDays){
-  const issues=[];
-  for(const muscle of goalProfile.priority){
-    const exposure=countMuscleExposure(templates,muscle);
-    if(exposure<(goalProfile.requiredFrequency[muscle]||1))issues.push(`${cap(muscle)} frequency below target.`);
-    const positions=templates.map((t,i)=>t.muscles.includes(muscle)?WEEKDAYS.indexOf(weekDays[i]):-1).filter(v=>v>=0);
-    for(let i=1;i<positions.length;i++){if(weekDistance(positions[i],positions[i-1])<2)issues.push(`${cap(muscle)} sessions too close together.`);}
-    if(positions.length>1&&weekDistance(positions[0],positions[positions.length-1])<2)issues.push(`${cap(muscle)} wraparound recovery too tight.`);
-  }
-  return{valid:issues.length===0,issues};
-}
-function distributeSets(total,exposures){
-  const base=Math.floor(total/exposures),rem=total%exposures;
-  return Array.from({length:exposures},(_,i)=>base+(i<rem?1:0));
-}
-function buildVolumeMap(templates,weeklySets){
-  const perDay=templates.map(()=>({})),frequency={},setsPerSession={};
-  Object.entries(weeklySets).forEach(([muscle,totalSets])=>{
-    const dayIdx=templates.map((t,i)=>t.muscles.includes(muscle)?i:-1).filter(i=>i>=0);
-    if(!dayIdx.length)return;
-    const dist=distributeSets(totalSets,dayIdx.length);
-    frequency[muscle]=dayIdx.length;
-    setsPerSession[muscle]=dist;
-    dayIdx.forEach((idx,i)=>{perDay[idx][muscle]=dist[i];});
-  });
-  return{perDay,frequency,setsPerSession};
-}
-function pickExercise(muscle,kind,equipment,used){
-  const bank=SCIENCE_EX_BANK[muscle]||{};
-  const order=kind==='anchor'?['anchor','work','iso']:kind==='work'?['work','iso','anchor']:['iso','work','anchor'];
-  for(const bucket of order){
-    for(const id of bank[bucket]||[]){
-      const ex=EX_LIB[id];
-      if(ex&&ex.eq.includes(equipment)&&!used.has(ex.name))return ex;
-    }
-  }
-  for(const bucket of order){
-    for(const id of bank[bucket]||[]){
-      const ex=EX_LIB[id];
-      if(ex&&ex.eq.includes(equipment))return ex;
+  // Fallback: same muscle, any exercise not yet used
+  for (const bucket of ['anchor','work','iso']) {
+    for (const id of (bank[bucket] || [])) {
+      const ex = EX_LIB[id];
+      if (ex && ex.eq.includes(equipment)) return { id, ...ex };
     }
   }
   return null;
 }
-function addPlannedExercise(list,muscle,kind,sets,reps,equipment,used,focusMuscles,suggestFn){
-  if(sets<=0)return;
-  const ex=pickExercise(muscle,kind,equipment,used);
-  if(!ex)return;
-  used.add(ex.name);
-  const scheme=`${sets}×${reps}`;
-  list.push({...ex,scheme,suggest:suggestFn?suggestFn(ex.name,scheme):null,isFocus:focusMuscles.includes(muscle)});
+
+// Rep schemes: [compound, isolation] per tier per block type
+function getRepScheme(isStr, tier, muscle) {
+  // Calves and core use time/reps regardless
+  if (muscle === 'calves') return '4×15';
+  if (muscle === 'core')   return '3×30–45s';
+
+  const schemes = {
+    // [compound, isolation]
+    hyp: { 2: ['3×8–12', '3×12–15'], 1: ['3×10–12', '3×12–15'], 0: ['3×12–15', '3×15'] },
+    str: { 2: ['4×4–6',  '3×8–10'],  1: ['4×5–7',   '3×8–10'],  0: ['3×8–10',  '3×10–12'] },
+  };
+  return schemes[isStr ? 'str' : 'hyp'][tier] || ['3×8–12', '3×12–15'];
 }
-function buildAdaptiveSession(template,dayVolume,goalProfile,focusMuscles,equipment,isStr,suggestFn,sessionLen,tier){
-  const maxExercises={30:5,45:6,60:8,90:10}[sessionLen]||8;
-  const bucketRank={priority:0,secondary:1,maintenance:2};
-  const exercises=[],used=new Set(),volume={...dayVolume};
-  const ordered=uniqList([template.anchor,...template.muscles]).filter(m=>volume[m]>0).sort((a,b)=>{
-    if(a===template.anchor)return-1;if(b===template.anchor)return 1;
-    if(focusMuscles.includes(a)&&!focusMuscles.includes(b))return-1;
-    if(focusMuscles.includes(b)&&!focusMuscles.includes(a))return 1;
-    return bucketRank[getBucketForMuscle(goalProfile,a)]-bucketRank[getBucketForMuscle(goalProfile,b)];
-  });
-  const anchorMuscle=ordered.find(m=>m===template.anchor&&volume[m]>0)||ordered.find(m=>['chest','back','shoulders','quads','hamstrings','glutes'].includes(m));
-  if(anchorMuscle){
-    let anchorSets=Math.min(isStr?5:4,Math.max(3,Math.ceil(volume[anchorMuscle]*0.45)));
-    if(tier===0)anchorSets=Math.max(2,anchorSets-1);
-    anchorSets=Math.min(anchorSets,volume[anchorMuscle]);
-    addPlannedExercise(exercises,anchorMuscle,'anchor',anchorSets,tier===0?'6–8':isStr?'4–6':'4–8',equipment,used,focusMuscles,suggestFn);
-    volume[anchorMuscle]-=anchorSets;
-  }
-  for(const muscle of ordered){
-    if(exercises.length>=maxExercises)break;
-    let remaining=volume[muscle]||0;
-    if(remaining<=0)continue;
-    const bucket=getBucketForMuscle(goalProfile,muscle);
-    const primaryRep=isStr&&bucket!=='maintenance'&&['chest','back','shoulders','quads','hamstrings','glutes'].includes(muscle)?'6–10':bucket==='priority'?'8–12':'8–15';
-    if(remaining>=5&&exercises.length<maxExercises){
-      const first=Math.min(4,remaining-2);
-      addPlannedExercise(exercises,muscle,'work',first,primaryRep,equipment,used,focusMuscles,suggestFn);
-      remaining-=first;
-    }
-    if(remaining>0&&exercises.length<maxExercises){
-      const secondKind=bucket==='priority'?'iso':'work';
-      const secondRep=secondKind==='iso'?'12–20':primaryRep;
-      const chunk=Math.min(remaining,bucket==='maintenance'?2:3);
-      addPlannedExercise(exercises,muscle,secondKind,chunk,secondRep,equipment,used,focusMuscles,suggestFn);
-      remaining-=chunk;
-    }
-    if(remaining>0&&exercises.length<maxExercises){
-      addPlannedExercise(exercises,muscle,'iso',remaining,'12–20',equipment,used,focusMuscles,suggestFn);
-    }
-  }
-  const emphasis=goalProfile.priority.filter(m=>template.muscles.includes(m));
-  let note=emphasis.length?`Priority muscles first: ${emphasis.map(cap).join(' + ')}.`:'';
-  if(isStr)note+=(note?' ':'')+'Anchor lift drives performance, then hypertrophy back-off work.';
-  if(tier===0)note='Deload bias — keep load conservative and leave reps in reserve.';
-  return{name:template.name,tag:template.tag,exercises:exercises.slice(0,maxExercises),note};
+
+function setsFromScheme(scheme) {
+  const m = String(scheme).match(/^(\d+)×/);
+  return m ? parseInt(m[1]) : 3;
 }
-function makeRestDay(){return{name:'Rest Day',tag:'rest',exercises:[{name:'Rest and recover',scheme:'—',muscle:'',pattern:'',isFocus:false,suggest:null},{name:'Hit all meals',scheme:'—',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'Muscle is built at rest. Recover hard.'};}
-function makeActiveRecoveryDay(){return{name:'Active Recovery',tag:'active',exercises:[{name:'Walk, cycle or mobility',scheme:'20–30 min',muscle:'',pattern:'',isFocus:false,suggest:null},{name:'Breathing + stretch',scheme:'10–15 min',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'Keep blood moving without adding fatigue.'};}
-function buildSplitRationale(goalProfile,goal,frequency,focusMuscles){
-  const primeLine=goal==='vtaper'?'Lats and delts are driven with the highest frequency so width improves without burying lower-body recovery.':goal==='hourglass'?'Glutes get the most weekly touches so curve-building volume stays high without stacking too much fatigue into one day.':goal==='strength'?'The week is organised around high-value anchor lifts first, then enough hypertrophy work to keep progress moving without crushing recovery.':'The split balances whole-body progress while still letting priority muscles lead sessions when you are freshest.';
-  const focusLine=focusMuscles.length?`Custom focus muscles ${focusMuscles.map(cap).join(' and ')} were promoted into the priority tier and pushed earlier in the week.`:'';
-  const freqLine=`Priority muscles hit ${Math.max(...goalProfile.priority.map(m=>frequency[m]||0),0)}x where recovery allows, while the rest stay at minimum effective frequency.`;
-  return[primeLine,focusLine,freqLine].filter(Boolean).join(' ');
-}
-function buildAdaptiveSplitSystem(profile,equipment,sessionLen,focusMuscles,isStr,suggestFn,tier,scheduleOverride){
-  const requestedDays=profile.days||4;
-  const trainDays=requestedDays===7?6:requestedDays;
-  const weekSlots=getScienceScheduleMap(trainDays);
-  const goalProfile=buildGoalProfile(profile.goal||'general',focusMuscles,requestedDays);
-  const weeklySets=buildWeeklySetBank(goalProfile,profile.goal||'general',requestedDays,sessionLen);
-  let templates=getAdaptiveTemplates(profile.goal||'general',requestedDays);
-  templates=ensureExposureTargets(templates,goalProfile,weekSlots);
-  const validation=validateTemplates(templates,goalProfile,weekSlots);
-  const volume=buildVolumeMap(templates,weeklySets);
-  const builtSessions=templates.map((template,idx)=>buildAdaptiveSession(template,volume.perDay[idx],goalProfile,focusMuscles,equipment,isStr,suggestFn,sessionLen,tier));
-  const ALL=WEEKDAYS;
-  const defaultMap={};weekSlots.forEach((day,idx)=>{if(idx<builtSessions.length)defaultMap[day]=idx;});
-  let trainDayMap=defaultMap;
-  if(scheduleOverride&&typeof scheduleOverride==='object'&&!Array.isArray(scheduleOverride)){
-    const entries=Object.entries(scheduleOverride).filter(([day,idx])=>ALL.includes(day)&&Number.isInteger(idx)&&idx>=0&&idx<builtSessions.length);
-    const uniqueIdx=new Set(entries.map(([,idx])=>idx));
-    if(entries.length===builtSessions.length&&uniqueIdx.size===builtSessions.length)trainDayMap=Object.fromEntries(entries);
-  }else if(Array.isArray(scheduleOverride)){
-    const clean=[...new Set(scheduleOverride.filter(day=>ALL.includes(day)))];
-    if(clean.length===builtSessions.length){trainDayMap={};clean.forEach((day,idx)=>{trainDayMap[day]=idx;});}
-  }
-  const splitDays=ALL.map(day=>{
-    if(trainDayMap[day]!==undefined&&builtSessions[trainDayMap[day]])return{day,...builtSessions[trainDayMap[day]]};
-    if(requestedDays===7)return{day,...makeActiveRecoveryDay()};
-    return{day,...makeRestDay()};
-  });
-  return{
-    splitDays,
-    splitMeta:{
-      goalProfile,
-      weeklySets,
-      frequency:volume.frequency,
-      setsPerSession:volume.setsPerSession,
-      validation,
-      rationale:buildSplitRationale(goalProfile,profile.goal||'general',volume.frequency,focusMuscles)
+
+function buildOneSession(template, muscleSetBudget, goalProfile, equipment, sessionLen, isStr, tier, suggestFn) {
+  // Max exercises based on session length
+  const maxEx = { 30: 4, 45: 5, 60: 7, 90: 9 }[sessionLen] || 7;
+
+  const exercises = [];
+  const usedNames = new Set();
+
+  // Process muscles in template order (anchor muscle first)
+  for (const muscle of template.muscles) {
+    if (exercises.length >= maxEx) break;
+
+    const budget = muscleSetBudget[muscle] || 0;
+    if (budget <= 0) continue;
+
+    const [compScheme, isoScheme] = getRepScheme(isStr, tier, muscle);
+    const compSets = setsFromScheme(compScheme);
+    const isoSets  = setsFromScheme(isoScheme);
+    const isAnchor = muscle === template.muscles[0];
+
+    let remaining = budget;
+
+    // ── Compound / anchor exercise ──
+    if (remaining >= compSets && exercises.length < maxEx) {
+      const kind = isAnchor ? 'anchor' : 'work';
+      const ex = pickExercise(muscle, kind, equipment, usedNames);
+      if (ex) {
+        usedNames.add(ex.name);
+        const suggest = suggestFn ? suggestFn(ex.name, compScheme) : null;
+        exercises.push({ ...ex, scheme: compScheme, suggest, isFocus: goalProfile.priority.includes(muscle) });
+        remaining -= compSets;
+      }
     }
+
+    // ── Isolation / accessory exercise if budget remains ──
+    if (remaining >= isoSets && exercises.length < maxEx) {
+      const ex = pickExercise(muscle, 'iso', equipment, usedNames);
+      if (ex) {
+        usedNames.add(ex.name);
+        const isoSch = `${isoSets}×${isoScheme.split('×')[1] || '12–15'}`;
+        const suggest = suggestFn ? suggestFn(ex.name, isoSch) : null;
+        exercises.push({ ...ex, scheme: isoSch, suggest, isFocus: goalProfile.priority.includes(muscle) });
+      }
+    }
+  }
+
+  // Session note
+  let note = '';
+  if (tier === 0) note = 'Deload week — keep all loads at 50–60%. Focus on technique, not effort.';
+  else if (isStr) note = 'Strength block — 3–4 min rest on compounds. Stop 1 rep before failure.';
+  else if (template.tag === 'focus') note = `Focus day — priority muscles hit first and hardest.`;
+
+  return {
+    name: template.name,
+    tag:  template.tag,
+    exercises,
+    note,
   };
 }
+
+// ── 6. ASSEMBLE SPLIT DAYS ───────────────────────────────────────
+// Maps built sessions onto Mon–Sun, fills gaps with rest/active days.
+// Respects saved trainingDayMap from userProfile.
+
+const WEEKDAYS_CONST = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+const DEFAULT_SCHED = {
+  1: ['Mon'],
+  2: ['Mon','Thu'],
+  3: ['Mon','Wed','Fri'],
+  4: ['Mon','Tue','Thu','Fri'],
+  5: ['Mon','Tue','Thu','Fri','Sat'],
+  6: ['Mon','Tue','Wed','Fri','Sat','Sun'],
+};
+
+function makeRestDay() {
+  return {
+    name: 'Rest Day', tag: 'rest',
+    exercises: [
+      { name:'Rest and recover', scheme:'—', muscle:'', pattern:'', isFocus:false, suggest:null },
+      { name:'Hit all your meals', scheme:'—', muscle:'', pattern:'', isFocus:false, suggest:null },
+    ],
+    note: 'Muscle is built during rest. Eat well and sleep 7–9 hours.',
+  };
+}
+
+function makeActiveRecoveryDay() {
+  return {
+    name: 'Active Recovery', tag: 'active',
+    exercises: [
+      { name:'Walk, cycle or swim', scheme:'20–30 min', muscle:'', pattern:'', isFocus:false, suggest:null },
+      { name:'Mobility and stretching', scheme:'10–15 min', muscle:'', pattern:'', isFocus:false, suggest:null },
+    ],
+    note: 'Keep blood moving without taxing your recovery.',
+  };
+}
+
+// ── MAIN EXPORT ──────────────────────────────────────────────────
+// Called by buildPlan() in place of the two old builders.
+// Returns { splitDays, splitMeta }
+
+function assembleSplitDays(profile, equipment, sessionLen, focusMuscles, isStr, tier, suggestFn, scheduleOverride) {
+  const { goal = 'general', days = 4 } = profile;
+  const trainDays = Math.min(days === 7 ? 6 : days, 6);
+
+  const goalProfile  = getGoalProfile(goal, focusMuscles);
+  const weeklyTargets = getWeeklySetTargets(goalProfile, goal, days, sessionLen, tier);
+  const templates    = getSessionTemplates(goal, days);
+  const perSession   = distributeVolume(templates, weeklyTargets);
+
+  // Build each session
+  const builtSessions = templates.map((template, idx) =>
+    buildOneSession(template, perSession[idx], goalProfile, equipment, sessionLen, isStr, tier, suggestFn)
+  );
+
+  // Determine which weekdays get which session
+  const defaultDays = DEFAULT_SCHED[trainDays] || DEFAULT_SCHED[4];
+  let trainDayMap = {};
+  defaultDays.forEach((day, idx) => { trainDayMap[day] = idx; });
+
+  // Apply saved schedule override from userProfile
+  if (scheduleOverride && typeof scheduleOverride === 'object' && !Array.isArray(scheduleOverride)) {
+    const entries = Object.entries(scheduleOverride).filter(
+      ([day, idx]) => WEEKDAYS_CONST.includes(day) && Number.isInteger(idx) && idx >= 0 && idx < builtSessions.length
+    );
+    const uniqueIdx = new Set(entries.map(([, idx]) => idx));
+    if (entries.length === builtSessions.length && uniqueIdx.size === builtSessions.length) {
+      trainDayMap = Object.fromEntries(entries);
+    }
+  } else if (Array.isArray(scheduleOverride)) {
+    const clean = [...new Set(scheduleOverride.filter(d => WEEKDAYS_CONST.includes(d)))];
+    if (clean.length === builtSessions.length) {
+      trainDayMap = {};
+      clean.forEach((day, idx) => { trainDayMap[day] = idx; });
+    }
+  }
+
+  // Map onto Mon–Sun
+  const splitDays = WEEKDAYS_CONST.map(day => {
+    if (trainDayMap[day] !== undefined && builtSessions[trainDayMap[day]]) {
+      return { day, ...builtSessions[trainDayMap[day]] };
+    }
+    return { day, ...(days === 7 ? makeActiveRecoveryDay() : makeRestDay()) };
+  });
+
+  // Meta for the overview tab
+  const splitMeta = {
+    goalProfile,
+    weeklySets: weeklyTargets,
+    frequency: Object.fromEntries(
+      Object.keys(weeklyTargets).map(m => [m, templates.filter(t => t.muscles.includes(m)).length])
+    ),
+    rationale: buildRationale(goalProfile, goal, focusMuscles, trainDays),
+  };
+
+  return { splitDays, splitMeta };
+}
+
+function buildRationale(goalProfile, goal, focusMuscles, trainDays) {
+  const goalLines = {
+    vtaper:    'Lats and delts lead every session so width accumulates without burying lower-body recovery.',
+    hourglass: 'Glutes get the most weekly touches, with upper sessions added for shoulder-to-waist contrast.',
+    strength:  'Sessions are organised around the big lifts first; hypertrophy accessory work fills the rest.',
+    general:   'Volume is spread evenly across the whole body with priority muscles leading each session.',
+  };
+  const focus = focusMuscles.length
+    ? `${focusMuscles.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(' and ')} promoted to priority tier — they appear first in every session they feature in.`
+    : '';
+  const freq = `Priority muscles hit ${trainDays >= 4 ? '2×' : '1–2×'} per week; maintenance muscles get minimum effective volume only.`;
+  return [goalLines[goal] || goalLines.general, focus, freq].filter(Boolean).join(' ');
+}
+
+
 
 // ════════════════════════════════════
 // PLAN ENGINE
@@ -1713,73 +1866,11 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[]){
   const trend=calcWeightTrend(pastCheckins,weight,dietGoal);
   let kcal=kcalBase+dietAdj+trend.adj;if(tier===0)kcal=Math.max(kcal,tdee-50);kcal=Math.round(kcal/50)*50;
   const protein=Math.round(weight*(dietGoal==='cut'?2.4:2.0));const fatK=Math.round(kcal*0.28);const fat=Math.round(fatK/9);const carbs=Math.round((kcal-protein*4-fatK)/4);
-  const adaptiveSplit=buildAdaptiveSplitSystem(profile,equipment,sessionLen,focusMuscles,isStr,suggestW,tier,profile.trainingDayMap||profile.trainingSchedule);
+  const adaptiveSplit=buildAddaptiveSplitSystem(profile,equipment,sessionLen,focusMuscles,isStr,suggestW,tier,profile.trainingDayMap||profile.trainingSchedule);
   const splitDays=adaptiveSplit.splitDays;
   const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
   const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,dietGoal);
   return{summary:{tier,kcal,protein,carbs,fat,days,goal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,block,isStr,calOverride},splitDays,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
-}
-
-// ── SPLIT DEFINITIONS ──
-function buildSplit(days,goal,eq,sessionLen,sets,cR,iR,focus,isStr,suggestFn,tier,scheduleOverride){
-  const S=(name,tag,ids)=>buildSession(name,tag,ids,eq,sessionLen,sets,cR,iR,focus,isStr,suggestFn);
-  const isFH=goal==='hourglass',isVT=goal==='vtaper',isST=goal==='strength';
-  const inclArms=sessionLen>=45;
-  const fbA=()=>S('Full Body A','full',['bench','back_squat','barbell_row','ohp','lat_raise','rdl',...(inclArms?['rope_pushdown','ez_curl']:[]),'plank','standing_calf']);
-  const fbB=()=>S('Full Body B','full',['pullups_bw','rdl','db_ohp','lat_raise','goblet_squat','rear_delt',...(inclArms?['db_curl','skull_crush']:[]),'plank','sl_calf']);
-  const fbaHG=()=>S('Full Body A — Glute Focus','full',['hip_thrust','ohp','lat_raise','pullups_bw','rdl','lat_pulldown','rear_delt',...(inclArms?['ez_curl']:[]),'plank','sl_calf']);
-  const fbbHG=()=>S('Full Body B — Upper + Ham','full',['barbell_row','db_ohp','lat_raise','rear_delt','db_rdl','leg_curl','nordic','pullups_bw',...(inclArms?['db_curl']:[]),'plank']);
-  const fbStrA=()=>S('Full Body Compound A','full',['back_squat','bench','barbell_row','ohp','deadlift','plank']);
-  const fbStrB=()=>S('Full Body Compound B','full',['deadlift','ohp','pullups_bw','back_squat','bench','plank']);
-  const vtUpperA=()=>S('Upper A — Push Focus','upper',['bench','incline_bench','ohp','lat_raise','barbell_row','lat_pulldown','rear_delt',...(inclArms?['rope_pushdown','ez_curl']:[]),'cable_row']);
-  const vtUpperB=()=>S('Upper B — Pull Focus','upper',['pullups','barbell_row','cable_row','lat_raise','rear_delt','face_pull','db_ohp',...(inclArms?['db_curl','bar_pushdown']:[]),'lat_pulldown']);
-  const vtShoulderBack=()=>S('Shoulder + Back Focus','upper',['pullups','barbell_row','lat_raise','face_pull','pullover','rear_delt','cable_lat','lat_pulldown',...(inclArms?['ez_curl']:[])]);
-  const vtPush=()=>S('Push — Chest · Shoulders · Triceps','upper',['bench','incline_bench','ohp','lat_raise','cable_fly_mid','rear_delt','face_pull',...(inclArms?['rope_pushdown','skull_crush']:[])]);
-  const vtPull=()=>S('Pull — Back · Biceps','upper',['pullups','barbell_row','cable_row','lat_pulldown','lat_raise','rear_delt','face_pull',...(inclArms?['ez_curl','hammer_curl']:[])]);
-  const vtLegs=()=>S('Legs — Quads and Hamstrings','lower',['back_squat','rdl','leg_press','leg_curl','walking_lunge','nordic','standing_calf','plank']);
-  const vtLowerA=()=>S('Lower A — Quad Focus','lower',['back_squat','rdl','leg_press','leg_curl','walking_lunge','standing_calf','plank']);
-  const vtLowerB=()=>S('Lower B — Hinge Focus','lower',['deadlift','rdl','back_squat','nordic','seated_curl','standing_calf','ab_wheel']);
-  const hgLowerGlute=()=>S('Lower — Glute Focus','lower',['hip_thrust','bss','abductor_m','rdl','cable_kickback','glute_bridge','standing_calf','plank']);
-  const hgLowerHam=()=>S('Lower — Hamstring and Quad','lower',['db_rdl','leg_curl','nordic','walking_lunge','leg_press','standing_calf','ab_wheel']);
-  const hgUpper=()=>S('Upper — Shoulders and Back','upper',['ohp','lat_raise','pullups_bw','barbell_row','rear_delt','face_pull','cable_row',...(inclArms?['db_curl']:[]),'plank']);
-  const hgGluteFocus=()=>S('Glute Isolation + Focus','focus',['hip_thrust','cable_kickback','abductor_m','band_walk','clamshell','donkey_kick','bss','standing_calf']);
-  const strSquat=()=>S('Squat Day','lower',['back_squat','front_squat','leg_press','bss','plank']);
-  const strBench=()=>S('Bench Day','upper',['bench','incline_bench','ohp','lat_raise',...(inclArms?['rope_pushdown','skull_crush']:[])]);
-  const strDeadlift=()=>S('Deadlift Day','lower',['deadlift','rdl','back_squat','nordic','ab_wheel']);
-  const strOHP=()=>S('OHP Day','upper',['ohp','barbell_row','lat_raise','rear_delt','face_pull',...(inclArms?['ez_curl']:[])]);
-  const strRow=()=>S('Row Day','upper',['barbell_row','pullups','cable_row','lat_pulldown','lat_raise',...(inclArms?['ez_curl','hammer_curl']:[])]);
-  const strSquatVar=()=>S('Squat Variation Day','lower',['bss','goblet_squat','leg_press','db_rdl','leg_curl','standing_calf','plank']);
-  const genPush=()=>S('Push — Chest · Shoulders · Triceps','upper',['bench','incline_bench','ohp','lat_raise','rear_delt',...(inclArms?['rope_pushdown','skull_crush']:[]),'cable_fly_mid']);
-  const genPull=()=>S('Pull — Back · Biceps','upper',['pullups_bw','barbell_row','cable_row','lat_pulldown','face_pull',...(inclArms?['ez_curl','hammer_curl']:[])]);
-  const genLegs=()=>S('Legs','lower',['back_squat','rdl','leg_press','leg_curl','walking_lunge','standing_calf','plank']);
-  const genUpperA=()=>S('Upper A','upper',['bench','ohp','barbell_row','lat_raise','lat_pulldown',...(inclArms?['rope_pushdown','ez_curl']:[]),'rear_delt']);
-  const genUpperB=()=>S('Upper B','upper',['pullups_bw','cable_row','db_ohp','lat_raise','rear_delt','face_pull',...(inclArms?['hammer_curl','bar_pushdown']:[])]);
-  const genLower=()=>S('Lower','lower',['back_squat','rdl','leg_press','leg_curl','bss','standing_calf','plank']);
-  const genFull=()=>S('Full Body','full',['bench','pullups_bw','back_squat','ohp','rdl','lat_raise',...(inclArms?['ez_curl','rope_pushdown']:[]),'plank','standing_calf']);
-  const activeRec=()=>({name:'Active Recovery',tag:'active',exercises:[{name:'Light walk or cycle',scheme:'20–30 min',muscle:'',pattern:'',isFocus:false,suggest:null},{name:'Full body stretch',scheme:'10–15 min',muscle:'',pattern:'',isFocus:false,suggest:null},{name:'Foam rolling',scheme:'10 min',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'No lifting today. Active recovery helps blood flow without taxing your system.'});
-  const restDay=()=>({name:'Rest Day',tag:'rest',exercises:[{name:'Rest and recover',scheme:'—',muscle:'',pattern:'',isFocus:false,suggest:null},{name:'Hit all meals',scheme:'—',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'Muscle is built at rest. Eat all your meals today.'});
-  function deload(day){if(tier!==0)return day;return{...day,isDeload:true,exercises:day.exercises.map(e=>({...e,scheme:e.scheme.includes('×')?e.scheme.replace('×','× light @ 60% — '):e.scheme})),note:'Deload — all weights at 50–60% of normal. Focus on movement quality.'};}
-  const SCHED_MAP={1:['Mon'],2:['Mon','Thu'],3:['Mon','Wed','Fri'],4:['Mon','Tue','Thu','Fri'],5:['Mon','Tue','Thu','Fri','Sat'],6:['Mon','Tue','Wed','Fri','Sat','Sun'],7:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']};
-  const ALL=WEEKDAYS;
-  const baseTrainDays=SCHED_MAP[days]||SCHED_MAP[4];
-  const movableTrainDays=days===7?baseTrainDays.filter(d=>d!=='Sun'):baseTrainDays.slice(0);
-  let tpls=[];
-  if(isST){if(days===1)tpls=[fbStrA()];else if(days===2)tpls=[fbStrA(),fbStrB()];else if(days===3)tpls=[strSquat(),strBench(),strDeadlift()];else if(days===4)tpls=[strSquat(),strBench(),strDeadlift(),strOHP()];else if(days===5)tpls=[strSquat(),strBench(),strDeadlift(),strOHP(),strRow()];else if(days===6)tpls=[strSquat(),strBench(),strDeadlift(),strOHP(),strRow(),strSquatVar()];else tpls=[strSquat(),strBench(),strDeadlift(),strOHP(),strRow(),strSquatVar()];}
-  else if(isFH){if(days===1)tpls=[fbaHG()];else if(days===2)tpls=[fbaHG(),fbbHG()];else if(days===3)tpls=[hgLowerGlute(),hgLowerHam(),hgUpper()];else if(days===4)tpls=[hgLowerGlute(),hgUpper(),hgLowerHam(),hgUpper()];else if(days===5)tpls=[hgLowerGlute(),hgUpper(),hgLowerHam(),hgLowerGlute(),hgUpper()];else if(days===6)tpls=[hgLowerGlute(),hgUpper(),hgGluteFocus(),hgLowerGlute(),hgUpper(),hgGluteFocus()];else tpls=[hgLowerGlute(),hgUpper(),hgGluteFocus(),hgLowerGlute(),hgUpper(),hgGluteFocus()];}
-  else if(isVT){if(days===1)tpls=[fbA()];else if(days===2)tpls=[fbA(),fbB()];else if(days===3)tpls=[vtUpperA(),vtLowerA(),vtUpperB()];else if(days===4)tpls=[vtUpperA(),vtLowerA(),vtUpperB(),vtLowerB()];else if(days===5)tpls=[vtUpperA(),vtLowerA(),vtUpperB(),vtLowerB(),vtShoulderBack()];else if(days===6)tpls=[vtPush(),vtPull(),vtLegs(),vtPush(),vtPull(),vtShoulderBack()];else tpls=[vtPush(),vtPull(),vtLegs(),vtPush(),vtPull(),vtShoulderBack()];}
-  else{if(days===1)tpls=[genFull()];else if(days===2)tpls=[fbA(),fbB()];else if(days===3)tpls=[genPush(),genPull(),genLegs()];else if(days===4)tpls=[genUpperA(),genLower(),genUpperB(),genLower()];else if(days===5)tpls=[genUpperA(),genLower(),genUpperB(),genLower(),genFull()];else if(days===6)tpls=[genPush(),genPull(),genLegs(),genPush(),genPull(),genLegs()];else tpls=[genPush(),genPull(),genLegs(),genPush(),genPull(),genLegs()];}
-  tpls=tpls.map(deload);
-  const defaultMap={};movableTrainDays.forEach((day,idx)=>{if(idx<tpls.length)defaultMap[day]=idx;});
-  let trainDayMap=defaultMap;
-  if(scheduleOverride&&typeof scheduleOverride==='object'&&!Array.isArray(scheduleOverride)){
-    const entries=Object.entries(scheduleOverride).filter(([day,idx])=>ALL.includes(day)&&Number.isInteger(idx)&&idx>=0&&idx<tpls.length);
-    const uniqueIdx=new Set(entries.map(([,idx])=>idx));
-    if(entries.length===tpls.length&&uniqueIdx.size===tpls.length)trainDayMap=Object.fromEntries(entries);
-  }else if(Array.isArray(scheduleOverride)){
-    const clean=[...new Set(scheduleOverride.filter(day=>ALL.includes(day)))];
-    if(clean.length===tpls.length){trainDayMap={};clean.forEach((day,idx)=>{trainDayMap[day]=idx;});}
-  }
-  return ALL.map(day=>{if(days===7&&day==='Sun'&&trainDayMap[day]===undefined)return{day,...activeRec()};if(trainDayMap[day]!==undefined&&tpls[trainDayMap[day]])return{day,...tpls[trainDayMap[day]]};return{day,...restDay()};});
 }
 
 // ── MEAL BUILDER ──
