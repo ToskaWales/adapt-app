@@ -580,7 +580,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 <div id="history" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Check-In History</div></div><div class="sb" id="histBody"></div></div>
 
 <!-- SETTINGS -->
-<div id="settings" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Profile and Settings</div></div><div class="sb"><div id="settingsBody"></div><button class="btn btn-outline" style="margin-top:8px;" onclick="startOb();goTo('onboarding');">Redo Onboarding</button><button class="btn btn-danger" style="margin-top:10px;" onclick="signOut()">Sign Out</button></div></div>
+<div id="settings" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Profile and Settings</div></div><div class="sb"><div id="settingsBody"></div><button class="btn btn-outline" style="margin-top:8px;" onclick="startOb();goTo('onboarding');">Redo Onboarding</button><button class="btn btn-danger" style="margin-top:10px;" onclick="resetMyData()">Reset My Data</button><button class="btn btn-danger" style="margin-top:10px;" onclick="signOut()">Sign Out</button></div></div>
 
 <!-- SWAP SHEET -->
 <div class="overlay" id="swapOvl" onclick="closeSwap()"></div>
@@ -603,7 +603,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getAuth,GoogleAuthProvider,signInWithPopup,signOut as fbSO,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import{getFirestore,doc,setDoc,getDoc,collection,addDoc,getDocs,query,orderBy,limit,where,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getFirestore,doc,setDoc,getDoc,deleteDoc,collection,addDoc,getDocs,query,orderBy,limit,where,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 const cfg={apiKey:"AIzaSyDQKmSRuK0cpIupdwVOilD8gX88ML-3K8s",authDomain:"adaptive-plan-app.firebaseapp.com",projectId:"adaptive-plan-app",storageBucket:"adaptive-plan-app.firebasestorage.app",messagingSenderId:"214755243355",appId:"1:214755243355:web:4fe3818b936a442477967e"};
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);const prov=new GoogleAuthProvider();prov.setCustomParameters({prompt:'select_account'});
 window.signInWithGoogle=async()=>{const b=document.querySelector('.btn-google');if(b){b.textContent='Signing in…';b.disabled=true;}try{await signInWithPopup(auth,prov);}catch(e){if(b){b.innerHTML='<svg class="g-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Continue with Google';b.disabled=false;}if(e.code!=='auth/popup-closed-by-user')console.error(e);}};
@@ -620,6 +620,7 @@ window.fbLoadCheckins=async()=>{const u=window.currentUser;if(!u)return[];try{co
 window.fbSaveSession=async sd=>{const u=window.currentUser;if(!u)return;const id=sd.isoDate+'_'+sd.dayName.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);const el=document.getElementById('logSD');if(el)el.className='sync-dot saving';try{await setDoc(doc(db,'users',u.uid,'sessions',id),{...sd,createdAt:serverTimestamp()});if(el)el.className='sync-dot saved';}catch(e){console.error(e);if(el)el.className='sync-dot error';}};
 window.fbLoadSessions=async()=>{const u=window.currentUser;if(!u)return[];try{const q=query(collection(db,'users',u.uid,'sessions'),orderBy('createdAt','desc'),limit(80));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){console.error(e);return[];}};
 window.fbLoadLastSession=async dn=>{const u=window.currentUser;if(!u)return null;try{const q=query(collection(db,'users',u.uid,'sessions'),where('dayName','==',dn),orderBy('createdAt','desc'),limit(1));const s=await getDocs(q);return s.empty?null:{id:s.docs[0].id,...s.docs[0].data()};}catch(e){console.error(e);return null;}};
+window.fbResetUserData=async()=>{const u=window.currentUser;if(!u)return false;setSD('saving');try{const checkins=await getDocs(collection(db,'users',u.uid,'checkins'));for(const snap of checkins.docs)await deleteDoc(snap.ref);const sessions=await getDocs(collection(db,'users',u.uid,'sessions'));for(const snap of sessions.docs)await deleteDoc(snap.ref);await deleteDoc(doc(db,'users',u.uid,'profile','data'));setSD('saved');return true;}catch(e){console.error(e);setSD('error');return false;}};
 </script>
 
 <!-- APP LOGIC -->
@@ -761,6 +762,14 @@ function obBack(s){const cur=document.getElementById('ob'+s),prv=document.getEle
 window.obBack=obBack;
 async function finishOnboarding(){obAnswers.focusMuscles=selectedMuscles;obAnswers.restrictions=selectedRestricts;const profile={...obAnswers,setupComplete:true,walkthroughSeen:false,createdAt:new Date().toISOString()};if(obAnswers.notifications===true&&'Notification' in window)Notification.requestPermission();if(window.fbSaveProfile)await window.fbSaveProfile(profile);window.userProfile=profile;updateHomeUI();showToast('Welcome to ADAPT','Your personalised plan is ready.');goTo('home');}
 window.finishOnboarding=finishOnboarding;
+async function resetMyData(){
+  const ok=window.confirm('Delete your profile, check-ins, and logged sessions and start over?');
+  if(!ok)return;
+  const cleared=window.fbResetUserData?await window.fbResetUserData():false;
+  if(!cleared){showToast('Reset failed','Your data could not be cleared right now.');return;}
+  window.userProfile=null;window.currentPlanData=null;window.currentCheckin=null;startOb();goTo('onboarding');showToast('Data reset','Your account is ready for a fresh start.');
+}
+window.resetMyData=resetMyData;
 
 // ── STREAK (calendar-week based) ──
 function getWeekStartMs(dateVal){
@@ -1243,7 +1252,7 @@ function getAdaptiveTemplates(goal,days){
       1:[makeTemplate('Full Body — V-Taper Bias','full','back',['back','shoulders','chest','quads','hamstrings','biceps','triceps','core'])],
       2:[makeTemplate('Full Body A — Lats First','full','back',['back','shoulders','chest','quads','hamstrings','biceps','core']),makeTemplate('Full Body B — Delts + Chest','full','shoulders',['shoulders','back','chest','glutes','quads','triceps','core'])],
       3:[makeTemplate('Upper A — Lat Width','upper','back',['back','shoulders','biceps','chest','triceps','core']),makeTemplate('Lower — Maintenance','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Upper B — Delts + Chest','upper','shoulders',['shoulders','chest','back','triceps','biceps'])],
-      4:[makeTemplate('Upper A — Lat Width','upper','back',['back','shoulders','biceps','chest','core']),makeTemplate('Lower — Maintenance','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Upper B — Chest + Delts','upper','shoulders',['shoulders','chest','triceps','back','biceps']),makeTemplate('Upper C — Back Detail','focus','back',['back','shoulders','biceps','core'])],
+      4:[makeTemplate('Upper A — Lat Width','upper','back',['back','shoulders','biceps','chest','core']),makeTemplate('Lower A — Quad Bias','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Upper B — Chest + Delts','upper','shoulders',['shoulders','chest','triceps','back','biceps']),makeTemplate('Lower B — Posterior Chain','lower','hamstrings',['hamstrings','glutes','quads','calves','core'])],
       5:[makeTemplate('Upper A — Lat Width','upper','back',['back','shoulders','biceps','chest']),makeTemplate('Lower A — Quads + Hams','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Upper B — Chest + Delts','upper','shoulders',['shoulders','chest','triceps','back']),makeTemplate('Lower B — Posterior Chain','lower','hamstrings',['hamstrings','glutes','quads','calves','core']),makeTemplate('Upper C — Back + Arms','focus','back',['back','shoulders','biceps','triceps','core'])],
       6:[makeTemplate('Pull A — Width','upper','back',['back','biceps','shoulders','core']),makeTemplate('Lower A — Quads','lower','quads',['quads','hamstrings','glutes','calves','core']),makeTemplate('Push — Delts + Chest','upper','shoulders',['shoulders','chest','triceps','back']),makeTemplate('Pull B — Thickness','upper','back',['back','biceps','shoulders']),makeTemplate('Lower B — Posterior Chain','lower','hamstrings',['hamstrings','glutes','quads','calves','core']),makeTemplate('Delts + Arms Specialisation','focus','shoulders',['shoulders','back','biceps','triceps','core'])]
     },
