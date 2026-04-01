@@ -310,6 +310,16 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 .toast.show{display:block;animation:slideUp 0.3s ease;}
 .toast-title{font-family:'Syne',-apple-system,sans-serif;font-weight:700;font-size:14px;color:#c8ff00;margin-bottom:2px;}
 .toast-msg{font-size:12px;color:#888;}
+.walkthrough-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:210;display:none;}
+.walkthrough-overlay.open{display:block;}
+.walkthrough-highlight{position:relative;z-index:212!important;box-shadow:0 0 0 2px rgba(200,255,0,0.75),0 18px 40px rgba(0,0,0,0.28);border-color:#c8ff00!important;transform:translateY(-2px);}
+.walkthrough-sheet{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:#181818;border:1px solid rgba(200,255,0,0.22);border-radius:18px;padding:18px;z-index:211;display:none;box-shadow:0 20px 40px rgba(0,0,0,0.35);}
+.walkthrough-sheet.open{display:block;animation:slideUp 0.28s ease;}
+.walkthrough-step{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#c8ff00;margin-bottom:6px;font-weight:600;}
+.walkthrough-title{font-family:'Syne',-apple-system,sans-serif;font-size:20px;font-weight:800;line-height:1.05;margin-bottom:8px;}
+.walkthrough-copy{font-size:13px;color:#999;line-height:1.6;}
+.walkthrough-actions{display:flex;gap:10px;margin-top:16px;}
+.walkthrough-actions .btn{flex:1;}
 .card.sauna{border-color:rgba(232,131,74,0.28);background:linear-gradient(135deg,rgba(247,192,104,0.08),rgba(201,75,43,0.14));}
 .card.sauna .card-title{color:#f7c068;}
 .card.sauna .card-desc{color:#d5bbb1;}
@@ -409,13 +419,13 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
       <div id="streakWrap"></div>
       <div id="phaseCardWrap" style="cursor:pointer;" onclick="goTo('result')"></div>
       <div id="gwCardWrap"></div>
-      <div class="card acc" onclick="goTo('checkin')"><div class="card-top"><div class="card-title">Check-In</div><div class="card-arrow">→</div></div><div class="card-desc" id="checkinCardDesc">Log energy, lifts and diet — get your updated plan instantly</div></div>
-      <div class="card" onclick="viewCurrentPlan()"><div class="card-top"><div class="card-title">Current Plan</div><div class="card-arrow">→</div></div><div class="card-desc">View your personalised training and diet</div></div>
-      <div class="card" onclick="goTo('logselect')"><div class="card-top"><div class="card-title">Log Session</div><div class="card-arrow">→</div></div><div class="card-desc">Record today's lifts and track strength progress</div></div>
-      <div class="card" onclick="goTo('strength')"><div class="card-top"><div class="card-title">Strength Progress</div><div class="card-arrow">→</div></div><div class="card-desc">Exercise charts, PRs and volume</div></div>
-      <div class="card sauna" onclick="goTo('sauna')"><div class="card-top"><div class="card-title">Sauna Calculator</div><div class="sauna-chip">Hot New</div></div><div class="card-desc">Heat protocol, timer, hydration and weekly planning for recovery work</div></div>
-      <div class="card" onclick="goTo('history')"><div class="card-top"><div class="card-title">Check-In History</div><div class="card-arrow">→</div></div><div class="card-desc">Weight chart and all past check-ins</div></div>
-      <div class="card" onclick="goTo('settings')"><div class="card-top"><div class="card-title">Settings and Profile</div><div class="card-arrow">→</div></div><div class="card-desc">Edit goals, calories, focus muscles, session length</div></div>
+      <div class="card acc" id="wtCheckin" onclick="goTo('checkin')"><div class="card-top"><div class="card-title">Check-In</div><div class="card-arrow">→</div></div><div class="card-desc" id="checkinCardDesc">Log energy, lifts and diet — get your updated plan instantly</div></div>
+      <div class="card" id="wtPlan" onclick="viewCurrentPlan()"><div class="card-top"><div class="card-title">Current Plan</div><div class="card-arrow">→</div></div><div class="card-desc">View your personalised training and diet</div></div>
+      <div class="card" id="wtLog" onclick="goTo('logselect')"><div class="card-top"><div class="card-title">Log Session</div><div class="card-arrow">→</div></div><div class="card-desc">Record today's lifts and track strength progress</div></div>
+      <div class="card" id="wtStrength" onclick="goTo('strength')"><div class="card-top"><div class="card-title">Strength Progress</div><div class="card-arrow">→</div></div><div class="card-desc">Exercise charts, PRs and volume</div></div>
+      <div class="card sauna" id="wtSauna" onclick="goTo('sauna')"><div class="card-top"><div class="card-title">Sauna Calculator</div><div class="sauna-chip">Hot New</div></div><div class="card-desc">Heat protocol, timer, hydration and weekly planning for recovery work</div></div>
+      <div class="card" id="wtHistory" onclick="goTo('history')"><div class="card-top"><div class="card-title">Check-In History</div><div class="card-arrow">→</div></div><div class="card-desc">Weight chart and all past check-ins</div></div>
+      <div class="card" id="wtSettings" onclick="goTo('settings')"><div class="card-top"><div class="card-title">Settings and Profile</div><div class="card-arrow">→</div></div><div class="card-desc">Edit goals, calories, focus muscles, session length</div></div>
     </div>
   </div>
 </div>
@@ -578,6 +588,16 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 
 <!-- TOAST -->
 <div class="toast" id="toast"><div class="toast-title" id="toastTitle"></div><div class="toast-msg" id="toastMsg"></div></div>
+<div class="walkthrough-overlay" id="walkthroughOverlay" onclick="closeFeatureWalkthrough(true)"></div>
+<div class="walkthrough-sheet" id="walkthroughSheet">
+  <div class="walkthrough-step" id="walkthroughStep"></div>
+  <div class="walkthrough-title" id="walkthroughTitle"></div>
+  <div class="walkthrough-copy" id="walkthroughCopy"></div>
+  <div class="walkthrough-actions">
+    <button class="btn btn-outline btn-sm" onclick="closeFeatureWalkthrough(true)">Skip</button>
+    <button class="btn btn-acc btn-sm" id="walkthroughNextBtn" onclick="nextFeatureWalkthrough()">Next</button>
+  </div>
+</div>
 
 <!-- FIREBASE -->
 <script type="module">
@@ -612,13 +632,69 @@ const OB_TOTAL=12;
 const WEEKDAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 // ── NAV ──
-function goTo(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='history')loadHistory();if(id==='settings')renderSettings();if(id==='logselect')renderLogSelect();if(id==='strength')loadStrength();if(id==='checkin')populateCheckinMeta();window.scrollTo(0,0);}
+function goTo(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');if(id!=='home'&&walkthroughState.active)closeFeatureWalkthrough(false);if(id==='history')loadHistory();if(id==='settings')renderSettings();if(id==='logselect')renderLogSelect();if(id==='strength')loadStrength();if(id==='checkin')populateCheckinMeta();if(id==='home'&&window.userProfile?.walkthroughSeen===false)setTimeout(()=>startFeatureWalkthrough(),450);window.scrollTo(0,0);}
 window.goTo=goTo;
 function setSD(s){['syncDot','ciSD','logSD'].forEach(id=>{const e=document.getElementById(id);if(e)e.className='sync-dot'+(s?' '+s:'');});}
 
 // ── TOAST ──
 let toastTimer=null;
 function showToast(title,msg,dur=3500){const t=document.getElementById('toast');document.getElementById('toastTitle').textContent=title;document.getElementById('toastMsg').textContent=msg;t.classList.add('show');if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),dur);}
+const FEATURE_WALKTHROUGH=[
+  {target:'wtCheckin',title:'Check-In',copy:'Start here most often. This updates your calories, recovery mode, training focus, and the next version of your plan from your real data.'},
+  {target:'wtPlan',title:'Current Plan',copy:'This is your live split. It shows the exact sessions, set bank logic, frequency, and why the week is structured the way it is.'},
+  {target:'wtLog',title:'Log Session',copy:'Store your lifts after training so ADAPT can keep building suggestions from your actual performance, not guesses.'},
+  {target:'wtStrength',title:'Strength Progress',copy:'Track PRs, exercise load trends, volume, and bodyweight changes so progress is visible and measurable.'},
+  {target:'wtSauna',title:'Sauna Calculator',copy:'Use goal-specific sauna guidance for recovery, cardio, stress relief or longevity with protocol, timer, hydration and weekly planning.'},
+  {target:'wtHistory',title:'Check-In History',copy:'Look back at bodyweight, old check-ins and plan changes so you can spot trends across whole blocks, not just single days.'},
+  {target:'wtSettings',title:'Settings and Profile',copy:'Change goals, session length, focus muscles and other inputs whenever your priorities change.'}
+];
+let walkthroughState={active:false,index:0};
+function clearFeatureHighlight(){document.querySelectorAll('.walkthrough-highlight').forEach(el=>el.classList.remove('walkthrough-highlight'));}
+async function markWalkthroughSeen(){
+  if(!window.userProfile||window.userProfile.walkthroughSeen!==false)return;
+  window.userProfile={...window.userProfile,walkthroughSeen:true};
+  if(window.fbSaveProfile)await window.fbSaveProfile(window.userProfile);
+}
+function renderFeatureWalkthroughStep(){
+  if(!walkthroughState.active)return;
+  const step=FEATURE_WALKTHROUGH[walkthroughState.index];
+  if(!step){closeFeatureWalkthrough(true);return;}
+  const target=document.getElementById(step.target);
+  if(!target){walkthroughState.index++;renderFeatureWalkthroughStep();return;}
+  clearFeatureHighlight();
+  target.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>{
+    if(!walkthroughState.active)return;
+    target.classList.add('walkthrough-highlight');
+    document.getElementById('walkthroughStep').textContent=`Feature ${walkthroughState.index+1} of ${FEATURE_WALKTHROUGH.length}`;
+    document.getElementById('walkthroughTitle').textContent=step.title;
+    document.getElementById('walkthroughCopy').textContent=step.copy;
+    document.getElementById('walkthroughNextBtn').textContent=walkthroughState.index===FEATURE_WALKTHROUGH.length-1?'Finish':'Next';
+  },220);
+}
+function startFeatureWalkthrough(){
+  if(walkthroughState.active||!document.getElementById('home')?.classList.contains('active'))return;
+  walkthroughState={active:true,index:0};
+  document.getElementById('walkthroughOverlay').classList.add('open');
+  document.getElementById('walkthroughSheet').classList.add('open');
+  renderFeatureWalkthroughStep();
+}
+async function closeFeatureWalkthrough(markSeen){
+  walkthroughState.active=false;
+  clearFeatureHighlight();
+  document.getElementById('walkthroughOverlay').classList.remove('open');
+  document.getElementById('walkthroughSheet').classList.remove('open');
+  if(markSeen)await markWalkthroughSeen();
+}
+function nextFeatureWalkthrough(){
+  if(!walkthroughState.active)return;
+  if(walkthroughState.index>=FEATURE_WALKTHROUGH.length-1){closeFeatureWalkthrough(true);return;}
+  walkthroughState.index++;
+  renderFeatureWalkthroughStep();
+}
+window.startFeatureWalkthrough=startFeatureWalkthrough;
+window.closeFeatureWalkthrough=closeFeatureWalkthrough;
+window.nextFeatureWalkthrough=nextFeatureWalkthrough;
 
 // ── DATE UTILITIES ──
 function toMs(dateVal){if(!dateVal)return 0;if(dateVal?.toDate)return dateVal.toDate().getTime();if(dateVal?.seconds)return dateVal.seconds*1000;return new Date(dateVal).getTime();}
@@ -683,7 +759,7 @@ function obNext(s){const cur=document.getElementById('ob'+s),nxt=document.getEle
 window.obNext=obNext;
 function obBack(s){const cur=document.getElementById('ob'+s),prv=document.getElementById('ob'+(s-1));if(!prv)return;cur.classList.remove('active');prv.classList.add('active');obStep=s-1;document.getElementById('obBar').style.width=(obStep/OB_TOTAL*100)+'%';}
 window.obBack=obBack;
-async function finishOnboarding(){obAnswers.focusMuscles=selectedMuscles;obAnswers.restrictions=selectedRestricts;const profile={...obAnswers,setupComplete:true,createdAt:new Date().toISOString()};if(obAnswers.notifications===true&&'Notification' in window)Notification.requestPermission();if(window.fbSaveProfile)await window.fbSaveProfile(profile);window.userProfile=profile;updateHomeUI();showToast('Welcome to ADAPT','Your personalised plan is ready.');goTo('home');}
+async function finishOnboarding(){obAnswers.focusMuscles=selectedMuscles;obAnswers.restrictions=selectedRestricts;const profile={...obAnswers,setupComplete:true,walkthroughSeen:false,createdAt:new Date().toISOString()};if(obAnswers.notifications===true&&'Notification' in window)Notification.requestPermission();if(window.fbSaveProfile)await window.fbSaveProfile(profile);window.userProfile=profile;updateHomeUI();showToast('Welcome to ADAPT','Your personalised plan is ready.');goTo('home');}
 window.finishOnboarding=finishOnboarding;
 
 // ── STREAK (calendar-week based) ──
