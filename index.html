@@ -310,16 +310,17 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 .toast.show{display:block;animation:slideUp 0.3s ease;}
 .toast-title{font-family:'Syne',-apple-system,sans-serif;font-weight:700;font-size:14px;color:#c8ff00;margin-bottom:2px;}
 .toast-msg{font-size:12px;color:#888;}
-.walkthrough-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:210;display:none;}
+.walkthrough-overlay{position:fixed;inset:0;background:radial-gradient(circle at top,rgba(200,255,0,0.08),transparent 34%),rgba(0,0,0,0.56);z-index:210;display:none;}
 .walkthrough-overlay.open{display:block;}
-.walkthrough-highlight{position:relative;z-index:212!important;box-shadow:0 0 0 2px rgba(200,255,0,0.75),0 18px 40px rgba(0,0,0,0.28);border-color:#c8ff00!important;transform:translateY(-2px);}
-.walkthrough-sheet{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:#181818;border:1px solid rgba(200,255,0,0.22);border-radius:18px;padding:18px;z-index:211;display:none;box-shadow:0 20px 40px rgba(0,0,0,0.35);}
+.walkthrough-highlight{position:relative;z-index:212!important;border-color:#c8ff00!important;background:linear-gradient(180deg,rgba(200,255,0,0.11),rgba(200,255,0,0.04))!important;box-shadow:0 0 0 3px rgba(200,255,0,0.88),0 0 0 9px rgba(200,255,0,0.12),0 22px 48px rgba(0,0,0,0.42);transform:translateY(-4px) scale(1.01);}
+.walkthrough-sheet{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#181818,#141414);border:1px solid rgba(200,255,0,0.28);border-radius:18px;padding:18px;z-index:211;display:none;box-shadow:0 20px 40px rgba(0,0,0,0.42);backdrop-filter:blur(10px);}
 .walkthrough-sheet.open{display:block;animation:slideUp 0.28s ease;}
 .walkthrough-step{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#c8ff00;margin-bottom:6px;font-weight:600;}
 .walkthrough-title{font-family:'Syne',-apple-system,sans-serif;font-size:20px;font-weight:800;line-height:1.05;margin-bottom:8px;}
 .walkthrough-copy{font-size:13px;color:#999;line-height:1.6;}
 .walkthrough-actions{display:flex;gap:10px;margin-top:16px;}
 .walkthrough-actions .btn{flex:1;}
+.walkthrough-feature-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid rgba(200,255,0,0.22);background:rgba(200,255,0,0.08);color:#c8ff00;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;}
 .card.sauna{border-color:rgba(232,131,74,0.28);background:linear-gradient(135deg,rgba(247,192,104,0.08),rgba(201,75,43,0.14));}
 .card.sauna .card-title{color:#f7c068;}
 .card.sauna .card-desc{color:#d5bbb1;}
@@ -392,7 +393,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 <!-- ONBOARDING -->
 <div id="onboarding" class="screen">
   <div class="ob-prog"><div class="ob-bar" id="obBar" style="width:8%"></div></div>
-  <div class="ob-step active" id="ob1"><div class="ob-sb"><div class="ob-num">1 of 12</div><div class="ob-q">What is your main goal?</div><div class="ob-sub">This shapes your training split, exercise selection and the way ADAPT rebuilds your plan after every check-in.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'goal','vtaper')"><div class="opt-label">V-Taper / Athletic</div><div class="opt-desc">Wide back, broad shoulders, defined chest.</div></div><div class="opt-card" onclick="obSel(this,'goal','hourglass')"><div class="opt-label">Hourglass / Curves</div><div class="opt-desc">Glutes, hips, shoulder width for contrast, waist definition.</div></div><div class="opt-card" onclick="obSel(this,'goal','strength')"><div class="opt-label">Strength and Power</div><div class="opt-desc">Squat, bench, deadlift. Raw strength and performance.</div></div><div class="opt-card" onclick="obSel(this,'goal','general')"><div class="opt-label">General Fitness</div><div class="opt-desc">Balanced full-body health and conditioning.</div></div></div><div class="intro-hero"><div class="intro-kicker">Why ADAPT Hits Different</div><div class="intro-title">One app for your plan, progress, food and recovery</div><div class="intro-copy">Instead of giving you one fixed routine, ADAPT keeps updating your training and diet from your real check-ins, saved lifts, bodyweight trend and recovery score.</div><div class="intro-pill-row"><div class="intro-pill">Adaptive training split</div><div class="intro-pill">Auto calorie shifts</div><div class="intro-pill">Weight analytics</div><div class="intro-pill">Goal-based sauna guide</div></div></div></div><div class="foot"><button class="btn btn-acc" onclick="obNext(1)" id="ob1n" disabled>Continue</button></div></div>
+  <div class="ob-step active" id="ob1"><div class="ob-sb"><div class="ob-num">1 of 12</div><div class="ob-q">What is your main goal?</div><div class="ob-sub">This shapes your training split, exercise selection and the way ADAPT rebuilds your plan after every check-in.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'goal','vtaper')"><div class="opt-label">V-Taper / Athletic</div><div class="opt-desc">Wide back, broad shoulders, defined chest.</div></div><div class="opt-card" onclick="obSel(this,'goal','hourglass')"><div class="opt-label">Hourglass / Curves</div><div class="opt-desc">Glutes, hips, shoulder width for contrast, waist definition.</div></div><div class="opt-card" onclick="obSel(this,'goal','strength')"><div class="opt-label">Strength and Power</div><div class="opt-desc">Squat, bench, deadlift. Raw strength and performance.</div></div><div class="opt-card" onclick="obSel(this,'goal','general')"><div class="opt-label">General Fitness</div><div class="opt-desc">Balanced full-body health and conditioning.</div></div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.hero.kicker">Why ADAPT Hits Different</div><div class="intro-title" data-i18n="intro.hero.title">One app for your plan, progress, food and recovery</div><div class="intro-copy" data-i18n="intro.hero.copy">Instead of giving you one fixed routine, ADAPT keeps updating your training and diet from your real check-ins, saved lifts, bodyweight trend and recovery score.</div><div class="intro-pill-row"><div class="intro-pill" data-i18n="intro.hero.pill1">Adaptive training split</div><div class="intro-pill" data-i18n="intro.hero.pill2">Auto calorie shifts</div><div class="intro-pill" data-i18n="intro.hero.pill3">Weight analytics</div><div class="intro-pill" data-i18n="intro.hero.pill4">Goal-based sauna guide</div></div></div></div><div class="foot"><button class="btn btn-acc" onclick="obNext(1)" id="ob1n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob2"><div class="ob-sb"><div class="ob-num">2 of 12</div><div class="ob-q">Biological sex?</div><div class="ob-sub">Used only for accurate calorie calculation.</div><div class="opt-grid c3"><div class="opt-card" onclick="obSel(this,'sex','male')"><div class="opt-label">Male</div></div><div class="opt-card" onclick="obSel(this,'sex','female')"><div class="opt-label">Female</div></div><div class="opt-card" onclick="obSel(this,'sex','other')"><div class="opt-label">Other</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(2)">Back</button><button class="btn btn-acc" onclick="obNext(2)" id="ob2n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob3"><div class="ob-sb"><div class="ob-num">3 of 12</div><div class="ob-q">Training experience?</div><div class="ob-sub">Sets your rep ranges and exercise complexity.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'experience','beginner')"><div class="opt-label">Beginner</div><div class="opt-desc">Under 1 year. Still learning the movements.</div></div><div class="opt-card" onclick="obSel(this,'experience','intermediate')"><div class="opt-label">Intermediate</div><div class="opt-desc">1–3 years. Comfortable with main compounds.</div></div><div class="opt-card" onclick="obSel(this,'experience','advanced')"><div class="opt-label">Advanced</div><div class="opt-desc">3+ years. Strong technique and movement patterns.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(3)">Back</button><button class="btn btn-acc" onclick="obNext(3)" id="ob3n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob4"><div class="ob-sb"><div class="ob-num">4 of 12</div><div class="ob-q">Days per week?</div><div class="ob-sub">How many days can you realistically commit to each week?</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="daysSel"><div class="day-btn" onclick="selDay(this,1)">1</div><div class="day-btn" onclick="selDay(this,2)">2</div><div class="day-btn" onclick="selDay(this,3)">3</div><div class="day-btn" onclick="selDay(this,4)">4</div><div class="day-btn" onclick="selDay(this,5)">5</div><div class="day-btn" onclick="selDay(this,6)">6</div><div class="day-btn" onclick="selDay(this,7)">7</div></div><div id="splitSug" class="info-box" style="display:none;"><div class="info-lbl">Recommended split</div><div class="info-val" id="splitText"></div><div style="font-size:12px;color:#888;margin-top:3px;" id="splitDaysText"></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(4)">Back</button><button class="btn btn-acc" onclick="obNext(4)" id="ob4n" disabled>Continue</button></div></div>
@@ -403,7 +404,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
   <div class="ob-step" id="ob9"><div class="ob-sb"><div class="ob-num">9 of 12</div><div class="ob-q">Goal weight?</div><div class="ob-sub">Where do you want to end up? Used for your progress graph.</div><div class="wt-row" style="margin-bottom:14px;"><input type="number" class="wt-in" id="obGW" placeholder="80" oninput="checkOb9()"><span class="wt-unit">kg</span></div><div id="gwPreview" class="info-box" style="display:none;"><div class="info-lbl">Estimated timeline</div><div class="info-val" id="gwText"></div><canvas id="gwChart" style="width:100%;height:90px;margin-top:12px;display:block;"></canvas></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(9)">Back</button><button class="btn btn-acc" onclick="obNext(9)" id="ob9n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob10"><div class="ob-sb"><div class="ob-num">10 of 12</div><div class="ob-q">Diet goal?</div><div class="ob-sub">Sets your calorie target and macro split.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'dietGoal','bulk')"><div class="opt-label">Bulk</div><div class="opt-desc">Calorie surplus. Build muscle faster.</div></div><div class="opt-card" onclick="obSel(this,'dietGoal','maintain')"><div class="opt-label">Maintain</div><div class="opt-desc">Near maintenance. Slow recomposition.</div></div><div class="opt-card" onclick="obSel(this,'dietGoal','cut')"><div class="opt-label">Cut</div><div class="opt-desc">Calorie deficit. Lose fat, keep muscle.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(10)">Back</button><button class="btn btn-acc" onclick="obNext(10)" id="ob10n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob11"><div class="ob-sb"><div class="ob-num">11 of 12</div><div class="ob-q">Food restrictions?</div><div class="ob-sub">Select all that apply.</div><div class="chip-wrap" id="restrictChips"><div class="chip sel" onclick="selRestrict(this,'none')">None</div><div class="chip" onclick="selRestrict(this,'vegetarian')">Vegetarian</div><div class="chip" onclick="selRestrict(this,'vegan')">Vegan</div><div class="chip" onclick="selRestrict(this,'dairy_free')">Dairy-free</div><div class="chip" onclick="selRestrict(this,'gluten_free')">Gluten-free</div><div class="chip" onclick="selRestrict(this,'halal')">Halal</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(11)">Back</button><button class="btn btn-acc" onclick="obNext(11)" id="ob11n">Continue</button></div></div>
-  <div class="ob-step" id="ob12"><div class="ob-sb"><div class="ob-num">12 of 12</div><div class="ob-q">Notifications and quick tour</div><div class="ob-sub">You are about to unlock the full app. This is the fastest way to get value from it on day one.</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'notifications',true)"><div class="opt-label">Yes please</div><div class="opt-desc">Nudge if you haven't checked in after 7 days.</div></div><div class="opt-card" onclick="obSel(this,'notifications',false)"><div class="opt-label">No thanks</div><div class="opt-desc">I'll remember on my own.</div></div></div><div class="intro-hero"><div class="intro-kicker">How To Use ADAPT</div><div class="intro-title">Check in, train, log, improve</div><div class="intro-copy">The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADAPT adjust the next block around what actually happened.</div></div><div class="intro-feature-list"><div class="intro-feature"><div class="intro-num">1</div><div><div class="intro-feature-title">Check-In drives the plan</div><div class="intro-feature-copy">Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.</div></div></div><div class="intro-feature"><div class="intro-num">2</div><div><div class="intro-feature-title">Training and analytics stay connected</div><div class="intro-feature-copy">Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.</div></div></div><div class="intro-feature"><div class="intro-num">3</div><div><div class="intro-feature-title">Recovery gets its own system</div><div class="intro-feature-copy">Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.</div></div></div></div><div class="info-box" style="margin-top:14px;"><div style="font-size:13px;color:#888;line-height:1.6;">In Safari: tap Share then Add to Home Screen for the full native app experience.</div><div class="quiet-note">Built for general fitness and recovery planning. If you are dealing with injury, symptoms, or treatment decisions, use a qualified clinician for that part.</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(12)">Back</button><button class="btn btn-acc" onclick="finishOnboarding()">Build My Plan</button></div></div>
+  <div class="ob-step" id="ob12"><div class="ob-sb"><div class="ob-num">12 of 12</div><div class="ob-q">Notifications and quick tour</div><div class="ob-sub">You are about to unlock the full app. This is the fastest way to get value from it on day one.</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'notifications',true)"><div class="opt-label">Yes please</div><div class="opt-desc">Nudge if you haven't checked in after 7 days.</div></div><div class="opt-card" onclick="obSel(this,'notifications',false)"><div class="opt-label">No thanks</div><div class="opt-desc">I'll remember on my own.</div></div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.tour.kicker">How To Use ADAPT</div><div class="intro-title" data-i18n="intro.tour.title">Check in, train, log, improve</div><div class="intro-copy" data-i18n="intro.tour.copy">The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADAPT adjust the next block around what actually happened.</div></div><div class="intro-feature-list"><div class="intro-feature"><div class="intro-num">1</div><div><div class="intro-feature-title" data-i18n="intro.tour.f1.title">Check-In drives the plan</div><div class="intro-feature-copy" data-i18n="intro.tour.f1.copy">Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.</div></div></div><div class="intro-feature"><div class="intro-num">2</div><div><div class="intro-feature-title" data-i18n="intro.tour.f2.title">Training and analytics stay connected</div><div class="intro-feature-copy" data-i18n="intro.tour.f2.copy">Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.</div></div></div><div class="intro-feature"><div class="intro-num">3</div><div><div class="intro-feature-title" data-i18n="intro.tour.f3.title">Recovery gets its own system</div><div class="intro-feature-copy" data-i18n="intro.tour.f3.copy">Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.</div></div></div></div><div class="info-box" style="margin-top:14px;"><div style="font-size:13px;color:#888;line-height:1.6;" data-i18n="intro.tour.safari">In Safari: tap Share then Add to Home Screen for the full native app experience.</div><div class="quiet-note" data-i18n="intro.tour.legal">Built for general fitness and recovery planning. If you are dealing with injury, symptoms, or treatment decisions, use a qualified clinician for that part.</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(12)">Back</button><button class="btn btn-acc" onclick="finishOnboarding()">Build My Plan</button></div></div>
 </div>
 
 <!-- HOME -->
@@ -419,13 +420,13 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
       <div id="streakWrap"></div>
       <div id="phaseCardWrap" style="cursor:pointer;" onclick="goTo('result')"></div>
       <div id="gwCardWrap"></div>
-      <div class="card acc" id="wtCheckin" onclick="goTo('checkin')"><div class="card-top"><div class="card-title">Check-In</div><div class="card-arrow">→</div></div><div class="card-desc" id="checkinCardDesc">Log energy, lifts and diet — get your updated plan instantly</div></div>
-      <div class="card" id="wtPlan" onclick="viewCurrentPlan()"><div class="card-top"><div class="card-title">Current Plan</div><div class="card-arrow">→</div></div><div class="card-desc">View your personalised training and diet</div></div>
-      <div class="card" id="wtLog" onclick="goTo('logselect')"><div class="card-top"><div class="card-title">Log Session</div><div class="card-arrow">→</div></div><div class="card-desc">Record today's lifts and track strength progress</div></div>
-      <div class="card" id="wtStrength" onclick="goTo('strength')"><div class="card-top"><div class="card-title">Strength Progress</div><div class="card-arrow">→</div></div><div class="card-desc">Exercise charts, PRs and volume</div></div>
-      <div class="card sauna" id="wtSauna" onclick="goTo('sauna')"><div class="card-top"><div class="card-title">Sauna Calculator</div><div class="sauna-chip">Hot New</div></div><div class="card-desc">Heat protocol, timer, hydration and weekly planning for recovery work</div></div>
-      <div class="card" id="wtHistory" onclick="goTo('history')"><div class="card-top"><div class="card-title">Check-In History</div><div class="card-arrow">→</div></div><div class="card-desc">Weight chart and all past check-ins</div></div>
-      <div class="card" id="wtSettings" onclick="goTo('settings')"><div class="card-top"><div class="card-title">Settings and Profile</div><div class="card-arrow">→</div></div><div class="card-desc">Edit goals, calories, focus muscles, session length</div></div>
+      <div class="card acc" id="wtCheckin" onclick="goTo('checkin')"><div class="card-top"><div class="card-title" data-i18n="home.card.checkin.title">Check-In</div><div class="card-arrow">→</div></div><div class="card-desc" id="checkinCardDesc" data-i18n="home.card.checkin.desc">Log energy, lifts and diet — get your updated plan instantly</div></div>
+      <div class="card" id="wtPlan" onclick="viewCurrentPlan()"><div class="card-top"><div class="card-title" data-i18n="home.card.plan.title">Current Plan</div><div class="card-arrow">→</div></div><div class="card-desc" data-i18n="home.card.plan.desc">View your personalised training and diet</div></div>
+      <div class="card" id="wtLog" onclick="goTo('logselect')"><div class="card-top"><div class="card-title" data-i18n="home.card.log.title">Log Session</div><div class="card-arrow">→</div></div><div class="card-desc" data-i18n="home.card.log.desc">Record today's lifts and track strength progress</div></div>
+      <div class="card" id="wtStrength" onclick="goTo('strength')"><div class="card-top"><div class="card-title" data-i18n="home.card.strength.title">Strength Progress</div><div class="card-arrow">→</div></div><div class="card-desc" data-i18n="home.card.strength.desc">Exercise charts, PRs and volume</div></div>
+      <div class="card sauna" id="wtSauna" onclick="goTo('sauna')"><div class="card-top"><div class="card-title" data-i18n="home.card.sauna.title">Sauna Calculator</div><div class="sauna-chip" data-i18n="home.card.sauna.badge">Hot New</div></div><div class="card-desc" data-i18n="home.card.sauna.desc">Heat protocol, timer, hydration and weekly planning for recovery work</div></div>
+      <div class="card" id="wtHistory" onclick="goTo('history')"><div class="card-top"><div class="card-title" data-i18n="home.card.history.title">Check-In History</div><div class="card-arrow">→</div></div><div class="card-desc" data-i18n="home.card.history.desc">Weight chart and all past check-ins</div></div>
+      <div class="card" id="wtSettings" onclick="goTo('settings')"><div class="card-top"><div class="card-title" data-i18n="home.card.settings.title">Settings and Profile</div><div class="card-arrow">→</div></div><div class="card-desc" data-i18n="home.card.settings.desc">Edit goals, calories, focus muscles, session length</div></div>
     </div>
   </div>
 </div>
@@ -580,7 +581,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 <div id="history" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Check-In History</div></div><div class="sb" id="histBody"></div></div>
 
 <!-- SETTINGS -->
-<div id="settings" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Profile and Settings</div></div><div class="sb"><div id="settingsBody"></div><button class="btn btn-outline" style="margin-top:8px;" onclick="startOb();goTo('onboarding');">Redo Onboarding</button><button class="btn btn-danger" style="margin-top:10px;" onclick="resetMyData()">Reset My Data</button><button class="btn btn-danger" style="margin-top:10px;" onclick="signOut()">Sign Out</button></div></div>
+<div id="settings" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title" data-i18n="settings.title">Profile and Settings</div></div><div class="sb"><div id="settingsBody"></div><button class="btn btn-outline" style="margin-top:8px;" onclick="startOb();goTo('onboarding');" data-i18n="settings.redo">Redo Onboarding</button><button class="btn btn-danger" style="margin-top:10px;" onclick="resetMyData()" data-i18n="settings.reset">Reset My Data</button><button class="btn btn-danger" style="margin-top:10px;" onclick="signOut()" data-i18n="settings.signout">Sign Out</button></div></div>
 
 <!-- SWAP SHEET -->
 <div class="overlay" id="swapOvl" onclick="closeSwap()"></div>
@@ -591,10 +592,11 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 <div class="walkthrough-overlay" id="walkthroughOverlay" onclick="closeFeatureWalkthrough(true)"></div>
 <div class="walkthrough-sheet" id="walkthroughSheet">
   <div class="walkthrough-step" id="walkthroughStep"></div>
+  <div class="walkthrough-feature-chip" id="walkthroughChip"></div>
   <div class="walkthrough-title" id="walkthroughTitle"></div>
   <div class="walkthrough-copy" id="walkthroughCopy"></div>
   <div class="walkthrough-actions">
-    <button class="btn btn-outline btn-sm" onclick="closeFeatureWalkthrough(true)">Skip</button>
+    <button class="btn btn-outline btn-sm" id="walkthroughSkipBtn" onclick="closeFeatureWalkthrough(true)">Skip</button>
     <button class="btn btn-acc btn-sm" id="walkthroughNextBtn" onclick="nextFeatureWalkthrough()">Next</button>
   </div>
 </div>
@@ -640,17 +642,230 @@ function setSD(s){['syncDot','ciSD','logSD'].forEach(id=>{const e=document.getEl
 // ── TOAST ──
 let toastTimer=null;
 function showToast(title,msg,dur=3500){const t=document.getElementById('toast');document.getElementById('toastTitle').textContent=title;document.getElementById('toastMsg').textContent=msg;t.classList.add('show');if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),dur);}
+const APP_I18N={
+  en:{
+    intro:{
+      hero:{
+        kicker:'Why ADAPT Hits Different',
+        title:'One app for your plan, progress, food and recovery',
+        copy:'Instead of giving you one fixed routine, ADAPT keeps updating your training and diet from your real check-ins, saved lifts, bodyweight trend and recovery score.',
+        pill1:'Adaptive training split',
+        pill2:'Auto calorie shifts',
+        pill3:'Weight analytics',
+        pill4:'Goal-based sauna guide'
+      },
+      tour:{
+        kicker:'How To Use ADAPT',
+        title:'Check in, train, log, improve',
+        copy:'The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADAPT adjust the next block around what actually happened.',
+        f1:{title:'Check-In drives the plan',copy:'Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.'},
+        f2:{title:'Training and analytics stay connected',copy:'Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.'},
+        f3:{title:'Recovery gets its own system',copy:'Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.'},
+        safari:'In Safari: tap Share then Add to Home Screen for the full native app experience.',
+        legal:'Built for general fitness and recovery planning. If you are dealing with injury, symptoms, or treatment decisions, use a qualified clinician for that part.'
+      }
+    },
+    home:{
+      greeting:'Hey {name}',
+      goalSub:'{goal} plan active',
+      streak:{title:'{count}-week streak',done:'You already locked in this week.',pending:'One check-in this week keeps it alive.'},
+      checkin:{today:'You checked in today — check in again anytime',yesterday:'Last check-in: yesterday — update your plan?',daysAgo:'Last check-in: {days} days ago — update your plan now'},
+      card:{
+        checkin:{title:'Check-In',desc:'Log energy, lifts and diet — get your updated plan instantly'},
+        plan:{title:'Current Plan',desc:'View your personalised training and diet'},
+        log:{title:'Log Session',desc:'Record today\'s lifts and track strength progress'},
+        strength:{title:'Strength Progress',desc:'Exercise charts, PRs and volume'},
+        sauna:{title:'Sauna Calculator',badge:'Hot New',desc:'Heat protocol, timer, hydration and weekly planning for recovery work'},
+        history:{title:'Check-In History',desc:'Weight chart and all past check-ins'},
+        settings:{title:'Settings and Profile',desc:'Edit goals, calories, focus muscles, session length'}
+      }
+    },
+    walkthrough:{
+      step:'Feature {current} of {total}',
+      spotlight:'Now showing',
+      skip:'Skip',
+      next:'Next',
+      finish:'Finish',
+      checkin:{title:'Check-In',copy:'Start here most often. This updates your calories, recovery mode, training focus, and the next version of your plan from your real data.'},
+      plan:{title:'Current Plan',copy:'This is your live split. It shows the exact sessions, set bank logic, frequency, and why the week is structured the way it is.'},
+      log:{title:'Log Session',copy:'Store your lifts after training so ADAPT can keep building suggestions from your actual performance, not guesses.'},
+      strength:{title:'Strength Progress',copy:'Track PRs, exercise load trends, volume, and bodyweight changes so progress is visible and measurable.'},
+      sauna:{title:'Sauna Calculator',copy:'Use goal-specific sauna guidance for recovery, cardio, stress relief or longevity with protocol, timer, hydration and weekly planning.'},
+      history:{title:'Check-In History',copy:'Look back at bodyweight, old check-ins and plan changes so you can spot trends across whole blocks, not just single days.'},
+      settings:{title:'Settings and Profile',copy:'Change goals, session length, focus muscles and other inputs whenever your priorities change.'}
+    },
+    settings:{
+      title:'Profile and Settings',
+      redo:'Redo Onboarding',
+      reset:'Reset My Data',
+      signout:'Sign Out',
+      helper:'Tap Redo Onboarding to update any setting.',
+      label:{
+        goal:'Goal',
+        sex:'Sex',
+        age:'Age',
+        experience:'Experience',
+        days:'Days/week',
+        session:'Session length',
+        focus:'Focus muscles',
+        equipment:'Equipment',
+        diet:'Diet goal',
+        goalWeight:'Goal weight'
+      }
+    },
+    history:{loading:'Loading...',empty:'No check-ins yet.',today:'Today',yesterday:'Yesterday',daysAgo:'{days} days ago',energy:'energy'},
+    toast:{
+      welcome:{title:'Welcome to ADAPT',body:'Your personalised plan is ready.'},
+      resetFail:{title:'Reset failed',body:'Your data could not be cleared right now.'},
+      resetDone:{title:'Data reset',body:'Your account is ready for a fresh start.'}
+    },
+    confirm:{reset:'Delete your profile, check-ins, and logged sessions and start over?'},
+    level:{rookie:'Rookie',consistent:'Consistent',dedicated:'Dedicated',elite:'Elite'},
+    enum:{
+      goal:{vtaper:'V-Taper',hourglass:'Hourglass',strength:'Strength',general:'General Fitness'},
+      experience:{beginner:'Beginner',intermediate:'Intermediate',advanced:'Advanced'},
+      sex:{male:'Male',female:'Female',other:'Other'},
+      equipment:{full:'Full Gym',dumbbells:'Dumbbells Only',bands:'Resistance Bands',none:'Bodyweight Only'},
+      dietGoal:{bulk:'Bulk',maintain:'Maintain',cut:'Cut'},
+      muscle:{chest:'Chest',back:'Back',shoulders:'Shoulders',biceps:'Biceps',triceps:'Triceps',glutes:'Glutes',quads:'Quads',hamstrings:'Hamstrings',core:'Core',calves:'Calves'}
+    }
+  },
+  de:{
+    intro:{
+      hero:{
+        kicker:'Warum ADAPT heraussticht',
+        title:'Eine App fuer Trainingsplan, Fortschritt, Ernaehrung und Regeneration',
+        copy:'Statt dir einmal einen festen Plan zu geben, passt ADAPT dein Training und deine Ernaehrung laufend an echte Check-ins, gespeicherte Lifts, Gewichtstrends und deinen Erholungsstatus an.',
+        pill1:'Adaptiver Trainingssplit',
+        pill2:'Automatische Kalorienanpassung',
+        pill3:'Gewichtsanalyse',
+        pill4:'Zielbasierter Sauna-Guide'
+      },
+      tour:{
+        kicker:'So nutzt du ADAPT',
+        title:'Einchecken, trainieren, loggen, verbessern',
+        copy:'Die App funktioniert am besten, wenn du diesen Kreislauf nutzt: Status updaten, Plan ausfuehren, Lifts loggen und den naechsten Block von ADAPT anhand deiner echten Woche anpassen lassen.',
+        f1:{title:'Der Check-In steuert den Plan',copy:'Energie, Schlaf, Ernaehrung, Lifts und Koerpergewicht fuettern die adaptive Engine, damit Kalorien und Trainingsmodus zu deiner echten Woche passen.'},
+        f2:{title:'Training und Analytik greifen ineinander',copy:'Current Plan zeigt den Split, Log Session speichert die Leistung und Strength Progress macht daraus PR-Tracking, Charts und eine brauchbare Gewichtshistorie.'},
+        f3:{title:'Regeneration bekommt ein eigenes System',copy:'Der Sauna Calculator liefert je nach Ziel einen Leitfaden fuer Cardio, Stress, Regeneration oder Langlebigkeit inklusive Protokoll, Timer, Hydration und Wochenplanung.'},
+        safari:'In Safari: Tippe auf Teilen und dann auf Zum Home-Bildschirm fuer das volle native App-Gefuehl.',
+        legal:'Gedacht fuer allgemeine Fitness- und Regenerationsplanung. Bei Verletzungen, Symptomen oder medizinischen Entscheidungen sollte eine qualifizierte Fachperson uebernehmen.'
+      }
+    },
+    home:{
+      greeting:'Hi {name}',
+      goalSub:'{goal}-Plan aktiv',
+      streak:{title:'{count}-Wochen-Serie',done:'Diese Woche ist schon gesichert.',pending:'Ein Check-In diese Woche haelt die Serie am Leben.'},
+      checkin:{today:'Du hast heute schon eingecheckt — du kannst jederzeit erneut aktualisieren',yesterday:'Letzter Check-In: gestern — Plan aktualisieren?',daysAgo:'Letzter Check-In: vor {days} Tagen — jetzt deinen Plan aktualisieren'},
+      card:{
+        checkin:{title:'Check-In',desc:'Energie, Lifts und Ernaehrung eintragen — dein Plan wird sofort angepasst'},
+        plan:{title:'Aktueller Plan',desc:'Deinen personalisierten Trainings- und Ernaehrungsplan ansehen'},
+        log:{title:'Session loggen',desc:'Heutige Lifts speichern und Kraftfortschritt verfolgen'},
+        strength:{title:'Kraftfortschritt',desc:'Uebungs-Charts, PRs und Volumen'},
+        sauna:{title:'Sauna Calculator',badge:'Neu',desc:'Hitzeprotokoll, Timer, Hydration und Wochenplanung fuer deine Regeneration'},
+        history:{title:'Check-In-Verlauf',desc:'Gewichtskurve und alle bisherigen Check-ins'},
+        settings:{title:'Einstellungen und Profil',desc:'Ziele, Kalorien, Fokusmuskeln und Session-Laenge anpassen'}
+      }
+    },
+    walkthrough:{
+      step:'Feature {current} von {total}',
+      spotlight:'Gerade sichtbar',
+      skip:'Ueberspringen',
+      next:'Weiter',
+      finish:'Fertig',
+      checkin:{title:'Check-In',copy:'Hier startest du am haeufigsten. Dieser Bereich aktualisiert Kalorien, Erholungsmodus, Trainingsfokus und die naechste Version deines Plans anhand echter Daten.'},
+      plan:{title:'Aktueller Plan',copy:'Das ist dein live adaptierter Split. Hier siehst du Sessions, Set-Bank-Logik, Frequenz und warum die Woche genau so aufgebaut ist.'},
+      log:{title:'Session loggen',copy:'Speichere nach dem Training deine Lifts, damit ADAPT Vorschlaege auf echter Leistung statt auf Schaetzungen aufbaut.'},
+      strength:{title:'Kraftfortschritt',copy:'Verfolge PRs, Lasttrends, Volumen und Gewichtsentwicklung, damit Fortschritt sichtbar und messbar wird.'},
+      sauna:{title:'Sauna Calculator',copy:'Nutze zielbasierte Sauna-Empfehlungen fuer Regeneration, Cardio, Stressabbau oder Langlebigkeit inklusive Protokoll, Timer, Hydration und Wochenplanung.'},
+      history:{title:'Check-In-Verlauf',copy:'Sieh dir Gewicht, alte Check-ins und Planveraenderungen ueber ganze Bloecke hinweg an statt nur ueber einzelne Tage.'},
+      settings:{title:'Einstellungen und Profil',copy:'Passe Ziele, Session-Laenge, Fokusmuskeln und andere Inputs an, sobald sich deine Prioritaeten aendern.'}
+    },
+    settings:{
+      title:'Profil und Einstellungen',
+      redo:'Onboarding erneut starten',
+      reset:'Meine Daten zuruecksetzen',
+      signout:'Abmelden',
+      helper:'Tippe auf Onboarding erneut starten, um deine Angaben zu aktualisieren.',
+      label:{
+        goal:'Ziel',
+        sex:'Geschlecht',
+        age:'Alter',
+        experience:'Erfahrung',
+        days:'Tage/Woche',
+        session:'Session-Laenge',
+        focus:'Fokusmuskeln',
+        equipment:'Equipment',
+        diet:'Ernaehrungsziel',
+        goalWeight:'Zielgewicht'
+      }
+    },
+    history:{loading:'Wird geladen...',empty:'Noch keine Check-ins.',today:'Heute',yesterday:'Gestern',daysAgo:'vor {days} Tagen',energy:'Energie'},
+    toast:{
+      welcome:{title:'Willkommen bei ADAPT',body:'Dein personalisierter Plan ist bereit.'},
+      resetFail:{title:'Zuruecksetzen fehlgeschlagen',body:'Deine Daten konnten gerade nicht geloescht werden.'},
+      resetDone:{title:'Daten zurueckgesetzt',body:'Dein Account ist bereit fuer einen frischen Start.'}
+    },
+    confirm:{reset:'Profil, Check-ins und geloggte Sessions loeschen und neu starten?'},
+    level:{rookie:'Rookie',consistent:'Konstant',dedicated:'Engagiert',elite:'Elite'},
+    enum:{
+      goal:{vtaper:'V-Taper',hourglass:'Hourglass',strength:'Kraft',general:'Allgemeine Fitness'},
+      experience:{beginner:'Anfaenger',intermediate:'Fortgeschritten',advanced:'Sehr fortgeschritten'},
+      sex:{male:'Maennlich',female:'Weiblich',other:'Divers'},
+      equipment:{full:'Volles Gym',dumbbells:'Nur Kurzhanteln',bands:'Widerstandsbaender',none:'Nur Koerpergewicht'},
+      dietGoal:{bulk:'Aufbau',maintain:'Erhalten',cut:'Diät'},
+      muscle:{chest:'Brust',back:'Ruecken',shoulders:'Schultern',biceps:'Bizeps',triceps:'Trizeps',glutes:'Glutes',quads:'Quadrizeps',hamstrings:'Hamstrings',core:'Core',calves:'Waden'}
+    }
+  }
+};
+function getAppLocale(){
+  const prefs=[...(navigator.languages||[]),navigator.language,'en'].filter(Boolean).map(v=>String(v).toLowerCase());
+  for(const pref of prefs){
+    if(APP_I18N[pref])return pref;
+    const base=pref.split('-')[0];
+    if(APP_I18N[base])return base;
+  }
+  return 'en';
+}
+const APP_LOCALE=getAppLocale();
+function t(key){
+  const walk=(src)=>key.split('.').reduce((acc,part)=>acc&&acc[part]!==undefined?acc[part]:undefined,src);
+  return walk(APP_I18N[APP_LOCALE])??walk(APP_I18N.en)??key;
+}
+function tf(key,vars={}){
+  return String(t(key)).replace(/\{(\w+)\}/g,(_,name)=>vars[name]??'');
+}
+function applyI18n(root=document){
+  document.documentElement.lang=APP_LOCALE;
+  root.querySelectorAll('[data-i18n]').forEach(el=>{const text=t(el.dataset.i18n);if(text)el.textContent=text;});
+}
+function trEnum(group,value){
+  if(value===undefined||value===null||value==='')return '—';
+  const text=t(`enum.${group}.${value}`);
+  return text===`enum.${group}.${value}`?cap(String(value)):text;
+}
+function goalLabel(goal){return trEnum('goal',goal);}
 const FEATURE_WALKTHROUGH=[
-  {target:'wtCheckin',title:'Check-In',copy:'Start here most often. This updates your calories, recovery mode, training focus, and the next version of your plan from your real data.'},
-  {target:'wtPlan',title:'Current Plan',copy:'This is your live split. It shows the exact sessions, set bank logic, frequency, and why the week is structured the way it is.'},
-  {target:'wtLog',title:'Log Session',copy:'Store your lifts after training so ADAPT can keep building suggestions from your actual performance, not guesses.'},
-  {target:'wtStrength',title:'Strength Progress',copy:'Track PRs, exercise load trends, volume, and bodyweight changes so progress is visible and measurable.'},
-  {target:'wtSauna',title:'Sauna Calculator',copy:'Use goal-specific sauna guidance for recovery, cardio, stress relief or longevity with protocol, timer, hydration and weekly planning.'},
-  {target:'wtHistory',title:'Check-In History',copy:'Look back at bodyweight, old check-ins and plan changes so you can spot trends across whole blocks, not just single days.'},
-  {target:'wtSettings',title:'Settings and Profile',copy:'Change goals, session length, focus muscles and other inputs whenever your priorities change.'}
+  {target:'wtCheckin',titleKey:'walkthrough.checkin.title',copyKey:'walkthrough.checkin.copy'},
+  {target:'wtPlan',titleKey:'walkthrough.plan.title',copyKey:'walkthrough.plan.copy'},
+  {target:'wtLog',titleKey:'walkthrough.log.title',copyKey:'walkthrough.log.copy'},
+  {target:'wtStrength',titleKey:'walkthrough.strength.title',copyKey:'walkthrough.strength.copy'},
+  {target:'wtSauna',titleKey:'walkthrough.sauna.title',copyKey:'walkthrough.sauna.copy'},
+  {target:'wtHistory',titleKey:'walkthrough.history.title',copyKey:'walkthrough.history.copy'},
+  {target:'wtSettings',titleKey:'walkthrough.settings.title',copyKey:'walkthrough.settings.copy'}
 ];
 let walkthroughState={active:false,index:0};
 function clearFeatureHighlight(){document.querySelectorAll('.walkthrough-highlight').forEach(el=>el.classList.remove('walkthrough-highlight'));}
+function focusWalkthroughTarget(target){
+  const scroller=document.querySelector('#home .home-scroll');
+  if(!scroller){target.scrollIntoView({behavior:'smooth',block:'start'});return;}
+  const scrollerRect=scroller.getBoundingClientRect();
+  const targetRect=target.getBoundingClientRect();
+  const desiredTop=Math.max(28,Math.min(scroller.clientHeight*0.2,110));
+  const nextTop=scroller.scrollTop+(targetRect.top-scrollerRect.top)-desiredTop;
+  const maxTop=Math.max(0,scroller.scrollHeight-scroller.clientHeight);
+  scroller.scrollTo({top:Math.max(0,Math.min(nextTop,maxTop)),behavior:'smooth'});
+}
 async function markWalkthroughSeen(){
   if(!window.userProfile||window.userProfile.walkthroughSeen!==false)return;
   window.userProfile={...window.userProfile,walkthroughSeen:true};
@@ -663,15 +878,17 @@ function renderFeatureWalkthroughStep(){
   const target=document.getElementById(step.target);
   if(!target){walkthroughState.index++;renderFeatureWalkthroughStep();return;}
   clearFeatureHighlight();
-  target.scrollIntoView({behavior:'smooth',block:'center'});
+  focusWalkthroughTarget(target);
+  document.getElementById('walkthroughStep').textContent=tf('walkthrough.step',{current:walkthroughState.index+1,total:FEATURE_WALKTHROUGH.length});
+  document.getElementById('walkthroughChip').textContent=t('walkthrough.spotlight');
+  document.getElementById('walkthroughTitle').textContent=t(step.titleKey);
+  document.getElementById('walkthroughCopy').textContent=t(step.copyKey);
+  document.getElementById('walkthroughSkipBtn').textContent=t('walkthrough.skip');
+  document.getElementById('walkthroughNextBtn').textContent=walkthroughState.index===FEATURE_WALKTHROUGH.length-1?t('walkthrough.finish'):t('walkthrough.next');
   setTimeout(()=>{
     if(!walkthroughState.active)return;
     target.classList.add('walkthrough-highlight');
-    document.getElementById('walkthroughStep').textContent=`Feature ${walkthroughState.index+1} of ${FEATURE_WALKTHROUGH.length}`;
-    document.getElementById('walkthroughTitle').textContent=step.title;
-    document.getElementById('walkthroughCopy').textContent=step.copy;
-    document.getElementById('walkthroughNextBtn').textContent=walkthroughState.index===FEATURE_WALKTHROUGH.length-1?'Finish':'Next';
-  },220);
+  },280);
 }
 function startFeatureWalkthrough(){
   if(walkthroughState.active||!document.getElementById('home')?.classList.contains('active'))return;
@@ -696,6 +913,7 @@ function nextFeatureWalkthrough(){
 window.startFeatureWalkthrough=startFeatureWalkthrough;
 window.closeFeatureWalkthrough=closeFeatureWalkthrough;
 window.nextFeatureWalkthrough=nextFeatureWalkthrough;
+applyI18n();
 
 // ── DATE UTILITIES ──
 function toMs(dateVal){if(!dateVal)return 0;if(dateVal?.toDate)return dateVal.toDate().getTime();if(dateVal?.seconds)return dateVal.seconds*1000;return new Date(dateVal).getTime();}
@@ -760,14 +978,14 @@ function obNext(s){const cur=document.getElementById('ob'+s),nxt=document.getEle
 window.obNext=obNext;
 function obBack(s){const cur=document.getElementById('ob'+s),prv=document.getElementById('ob'+(s-1));if(!prv)return;cur.classList.remove('active');prv.classList.add('active');obStep=s-1;document.getElementById('obBar').style.width=(obStep/OB_TOTAL*100)+'%';}
 window.obBack=obBack;
-async function finishOnboarding(){obAnswers.focusMuscles=selectedMuscles;obAnswers.restrictions=selectedRestricts;const profile={...obAnswers,setupComplete:true,walkthroughSeen:false,createdAt:new Date().toISOString()};if(obAnswers.notifications===true&&'Notification' in window)Notification.requestPermission();if(window.fbSaveProfile)await window.fbSaveProfile(profile);window.userProfile=profile;updateHomeUI();showToast('Welcome to ADAPT','Your personalised plan is ready.');goTo('home');}
+async function finishOnboarding(){obAnswers.focusMuscles=selectedMuscles;obAnswers.restrictions=selectedRestricts;const profile={...obAnswers,setupComplete:true,walkthroughSeen:false,createdAt:new Date().toISOString()};if(obAnswers.notifications===true&&'Notification' in window)Notification.requestPermission();if(window.fbSaveProfile)await window.fbSaveProfile(profile);window.userProfile=profile;updateHomeUI();showToast(t('toast.welcome.title'),t('toast.welcome.body'));goTo('home');}
 window.finishOnboarding=finishOnboarding;
 async function resetMyData(){
-  const ok=window.confirm('Delete your profile, check-ins, and logged sessions and start over?');
+  const ok=window.confirm(t('confirm.reset'));
   if(!ok)return;
   const cleared=window.fbResetUserData?await window.fbResetUserData():false;
-  if(!cleared){showToast('Reset failed','Your data could not be cleared right now.');return;}
-  window.userProfile=null;window.currentPlanData=null;window.currentCheckin=null;startOb();goTo('onboarding');showToast('Data reset','Your account is ready for a fresh start.');
+  if(!cleared){showToast(t('toast.resetFail.title'),t('toast.resetFail.body'));return;}
+  window.userProfile=null;window.currentPlanData=null;window.currentCheckin=null;startOb();goTo('onboarding');showToast(t('toast.resetDone.title'),t('toast.resetDone.body'));
 }
 window.resetMyData=resetMyData;
 
@@ -827,24 +1045,23 @@ function calcWeightTrend(checkins,currentWeight,dietGoal){
 }
 
 // ── GAMIFICATION ──
-function getLevel(n){if(n>=24)return{name:'Elite',color:'#ffd700'};if(n>=12)return{name:'Dedicated',color:'#ff69b4'};if(n>=5)return{name:'Consistent',color:'#00d4ff'};return{name:'Rookie',color:'#888'};}
+function getLevel(n){if(n>=24)return{name:t('level.elite'),color:'#ffd700'};if(n>=12)return{name:t('level.dedicated'),color:'#ff69b4'};if(n>=5)return{name:t('level.consistent'),color:'#00d4ff'};return{name:t('level.rookie'),color:'#888'};}
 function checkMilestones(n){const m=[{at:1,t:'First check-in complete',m:'The journey starts.'},{at:5,t:'Consistent rank unlocked',m:'5 check-ins in. You are building a real habit.'},{at:12,t:'Dedicated rank unlocked',m:'12 check-ins. That is elite behaviour.'},{at:24,t:'Elite rank unlocked',m:'24 check-ins. Top 1% of people who start.'}];for(const x of m){if(n===x.at){showToast(x.t,x.m,5000);break;}}}
 
 // ── HOME UI ──
 function updateHomeUI(){
   const p=window.userProfile;if(!p?.setupComplete)return;
-  const gl={vtaper:'V-Taper',hourglass:'Hourglass',strength:'Strength',general:'General Fitness'};
   const name=(window.currentUser?.displayName||'').split(' ')[0]||'there';
-  document.getElementById('heroGreeting').textContent='Hey '+name;
-  document.getElementById('heroSub').textContent=(gl[p.goal]||'Personalised')+' plan active';
+  document.getElementById('heroGreeting').textContent=tf('home.greeting',{name});
+  document.getElementById('heroSub').textContent=tf('home.goalSub',{goal:goalLabel(p.goal)||'ADAPT'});
   window.fbLoadCheckins&&window.fbLoadCheckins().then(async checkins=>{
     const level=getLevel(checkins.length);
-    document.getElementById('heroBadges').innerHTML=`<div class="badge g">${p.days}x/week</div><div class="badge b">${p.sessionLen}min</div><div class="badge">${cap(p.experience)}</div>${(p.focusMuscles||[]).map(m=>`<div class="badge p">${cap(m)}</div>`).join('')}<div class="level-badge" style="color:${level.color};border-color:${level.color}50;background:${level.color}10;">${level.name}</div>`;
+    document.getElementById('heroBadges').innerHTML=`<div class="badge g">${p.days}x/week</div><div class="badge b">${p.sessionLen}min</div><div class="badge">${trEnum('experience',p.experience)}</div>${(p.focusMuscles||[]).map(m=>`<div class="badge p">${trEnum('muscle',m)}</div>`).join('')}<div class="level-badge" style="color:${level.color};border-color:${level.color}50;background:${level.color}10;">${level.name}</div>`;
     const streak=calcStreak(checkins);
-    document.getElementById('streakWrap').innerHTML=streak.count>=2?`<div class="streak-card"><div class="streak-num">${streak.count}</div><div class="streak-info"><div class="streak-title">${streak.count}-week streak</div><div class="streak-sub">${streak.currentWeekDone?'You already locked in this week.':'One check-in this week keeps it alive.'}</div></div></div>`:'';
+    document.getElementById('streakWrap').innerHTML=streak.count>=2?`<div class="streak-card"><div class="streak-num">${streak.count}</div><div class="streak-info"><div class="streak-title">${tf('home.streak.title',{count:streak.count})}</div><div class="streak-sub">${streak.currentWeekDone?t('home.streak.done'):t('home.streak.pending')}</div></div></div>`:'';
     // Update check-in card with days since last
     const desc=document.getElementById('checkinCardDesc');
-    if(desc&&checkins.length){const d=daysAgo(toMs(checkins[0].createdAt));desc.textContent=d===0?'You checked in today — check in again anytime':d===1?'Last check-in: yesterday — update your plan?':'Last check-in: '+d+' days ago — update your plan now';}
+    if(desc&&checkins.length){const d=daysAgo(toMs(checkins[0].createdAt));desc.textContent=d===0?t('home.checkin.today'):d===1?t('home.checkin.yesterday'):tf('home.checkin.daysAgo',{days:d});}
     const block=calcBlock(checkins);
     renderPhaseCard(block);
     renderGWCard(checkins,p);
@@ -1648,7 +1865,7 @@ function drawWeightChart(checkins){const wt=checkins.filter(c=>c.weight).reverse
 function drawLineChart(data,cid,H,color){const canvas=document.getElementById(cid);if(!canvas)return;const W=canvas.offsetWidth||300;canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');const weights=data.map(d=>parseFloat(d.weight)||0),labels=data.map(d=>d.date||'');const minV=Math.min(...weights)*0.97,maxV=Math.max(...weights)*1.03,range=maxV-minV||1;const pad={l:38,r:10,t:10,b:22};const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;ctx.clearRect(0,0,W,H);ctx.strokeStyle='#2a2a2a';ctx.lineWidth=1;[0,0.5,1].forEach(f=>{const y=pad.t+cH*f;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();ctx.fillStyle='#555';ctx.font='9px sans-serif';ctx.fillText((maxV-range*f).toFixed(1),0,y+3);});const pts=weights.map((w,i)=>({x:pad.l+(i/(weights.length-1||1))*cW,y:pad.t+((maxV-w)/range)*cH}));ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();ctx.lineTo(pts[pts.length-1].x,pad.t+cH);ctx.lineTo(pts[0].x,pad.t+cH);ctx.closePath();const g=ctx.createLinearGradient(0,pad.t,0,pad.t+cH);g.addColorStop(0,color+'26');g.addColorStop(1,color+'00');ctx.fillStyle=g;ctx.fill();pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();});}
 
 // ── HISTORY ──
-async function loadHistory(){const body=document.getElementById('histBody');body.innerHTML='<div class="empty">Loading...</div>';const entries=window.fbLoadCheckins?await window.fbLoadCheckins():[];if(!entries.length){body.innerHTML='<div class="empty">No check-ins yet.</div>';return;}body.innerHTML=entries.map(e=>{const en=parseInt(e.energy)||5;const cls=en>=7?'e-hi':en>=4?'e-mid':'e-lo';const d=daysAgo(toMs(e.createdAt));const whenLbl=d===0?'Today':d===1?'Yesterday':d+' days ago';return`<div class="hist-badge" onclick="viewHist('${e.id}')"><div><div style="font-weight:500;font-size:14px;">${e.date||''} <span style="font-size:11px;color:#888;">· ${whenLbl}</span></div><div style="font-size:12px;color:#888;margin-top:2px;">${e.weight?e.weight+'kg · ':''} ${(e.lifts||'').replace(/_/g,' ')} · ${e.sleep||''}</div></div><div style="text-align:right;"><div class="e-val ${cls}">${e.energy}<span style="font-size:12px;font-weight:400;">/10</span></div><div style="font-size:11px;color:#888;">energy</div></div></div>`;}).join('');}
+async function loadHistory(){const body=document.getElementById('histBody');body.innerHTML=`<div class="empty">${t('history.loading')}</div>`;const entries=window.fbLoadCheckins?await window.fbLoadCheckins():[];if(!entries.length){body.innerHTML=`<div class="empty">${t('history.empty')}</div>`;return;}body.innerHTML=entries.map(e=>{const en=parseInt(e.energy)||5;const cls=en>=7?'e-hi':en>=4?'e-mid':'e-lo';const d=daysAgo(toMs(e.createdAt));const whenLbl=d===0?t('history.today'):d===1?t('history.yesterday'):tf('history.daysAgo',{days:d});return`<div class="hist-badge" onclick="viewHist('${e.id}')"><div><div style="font-weight:500;font-size:14px;">${e.date||''} <span style="font-size:11px;color:#888;">· ${whenLbl}</span></div><div style="font-size:12px;color:#888;margin-top:2px;">${e.weight?e.weight+'kg · ':''} ${(e.lifts||'').replace(/_/g,' ')} · ${e.sleep||''}</div></div><div style="text-align:right;"><div class="e-val ${cls}">${e.energy}<span style="font-size:12px;font-weight:400;">/10</span></div><div style="font-size:11px;color:#888;">${t('history.energy')}</div></div></div>`;}).join('');}
 window.viewHist=async function(id){const entries=window.fbLoadCheckins?await window.fbLoadCheckins():[];const e=entries.find(x=>x.id===id);if(!e)return;window.currentCheckin=e;const plan=buildPlan(window.userProfile,e,[],[]);window.currentPlanData=plan;renderPlan(plan);goTo('result');};
 
 function viewCurrentPlan(){
@@ -1659,7 +1876,7 @@ function viewCurrentPlan(){
 }
 window.viewCurrentPlan=viewCurrentPlan;
 
-function renderSettings(){const p=window.userProfile||{};document.getElementById('settingsBody').innerHTML=`<div style="margin-bottom:16px;"><div class="set-row"><div class="set-label">Goal</div><div class="set-val">${cap(p.goal||'—')}</div></div><div class="set-row"><div class="set-label">Sex</div><div class="set-val">${cap(p.sex||'—')}</div></div><div class="set-row"><div class="set-label">Age</div><div class="set-val">${p.age||'—'}</div></div><div class="set-row"><div class="set-label">Experience</div><div class="set-val">${cap(p.experience||'—')}</div></div><div class="set-row"><div class="set-label">Days/week</div><div class="set-val">${p.days||'—'}</div></div><div class="set-row"><div class="set-label">Session length</div><div class="set-val">${p.sessionLen||'—'} min</div></div><div class="set-row"><div class="set-label">Focus muscles</div><div class="set-val">${(p.focusMuscles||[]).map(cap).join(' & ')||'—'}</div></div><div class="set-row"><div class="set-label">Equipment</div><div class="set-val">${cap(p.equipment||'—')}</div></div><div class="set-row"><div class="set-label">Diet goal</div><div class="set-val">${cap(p.dietGoal||'—')}</div></div><div class="set-row"><div class="set-label">Goal weight</div><div class="set-val">${p.goalWeight?p.goalWeight+'kg':'—'}</div></div></div><p style="font-size:12px;color:#888;margin-bottom:16px;">Tap Redo Onboarding to update any setting.</p>`;}
+function renderSettings(){const p=window.userProfile||{};document.getElementById('settingsBody').innerHTML=`<div style="margin-bottom:16px;"><div class="set-row"><div class="set-label">${t('settings.label.goal')}</div><div class="set-val">${goalLabel(p.goal)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.sex')}</div><div class="set-val">${trEnum('sex',p.sex)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.age')}</div><div class="set-val">${p.age||'—'}</div></div><div class="set-row"><div class="set-label">${t('settings.label.experience')}</div><div class="set-val">${trEnum('experience',p.experience)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.days')}</div><div class="set-val">${p.days||'—'}</div></div><div class="set-row"><div class="set-label">${t('settings.label.session')}</div><div class="set-val">${p.sessionLen||'—'} min</div></div><div class="set-row"><div class="set-label">${t('settings.label.focus')}</div><div class="set-val">${(p.focusMuscles||[]).map(m=>trEnum('muscle',m)).join(' & ')||'—'}</div></div><div class="set-row"><div class="set-label">${t('settings.label.equipment')}</div><div class="set-val">${trEnum('equipment',p.equipment)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.diet')}</div><div class="set-val">${trEnum('dietGoal',p.dietGoal)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.goalWeight')}</div><div class="set-val">${p.goalWeight?p.goalWeight+'kg':'—'}</div></div></div><p style="font-size:12px;color:#888;margin-bottom:16px;">${t('settings.helper')}</p>`;}
 
 function normalizeSchedule(days,count,fallback){if(Array.isArray(days)){const cleaned=[...new Set(days.filter(d=>WEEKDAYS.includes(d)))].sort((a,b)=>WEEKDAYS.indexOf(a)-WEEKDAYS.indexOf(b));if(cleaned.length===count)return cleaned;}return fallback.slice();}
 function getSaunaTargetCount(){return saunaState.goal==='recovery'?2:saunaState.goal==='cardio'?4:3;}
