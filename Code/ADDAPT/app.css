@@ -117,6 +117,9 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 .card-arrow{color:#888;font-size:15px;}
 .card.acc{border-color:rgba(200,255,0,0.2);background:rgba(200,255,0,0.03);}
 .card.acc .card-title{color:#c8ff00;}
+.card.emom{border-color:rgba(0,212,255,0.28);background:linear-gradient(135deg,rgba(0,212,255,0.08),rgba(20,54,94,0.14));}
+.card.emom .card-title{color:#7de9ff;}
+.card.emom .card-desc{color:#b7d7df;}
 .streak-card{background:rgba(200,255,0,0.04);border:1px solid rgba(200,255,0,0.15);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
 .streak-num{font-family:'Syne',-apple-system,sans-serif;font-weight:800;font-size:32px;color:#c8ff00;}
 .streak-info .streak-title{font-weight:600;font-size:14px;}
@@ -263,7 +266,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 .w-timer-title{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#888;}
 .w-timer-clock{font-family:'Syne',-apple-system,sans-serif;font-size:30px;font-weight:800;color:#c8ff00;letter-spacing:0.02em;}
 .w-timer-sub{font-size:12px;color:#888;margin-top:4px;min-height:18px;}
-.w-timer-actions{display:flex;gap:8px;margin-top:10px;}
+.w-timer-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
 .w-timer-actions .btn{padding:10px 12px;font-size:11px;}
 .w-timer-meta{display:flex;gap:8px;align-items:center;margin-top:10px;}
 .w-timer-select{flex:1;background:#111;border:1px solid #2a2a2a;color:#f2f2f2;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;}

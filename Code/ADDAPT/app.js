@@ -49,8 +49,9 @@ window.fbResetUserData=async()=>{const u=window.currentUser;if(!u)return false;s
 window.currentUser=null;window.userProfile=null;window.currentPlanData=null;window.currentCheckin=null;
 let obAnswers={},selectedMuscles=[],selectedRestricts=['none'],stepInterval=null,currentLogDay=null,swapTargetEx=null,calOverrideActive=false;
 let lastTrainingMove=null;
+let pendingLogMode='normal';
 const APP_STATE={
-  workoutTimer:{running:false,interval:null,seconds:0,lastMinute:-1,startEpoch:null,activeExercise:'',activeSet:1,restSeconds:0,restInterval:null,cues:['Power breathing and setup check.','Brace hard and own your first rep.','Control tempo and own every eccentric.','Add intent: move the bar faster on the concentric.','Stay technical. Leave ego out of the set.','Hydrate and reset posture before next set.']},
+  workoutTimer:{running:false,interval:null,seconds:0,lastMinute:-1,startEpoch:null,activeExercise:'',activeSet:1,restSeconds:0,restInterval:null,emomEnabled:false,emomTargetMinutes:0,cues:['Power breathing and setup check.','Brace hard and own your first rep.','Control tempo and own every eccentric.','Add intent: move the bar faster on the concentric.','Stay technical. Leave ego out of the set.','Hydrate and reset posture before next set.']},
   gamification:{xp:0,level:1,nextXp:100},
 };
 const WORKOUT_TIMER_STORAGE_KEY='addapt_workout_timer_v3';
@@ -117,7 +118,12 @@ function renderWorkoutTimer(){
   const restClock=document.getElementById('wRestClock');
   if(clock)clock.textContent=formatClock(wt.seconds);
   if(tick)tick.textContent='M'+String(Math.floor(wt.seconds/60)).padStart(2,'0');
-  if(cue)cue.textContent=wt.seconds===0?'Start your workout timer to trigger a cue every minute.':getMinuteCue(Math.max(0,Math.floor((wt.seconds-1)/60)));
+  if(cue){
+    if(wt.emomEnabled){
+      const currentRound=Math.min(Math.max(1,Math.floor(wt.seconds/60)+1),Math.max(1,wt.emomTargetMinutes));
+      cue.textContent=`EMOM live - round ${currentRound}/${wt.emomTargetMinutes}`;
+    }else cue.textContent=wt.seconds===0?'Start your workout timer to trigger a cue every minute.':getMinuteCue(Math.max(0,Math.floor((wt.seconds-1)/60)));
+  }
   if(btn)btn.textContent=wt.running?'Pause':'Start';
   if(setEl)setEl.textContent='Set '+wt.activeSet;
   if(restPill)restPill.style.display=wt.restSeconds>0?'inline-flex':'none';
@@ -138,9 +144,14 @@ function setWorkoutTimerActive(active){
     const minute=Math.floor(wt.seconds/60);
     if(wt.seconds>0&&wt.seconds%60===0&&minute!==wt.lastMinute){
       wt.lastMinute=minute;
-      const cue=getMinuteCue(minute-1);
+      const cue=wt.emomEnabled?`Round ${Math.min(minute+1,wt.emomTargetMinutes)} starts now.`:getMinuteCue(minute-1);
+      if(wt.emomEnabled)wt.activeSet=Math.min(Math.max(1,minute+1),Math.max(1,wt.emomTargetMinutes));
       notifyMinuteCue(minute,cue);
       updateMediaSession(minute,cue);
+      if(wt.emomEnabled&&minute>=wt.emomTargetMinutes){
+        setWorkoutTimerActive(false);
+        showToast('EMOM complete',`${wt.emomTargetMinutes} rounds done.`);
+      }
     }
     renderWorkoutTimer();
   },1000);
@@ -153,11 +164,24 @@ function setWorkoutExerciseFromSelect(){const sel=document.getElementById('wTime
 window.setWorkoutExerciseFromSelect=setWorkoutExerciseFromSelect;
 function bumpWorkoutSet(){APP_STATE.workoutTimer.activeSet++;renderWorkoutTimer();updateMediaSession(Math.floor(APP_STATE.workoutTimer.seconds/60),null);}
 window.bumpWorkoutSet=bumpWorkoutSet;
+function startEmomTimer(minutes=12){
+  const wt=APP_STATE.workoutTimer;
+  wt.emomEnabled=true;
+  wt.emomTargetMinutes=Math.max(4,Math.min(30,parseInt(minutes,10)||12));
+  wt.activeSet=1;
+  wt.lastMinute=-1;
+  if(!wt.running&&wt.seconds===0)wt.startEpoch=Date.now();
+  setWorkoutTimerActive(true);
+  showToast('EMOM started',`${wt.emomTargetMinutes} rounds. One minute per round.`);
+}
+window.startEmomTimer=startEmomTimer;
 function stopRestTimer(resetDisplay){const wt=APP_STATE.workoutTimer;clearInterval(wt.restInterval);wt.restInterval=null;if(resetDisplay)wt.restSeconds=0;renderWorkoutTimer();}
 function startRestTimer(seconds=90){const wt=APP_STATE.workoutTimer;stopRestTimer(false);wt.restSeconds=Math.max(1,parseInt(seconds,10)||90);renderWorkoutTimer();updateMediaSession(Math.floor(wt.seconds/60),null);wt.restInterval=setInterval(()=>{wt.restSeconds=Math.max(0,wt.restSeconds-1);renderWorkoutTimer();updateMediaSession(Math.floor(wt.seconds/60),null);if(wt.restSeconds===0){stopRestTimer(true);notifyMinuteCue(Math.floor(wt.seconds/60),'Rest complete - start next set.');showToast('Rest complete','Start your next set.');}},1000);}
 window.startRestTimer=startRestTimer;
-function resetWorkoutTimer(){const wt=APP_STATE.workoutTimer;clearInterval(wt.interval);stopRestTimer(true);wt.running=false;wt.startEpoch=null;wt.seconds=0;wt.lastMinute=-1;wt.activeSet=1;renderWorkoutTimer();updateMediaSession(0,null);const sub=document.getElementById('wTimerSub');if(sub)sub.textContent='Lockscreen card ready when timer starts.';}
+function resetWorkoutTimer(){const wt=APP_STATE.workoutTimer;clearInterval(wt.interval);stopRestTimer(true);wt.running=false;wt.startEpoch=null;wt.seconds=0;wt.lastMinute=-1;wt.activeSet=1;wt.emomEnabled=false;wt.emomTargetMinutes=0;renderWorkoutTimer();updateMediaSession(0,null);const sub=document.getElementById('wTimerSub');if(sub)sub.textContent='Lockscreen card ready when timer starts.';}
 window.resetWorkoutTimer=resetWorkoutTimer;
+function launchEmomFromHome(){pendingLogMode='emom';goTo('logselect');renderLogSelect();}
+window.launchEmomFromHome=launchEmomFromHome;
 loadWorkoutTimerState();
 if(APP_STATE.workoutTimer.running){setWorkoutTimerActive(true);}else{renderWorkoutTimer();}
 const APP_I18N={
@@ -192,6 +216,7 @@ const APP_I18N={
         checkin:{title:'Check-In',desc:'Log energy, lifts and diet — get your updated plan instantly'},
         plan:{title:'Current Plan',desc:'View your personalised training and diet'},
         log:{title:'Log Session',desc:'Record today\'s lifts and track strength progress'},
+        emom:{title:'EMOM',desc:'Quick minute-by-minute rounds with auto set tracking'},
         strength:{title:'Strength Progress',desc:'Exercise charts, PRs and volume'},
         sauna:{title:'Sauna Calculator',badge:'Hot New',desc:'Heat protocol, timer, hydration and weekly planning for recovery work'},
         history:{title:'Check-In History',desc:'Weight chart and all past check-ins'},
@@ -279,6 +304,7 @@ const APP_I18N={
         checkin:{title:'Check-In',desc:'Energie, Lifts und Ernaehrung eintragen — dein Plan wird sofort angepasst'},
         plan:{title:'Aktueller Plan',desc:'Deinen personalisierten Trainings- und Ernaehrungsplan ansehen'},
         log:{title:'Session loggen',desc:'Heutige Lifts speichern und Kraftfortschritt verfolgen'},
+        emom:{title:'EMOM',desc:'Schnelle Minutentakte mit automatischer Satzzaehlung'},
         strength:{title:'Kraftfortschritt',desc:'Uebungs-Charts, PRs und Volumen'},
         sauna:{title:'Sauna Calculator',badge:'Neu',desc:'Hitzeprotokoll, Timer, Hydration und Wochenplanung fuer deine Regeneration'},
         history:{title:'Check-In-Verlauf',desc:'Gewichtskurve und alle bisherigen Check-ins'},
@@ -1334,7 +1360,7 @@ function swapMeal(mealIdx){
 window.swapMeal=swapMeal;
 
 // ── LOG SESSION ──
-function renderLogSelect(){const plan=window.currentPlanData,body=document.getElementById('logDayList');if(!plan){body.innerHTML='<div class="empty">Complete a check-in first to generate your plan.</div>';return;}body.innerHTML=plan.splitDays.filter(d=>d.tag!=='rest'&&d.tag!=='active').map((d,i)=>`<div class="card" onclick="openLogDay(${i})"><div class="card-top"><div class="day-tag t-${d.tag}" style="font-size:10px;">${d.tag.toUpperCase()}</div><div class="card-arrow">→</div></div><div class="card-title">${d.day} — ${d.name}</div><div class="card-desc">${d.exercises.filter(e=>e.scheme!=='—').length} exercises</div></div>`).join('');}
+function renderLogSelect(){const plan=window.currentPlanData,body=document.getElementById('logDayList'),hint=document.getElementById('logModeHint');if(hint)hint.textContent=pendingLogMode==='emom'?'EMOM mode is armed: pick today\'s session to auto-start a 12-minute EMOM timer.':'Which session did you train today?';if(!plan){body.innerHTML='<div class="empty">Complete a check-in first to generate your plan.</div>';return;}body.innerHTML=plan.splitDays.filter(d=>d.tag!=='rest'&&d.tag!=='active').map((d,i)=>`<div class="card" onclick="openLogDay(${i})"><div class="card-top"><div class="day-tag t-${d.tag}" style="font-size:10px;">${d.tag.toUpperCase()}</div><div class="card-arrow">→</div></div><div class="card-title">${d.day} — ${d.name}</div><div class="card-desc">${d.exercises.filter(e=>e.scheme!=='—').length} exercises</div></div>`).join('');}
 let logDayIndex=null;
 async function openLogDay(idx){
   const plan=window.currentPlanData;
@@ -1362,11 +1388,26 @@ async function openLogDay(idx){
     const setsHtml=Array.from({length:setCount},(_,si)=>`<div class="log-set-row"><div class="log-set-num">Set ${si+1}</div><input type="number" class="log-in" placeholder="${lastWt||'kg'}" step="0.5" id="w_${safeName}_${si}"><span class="log-lbl">kg ×</span><input type="number" class="log-in" placeholder="reps" id="r_${safeName}_${si}"><span class="log-lbl">reps</span></div>`).join('');
     return`<div class="log-ex-card"><div class="log-ex-hdr"><div class="log-ex-name">${ex.name}</div><div class="log-ex-info">${ex.scheme}${lastEx?` · Last: ${lastEx.maxWeight}kg × ${lastEx.maxReps}`:''}</div></div><div class="log-sets">${setsHtml}</div></div>`;
   }).join('');
+  wireLogInputHelpers();
+  if(pendingLogMode==='emom'){startEmomTimer(12);pendingLogMode='normal';}
   renderWorkoutTimer();
   if('mediaSession' in navigator)updateMediaSession(Math.floor(APP_STATE.workoutTimer.seconds/60),day.name);
   goTo('logsession');
 }
 window.openLogDay=openLogDay;
+function wireLogInputHelpers(){
+  const inputs=[...document.querySelectorAll('#logExWrap .log-in')];
+  inputs.forEach((input,idx)=>{
+    input.addEventListener('focus',()=>input.select(),{once:true});
+    input.addEventListener('keydown',e=>{
+      if(e.key!=='Enter')return;
+      e.preventDefault();
+      const next=inputs[idx+1];
+      if(next)next.focus();
+      else submitSessionLog();
+    });
+  });
+}
 async function submitSessionLog(){if(!currentLogDay){showToast('Error','No session selected.');return;}const exList=currentLogDay.exercises.filter(e=>e.scheme!=='—'&&e.muscle);const exercises=exList.map(ex=>{const setCount=parseInt((ex.scheme||'').match(/\d+/)?.[0])||3;const safeName=ex.name.replace(/[^a-zA-Z0-9]/g,'_');const sets=Array.from({length:setCount},(_,si)=>{const wEl=document.getElementById(`w_${safeName}_${si}`);const rEl=document.getElementById(`r_${safeName}_${si}`);if(!wEl?.value||!rEl?.value)return null;return{weight:parseFloat(wEl.value),reps:parseInt(rEl.value)};}).filter(Boolean);if(!sets.length)return null;const maxWeight=Math.max(...sets.map(s=>s.weight));const maxSet=sets.find(s=>s.weight===maxWeight);return{name:ex.name,muscle:ex.muscle,sets,maxWeight,maxReps:maxSet?.reps||0,targetReps:parseInt((ex.scheme||'').split('–')[1])||10};}).filter(Boolean);if(!exercises.length){showToast('Nothing logged','Enter at least one weight to save.');return;}const prs=exercises.filter(e=>{const last=window.currentPlanData?.sIdx[e.name];return last?.maxWeight&&e.maxWeight>parseFloat(last.maxWeight);});const isoDate=new Date().toISOString().split('T')[0];await window.fbSaveSession({dayName:currentLogDay.name,day:currentLogDay.day,isoDate,date:new Date().toLocaleDateString('en-GB'),exercises,elapsedSeconds:APP_STATE.workoutTimer.seconds});if(prs.length)showToast('New PRs!',prs.map(e=>`${e.name}: ${e.maxWeight}kg`).join(', '),5000);else showToast('Session saved','Great work. Keep it consistent.');resetWorkoutTimer();goTo('home');}
 window.submitSessionLog=submitSessionLog;
 
