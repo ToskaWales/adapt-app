@@ -104,6 +104,7 @@ window.scheduleNotifications = scheduleNotifications;
 document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleNotifications(); });
 window.addEventListener('load', scheduleNotifications);
 const WORKOUT_TIMER_STORAGE_KEY='addapt_workout_timer_v3';
+const MEAL_LOG_STORAGE_KEY='addapt_meal_log_v1';
 const OB_TOTAL=12;
 const WEEKDAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
@@ -411,6 +412,8 @@ window.renderProgressPhotoGallery = function() {
 const origGoTo = window.goTo;
 window.goTo = function(id) {
   origGoTo(id);
+  updateAppNavState(id);
+  if(['home','trainingHub','nutritionHub','statsHub','sauna'].includes(id))refreshPrimarySurfaces();
   if (id === 'strength') {
     setTimeout(window.renderProgressPhotoGallery, 100);
   }
@@ -1156,28 +1159,166 @@ function calcGamification(checkins,sessions){
 }
 
 // ── HOME UI ──
-function updateHomeUI(){
-  const p=window.userProfile;if(!p?.setupComplete)return;
-  const name=(window.currentUser?.displayName||'').split(' ')[0]||'there';
-  document.getElementById('heroGreeting').textContent=tf('home.greeting',{name});
-  document.getElementById('heroSub').textContent=tf('home.goalSub',{goal:goalLabel(p.goal)||'ADDAPT'});
-  window.fbLoadCheckins&&window.fbLoadCheckins().then(async checkins=>{
-    const sessions=window.fbLoadSessions?await window.fbLoadSessions():[];
-    const level=getLevel(checkins.length);
-    document.getElementById('heroBadges').innerHTML=`<div class="badge g">${p.days}x/week</div><div class="badge b">${p.sessionLen}min</div><div class="badge">${trEnum('experience',p.experience)}</div>${(p.focusMuscles||[]).map(m=>`<div class="badge p">${trEnum('muscle',m)}</div>`).join('')}<div class="level-badge" style="color:${level.color};border-color:${level.color}50;background:${level.color}10;">${level.name}</div>`;
-    const streak=calcStreak(checkins);
-    const game=calcGamification(checkins,sessions);
-    APP_STATE.gamification={xp:game.xp,level:game.level,nextXp:game.nextXp};
-    document.getElementById('streakWrap').innerHTML=(streak.count>=2?`<div class="streak-card"><div class="streak-num">${streak.count}</div><div class="streak-info"><div class="streak-title">${tf('home.streak.title',{count:streak.count})}</div><div class="streak-sub">${streak.currentWeekDone?t('home.streak.done'):t('home.streak.pending')}</div></div></div>`:'')+`<div class="streak-card" style="border-color:rgba(0,212,255,0.2);background:rgba(0,212,255,0.05);"><div class="streak-num" style="color:#00d4ff;">Lv ${game.level}</div><div class="streak-info"><div class="streak-title">${game.xp} XP earned</div><div class="streak-sub">${game.sessionCount} sessions logged · ${game.prCount} tracked top sets · Next level at ${game.nextXp} XP</div></div></div>`;
-    // Update check-in card with days since last
-    const desc=document.getElementById('checkinCardDesc');
-    if(desc&&checkins.length){const d=daysAgo(toMs(checkins[0].createdAt));desc.textContent=d===0?t('home.checkin.today'):d===1?t('home.checkin.yesterday'):tf('home.checkin.daysAgo',{days:d});}
-    const block=calcBlock(checkins);
-    renderPhaseCard(block);
-    renderGWCard(checkins,p);
-    checkMilestones(checkins.length);
-  });
+function getDefaultDashboardCheckin(){return{energy:7,stress:3,sleep:'7-8hrs',lifts:'same',diet:'on_target',weight:null,notes:'',isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB'),calOverride:null};}
+function getTodayWeekday(){return WEEKDAYS[(new Date().getDay()+6)%7];}
+function getDashboardPlan(checkins,sessions){
+  if(window.currentPlanData)return window.currentPlanData;
+  const ci=window.currentCheckin||getDefaultDashboardCheckin();
+  window.currentCheckin=ci;
+  window.currentPlanData=buildPlan(window.userProfile,ci,sessions,checkins);
+  return window.currentPlanData;
 }
+function getPrimarySession(plan){
+  const today=getTodayWeekday();
+  const todaySession=plan?.splitDays?.find(day=>day.day===today);
+  if(todaySession&&todaySession.tag!=='rest'&&todaySession.tag!=='active')return{session:todaySession,label:'Today'};
+  const nextSession=plan?.splitDays?.find(day=>day.tag!=='rest'&&day.tag!=='active');
+  return{session:nextSession||todaySession,label:todaySession?'Today':'Next up'};
+}
+function updateAppNavState(id){
+  const nav=document.getElementById('appNav');
+  if(!nav)return;
+  const navTargets=['home','trainingHub','nutritionHub','sauna','statsHub'];
+  nav.classList.toggle('hidden',!navTargets.includes(id));
+  nav.querySelectorAll('.app-nav-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.target===id));
+}
+function getMealLogState(){
+  try{return JSON.parse(localStorage.getItem(MEAL_LOG_STORAGE_KEY)||'{}');}catch{return{};}
+}
+function saveMealLogState(state){localStorage.setItem(MEAL_LOG_STORAGE_KEY,JSON.stringify(state));}
+function toggleMealSlotLog(index){
+  const state=getMealLogState();
+  const key=new Date().toISOString().split('T')[0];
+  state[key]=state[key]||{};
+  state[key][index]=!state[key][index];
+  saveMealLogState(state);
+  refreshPrimarySurfaces();
+}
+window.toggleMealSlotLog=toggleMealSlotLog;
+function drawLineChartIntoSeries(series,canvasId,emptyId,color,height=120){
+  const canvas=document.getElementById(canvasId);
+  const empty=document.getElementById(emptyId);
+  if(!canvas)return;
+  if(!series||series.length<2){
+    canvas.style.display='none';
+    if(empty)empty.style.display='block';
+    return;
+  }
+  if(empty)empty.style.display='none';
+  canvas.style.display='block';
+  drawLineChart(series.map(item=>({weight:item.value,date:item.label})) ,canvasId,height,color);
+}
+function renderVolumeInto(sessions,targetId){
+  const muscles={chest:0,back:0,shoulders:0,biceps:0,triceps:0,glutes:0,quads:0,hamstrings:0,core:0};
+  const landmarks={chest:[10,18],back:[12,22],shoulders:[10,20],biceps:[6,14],triceps:[6,14],glutes:[12,24],quads:[10,20],hamstrings:[10,20],core:[6,14]};
+  sessions.slice(0,16).forEach(sess=>{(sess.exercises||[]).forEach(ex=>{if(muscles.hasOwnProperty(ex.muscle))muscles[ex.muscle]+=(ex.sets?.length||3);});});
+  const max=Math.max(...Object.values(muscles),1);
+  const rows=Object.entries(muscles).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([m,v])=>{
+    const [lo,hi]=landmarks[m]||[8,16];
+    const status=v<lo?'<span style="color:#ff4d00;">Below</span>':v>hi?'<span style="color:#ffaa00;">High</span>':'<span style="color:#c8ff00;">On target</span>';
+    return`<div class="vol-bar-wrap"><div class="vol-bar-label"><span>${cap(m)}</span><span>${v} sets · ${status}</span></div><div class="vol-bar-track"><div class="vol-bar-fill" style="width:${Math.round(v/max*100)}%;"></div></div><div style="font-size:10px;color:#888;margin-top:4px;">Landmark: ${lo}-${hi} sets</div></div>`;
+  }).join('')||'<div class="chart-empty">Log more sessions to see set volume.</div>';
+  const target=document.getElementById(targetId);
+  if(target)target.innerHTML=rows;
+}
+function drawWeightChartInto(checkins,canvasId,emptyId){
+  const series=checkins.filter(c=>c.weight).reverse().slice(-12).map(item=>({value:parseFloat(item.weight),label:item.date||''}));
+  drawLineChartIntoSeries(series,canvasId,emptyId,'#c8ff00',120);
+}
+function buildGoalProgressMarkup(checkins,p,game){
+  const gw=p.goalWeight;
+  const currentWeight=checkins.find(c=>c.weight)?.weight||p.weight;
+  if(!gw||!currentWeight)return `<div class="stats-mini"><strong>Lv ${game.level}</strong><span>${game.xp} XP earned · add weight logs to unlock goal tracking.</span></div>`;
+  const start=p.weight||currentWeight;
+  const total=Math.abs(gw-start)||0.001;
+  const progress=Math.abs(parseFloat(currentWeight)-start);
+  const pct=Math.min(100,Math.round(progress/total*100));
+  return `<div class="stats-mini"><strong>${pct}%</strong><span>${currentWeight}kg now · ${gw}kg target · Lv ${game.level}</span></div>`;
+}
+function renderHomeDashboard({p,checkins,sessions,plan,streak,game}){
+  const heroBadges=document.getElementById('heroBadges');
+  const streakMini=document.getElementById('homeStreakMini');
+  const protocolCard=document.getElementById('homeProtocolCard');
+  const nutritionCard=document.getElementById('homeNutritionCard');
+  const trendCard=document.getElementById('homeTrendCard');
+  const actionStrip=document.getElementById('homeActionStrip');
+  if(heroBadges){
+    const level=getLevel(checkins.length);
+    heroBadges.innerHTML=`<div class="badge g">${p.days}x/week</div><div class="badge b">${p.sessionLen}min</div><div class="badge">${trEnum('experience',p.experience)}</div>${(p.focusMuscles||[]).map(m=>`<div class="badge p">${trEnum('muscle',m)}</div>`).join('')}<div class="level-badge" style="color:${level.color};border-color:${level.color}50;background:${level.color}10;">${level.name}</div>`;
+  }
+  if(streakMini)streakMini.textContent=`${Math.max(0,streak.count)}w`;
+  const primary=getPrimarySession(plan);
+  const todaySession=primary.session;
+  const exerciseCount=todaySession?.exercises?.filter(ex=>ex.scheme!=='—').length||0;
+  if(protocolCard){
+    protocolCard.innerHTML=`<div class="section-kicker">Daily System</div><div class="section-title">${todaySession?.name||'Plan loading'}</div><div class="section-copy">${todaySession?.tag==='rest'?'Low-friction recovery day. Keep moving, eat to plan, and use the sauna protocol if recovery is the priority.':`${primary.label} you have ${exerciseCount} exercise${exerciseCount===1?'':'s'} lined up. Recovery and diet are shown underneath so the day stays connected.`}</div><div class="protocol-strip"><div class="protocol-row"><div><div class="protocol-label">Training</div><div class="protocol-value">${todaySession?.tag==='rest'?'Rest / active recovery':todaySession?.day+' · '+todaySession?.name}</div></div><div class="day-tag t-${todaySession?.tag||'r'}">${(todaySession?.tag||'rest').toUpperCase()}</div></div><div class="protocol-row"><div><div class="protocol-label">Recovery</div><div class="protocol-value">${saunaState.goal==='recovery'?'Sauna recovery block recommended':'Sauna '+cap(saunaState.goal)+' protocol ready'}</div></div><button class="btn btn-outline btn-sm" id="wtSauna" onclick="goTo('sauna')">Open</button></div><div class="protocol-row"><div><div class="protocol-label">Nutrition</div><div class="protocol-value">${plan.analysis.kcal} kcal · ${plan.analysis.protein}g protein</div></div><button class="btn btn-outline btn-sm" id="wtPlan" onclick="viewCurrentPlan()">Plan</button></div></div>`;
+  }
+  if(nutritionCard){
+    nutritionCard.innerHTML=`<div class="section-kicker">Diet Overview</div><div class="metric-big">${plan.analysis.kcal}</div><div class="metric-sub">Daily target with ${plan.meals.length} meal slot${plan.meals.length===1?'':'s'} · ${plan.analysis.protein}g protein · ${plan.analysis.carbs}g carbs</div><div class="tiny-stat-row"><div class="tiny-stat">Protein ${plan.analysis.protein}g</div><div class="tiny-stat">Carbs ${plan.analysis.carbs}g</div><div class="tiny-stat">Fats ${plan.analysis.fat}g</div></div>`;
+  }
+  if(trendCard){
+    trendCard.innerHTML=`<div class="section-kicker">Logged Trend</div><div class="chart-wrap" style="padding:0;border:none;background:none;margin:0;"><canvas id="homeCheckinChart" style="width:100%;height:110px;"></canvas><div id="homeCheckinEmpty" class="chart-empty" style="display:none;">Add check-ins to unlock your trend line.</div></div><div class="tiny-stat-row"><div class="tiny-stat">Gym ${sessions.filter(s=>s.dayName!=='Custom EMOM').length}</div><div class="tiny-stat">EMOM ${sessions.filter(s=>String(s.dayName||'').includes('EMOM')).length}</div><div class="tiny-stat">Sauna ${saunaState.sessions}</div></div>`;
+    const series=(checkins.filter(c=>c.weight).reverse().slice(-8).map(item=>({value:parseFloat(item.weight),label:item.date||''})));
+    if(series.length>=2)drawLineChartIntoSeries(series,'homeCheckinChart','homeCheckinEmpty','#00d4ff',110);else drawLineChartIntoSeries(checkins.slice(-8).map(item=>({value:parseFloat(item.energy)||0,label:item.date||''})),'homeCheckinChart','homeCheckinEmpty','#00d4ff',110);
+  }
+  if(actionStrip){
+    actionStrip.innerHTML=`<div class="section-kicker">Quick Actions</div><div class="home-actions"><button class="mini-action-card" id="wtCheckin" onclick="goTo('checkin')"><h4>Check-In</h4><p>${checkins.length?`Last update ${daysAgo(toMs(checkins[0].createdAt))}d ago`:'Run your first check-in to generate the plan.'}</p></button><button class="mini-action-card" id="wtLog" onclick="goTo('logselect')"><h4>Log Training</h4><p>Save gym work and keep the plan adaptive.</p></button><button class="mini-action-card" id="wtEmom" onclick="goToEmomBuilder()"><h4>Log EMOM</h4><p>Fast builder with saved intervals and cues.</p></button><button class="mini-action-card" id="wtStrength" onclick="goTo('statsHub')"><h4>Statistics</h4><p>Strength, goal progress, and recovery metrics.</p></button></div>`;
+  }
+}
+function renderTrainingHub({plan}){
+  const weekWrap=document.getElementById('trainingWeekOverview');
+  const todayWrap=document.getElementById('trainingTodayCard');
+  if(!weekWrap||!todayWrap||!plan)return;
+  const today=getTodayWeekday();
+  weekWrap.innerHTML=`<div class="week-chip-row">${plan.splitDays.map(day=>`<div class="week-chip ${day.day===today?'today':''} ${day.tag==='rest'||day.tag==='active'?'rest':''}"><div class="week-chip-day">${day.day}</div><div class="week-chip-name">${day.name}</div><div class="week-chip-tag">${day.tag==='rest'?'Recovery':day.tag==='active'?'Active':(day.exercises||[]).filter(ex=>ex.scheme!=='—').length+' lifts'}</div></div>`).join('')}</div>`;
+  const primary=getPrimarySession(plan).session;
+  const list=(primary?.exercises||[]).filter(ex=>ex.scheme!=='—').slice(0,8);
+  todayWrap.innerHTML=`<div class="session-feature"><div class="session-feature-head"><div><div class="section-kicker">Actual Session</div><div class="session-feature-title">${primary?.day||today} · ${primary?.name||'Training day'}</div><div class="session-feature-copy">${primary?.note||'Use this as the anchor session for today. Open the full plan if you want the full rationale and diet/recovery tabs.'}</div></div><button class="btn btn-outline btn-sm" onclick="goTo('result')">Open plan</button></div><div class="session-ex-list">${list.length?list.map(ex=>`<div class="session-ex-item"><div><div class="session-ex-name">${ex.name}</div><div class="session-ex-meta">${ex.muscle?cap(ex.muscle):'Accessory'}${ex.isFocus?' · focus':''}</div></div><div class="session-ex-scheme">${ex.scheme}</div></div>`).join(''):'<div class="chart-empty">Today is set aside for recovery. Use the add activity button below if you trained anyway.</div>'}</div></div>`;
+}
+function renderNutritionHub({checkins,plan}){
+  const macroWrap=document.getElementById('nutritionMacroStrip');
+  const mealsWrap=document.getElementById('nutritionMeals');
+  if(!macroWrap||!mealsWrap||!plan)return;
+  macroWrap.innerHTML=`<div class="macro-strip"><div class="macro-pill"><strong>${plan.analysis.kcal}</strong><span>kcal</span></div><div class="macro-pill"><strong>${plan.analysis.protein}g</strong><span>protein</span></div><div class="macro-pill"><strong>${plan.analysis.carbs}g</strong><span>carbs</span></div><div class="macro-pill"><strong>${plan.analysis.fat}g</strong><span>fat</span></div></div>`;
+  const kcalSeries=checkins.filter(item=>item.planSummary?.kcal).reverse().slice(-8).map(item=>({value:parseFloat(item.planSummary.kcal),label:item.date||''}));
+  drawLineChartIntoSeries(kcalSeries,'nutritionKcalChart','nutritionKcalEmpty','#c8ff00',130);
+  const mealState=getMealLogState()[new Date().toISOString().split('T')[0]]||{};
+  mealsWrap.innerHTML=plan.meals.map((meal,index)=>`<div class="meal-slot-card"><div class="meal-slot-head"><div class="meal-num">${meal.num}</div><div class="meal-slot-copy"><div class="meal-slot-name">${meal.name}</div><div class="meal-slot-time">${meal.time} · ${meal.kcal} kcal</div></div><button class="meal-slot-toggle ${mealState[index]?'logged':''}" onclick="toggleMealSlotLog(${index})">${mealState[index]?'✓':'+'}</button></div><ul class="meal-slot-items">${meal.items.map(([food,qty])=>`<li><span>${food}</span><span>${qty}</span></li>`).join('')}</ul></div>`).join('');
+}
+function renderStatsHub({p,checkins,sessions,plan,game,streak}){
+  const trainingSection=document.getElementById('statsTrainingSection');
+  const nutritionSection=document.getElementById('statsNutritionSection');
+  const recoverySection=document.getElementById('statsRecoverySection');
+  if(!trainingSection||!nutritionSection||!recoverySection||!plan)return;
+  trainingSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div><div class="stats-card-title">Training</div><div class="stats-card-copy">Strength access plus weekly set landmarks from your recent logs.</div></div><button class="btn btn-outline btn-sm" onclick="goTo('strength')">Strength</button></div><div id="statsVolumeWrap"></div></div>`;
+  renderVolumeInto(sessions,'statsVolumeWrap');
+  nutritionSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div><div class="stats-card-title">Nutrition</div><div class="stats-card-copy">Bodyweight trend, goal progress, and the gamified layer underneath it.</div></div><button class="btn btn-outline btn-sm" onclick="goTo('nutritionHub')">Nutrition</button></div><div class="chart-wrap"><div class="chart-lbl">Weight Change</div><canvas id="statsWeightChart" style="width:100%;height:120px;"></canvas><div id="statsWeightEmpty" class="chart-empty" style="display:none;">Add bodyweight in check-ins to start this graph.</div></div><div class="stats-grid">${buildGoalProgressMarkup(checkins,p,game)}<div class="stats-mini"><strong>${streak.count} week${streak.count===1?'':'s'}</strong><span>${game.xp} XP earned · next level at ${game.nextXp} XP.</span></div></div></div>`;
+  drawWeightChartInto(checkins,'statsWeightChart','statsWeightEmpty');
+  const recoveryScore=Math.min(100,Math.round((saunaState.sessions/getSaunaTargetCount())*100));
+  const recoveryMode=saunaState.goal==='recovery'?'Soft Reset':saunaState.goal==='cardio'?'Heat Engine':saunaState.goal==='stress'?'Calm Operator':'Long Game';
+  recoverySection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div><div class="stats-card-title">Recovery</div><div class="stats-card-copy">A lighter, more playful look at how the sauna system is being used.</div></div><button class="btn btn-outline btn-sm" onclick="goTo('sauna')">Recovery</button></div><div class="stats-grid"><div class="stats-mini"><strong>${saunaState.sessions}</strong><span>Sauna sessions logged in this device session.</span></div><div class="stats-mini"><strong>${recoveryScore}%</strong><span>Of this week’s recovery target hit based on current sauna goal.</span></div><div class="stats-mini"><strong>${recoveryMode}</strong><span>Your current heat persona from the selected sauna goal.</span></div><div class="stats-mini"><strong>${getSaunaProtocol().heat.reduce((sum,val)=>sum+val,0)} min</strong><span>Total hot exposure in the current protocol build.</span></div></div></div>`;
+}
+async function refreshPrimarySurfaces(){
+  const p=window.userProfile;
+  if(!p?.setupComplete)return;
+  const name=(window.currentUser?.displayName||'').split(' ')[0]||'there';
+  const greeting=document.getElementById('heroGreeting');
+  const sub=document.getElementById('heroSub');
+  if(greeting)greeting.textContent=tf('home.greeting',{name});
+  if(sub)sub.textContent=tf('home.goalSub',{goal:goalLabel(p.goal)||'ADDAPT'});
+  const [checkins,sessions]=await Promise.all([window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([]),window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([])]);
+  const streak=calcStreak(checkins);
+  const game=calcGamification(checkins,sessions);
+  APP_STATE.gamification={xp:game.xp,level:game.level,nextXp:game.nextXp};
+  const plan=getDashboardPlan(checkins,sessions);
+  const ctx={p,checkins,sessions,plan,streak,game};
+  renderHomeDashboard(ctx);
+  renderTrainingHub(ctx);
+  renderNutritionHub(ctx);
+  renderStatsHub(ctx);
+  checkMilestones(checkins.length);
+}
+function updateHomeUI(){refreshPrimarySurfaces();}
 
 function renderPhaseCard(block){const{name,week,total,isStr,weeksLeft,earlyTrigger}=block;const col=isStr?'#00d4ff':'#c8ff00';const pct=Math.round(week/total*100);document.getElementById('phaseCardWrap').innerHTML=`<div class="phase-card"><div class="phase-top"><div><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${col};margin-bottom:4px;">Current Phase</div><div class="phase-name" style="color:${col};">${name} Block</div><div style="font-size:12px;color:#888;margin-top:3px;">${isStr?'Lower reps · heavier weight · 3–4 min rest':'Higher reps · moderate weight · more volume'}</div></div><div><div class="phase-week" style="color:${col};">${week}<span style="font-size:14px;color:#888;font-weight:400;">/${total}</span></div><div class="phase-week-lbl">weeks</div></div></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col};"></div></div><div class="phase-meta"><span>${pct}% complete</span><span>${weeksLeft} week${weeksLeft!==1?'s':''} left</span></div><div class="phase-next">Next: <strong>${isStr?'Hypertrophy Block':'Strength Block'}</strong> in ${weeksLeft} week${weeksLeft!==1?'s':''}.</div>${earlyTrigger?`<div class="phase-trigger" style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.2);color:#ffaa00;">${earlyTrigger}</div>`:''}</div>`;}
 
