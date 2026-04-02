@@ -53,12 +53,141 @@ let pendingLogMode='normal';
 const APP_STATE={
   workoutTimer:{running:false,interval:null,seconds:0,lastMinute:-1,startEpoch:null,activeExercise:'',activeSet:1,restSeconds:0,restInterval:null,emomEnabled:false,emomTargetMinutes:0,emomWork:40,emomRest:20,emomExercises:[],cues:['Power breathing and setup check.','Brace hard and own your first rep.','Control tempo and own every eccentric.','Add intent: move the bar faster on the concentric.','Stay technical. Leave ego out of the set.','Hydrate and reset posture before next set.']},
   gamification:{xp:0,level:1,nextXp:100},
+  notifTimers: {checkin: null, emom: null, sauna: null}
 };
+
+// ── NOTIFICATION SCHEDULING ──
+function scheduleNotifications() {
+  // Clear existing timers
+  Object.values(APP_STATE.notifTimers).forEach(t => t && clearTimeout(t));
+  if (!window.userProfile) return;
+  // Check-in reminder: 7 days after last check-in
+  if (window.userProfile.notifCheckin !== false && 'Notification' in window && Notification.permission === 'granted') {
+    window.fbLoadCheckins?.().then(checkins => {
+      let last = checkins && checkins.length > 0 ? new Date(checkins[0].createdAt?.toDate?.() || checkins[0].createdAt || checkins[0].date || Date.now()) : null;
+      let msSince = last ? (Date.now() - new Date(last).getTime()) : Infinity;
+      let msToNext = Math.max(0, 7 * 24 * 60 * 60 * 1000 - msSince);
+      if (msToNext < 60 * 1000) msToNext = 60 * 1000; // never less than 1 min for demo
+      APP_STATE.notifTimers.checkin = setTimeout(() => {
+        new Notification('Time to check in!', { body: 'You haven\'t checked in for a week. Update your progress in ADDAPT.', tag: 'addapt-checkin', renotify: true });
+      }, msToNext);
+    });
+  }
+  // EMOM reminder: every day at 18:00 (demo)
+  if (window.userProfile.notifEmom && 'Notification' in window && Notification.permission === 'granted') {
+    let now = new Date();
+    let next = new Date(now);
+    next.setHours(18, 0, 0, 0);
+    if (next < now) next.setDate(next.getDate() + 1);
+    let msToNext = next - now;
+    APP_STATE.notifTimers.emom = setTimeout(() => {
+      new Notification('EMOM Reminder', { body: 'Ready for your EMOM session? Tap to start your timer!', tag: 'addapt-emom', renotify: true });
+      scheduleNotifications(); // reschedule for next day
+    }, msToNext);
+  }
+  // Sauna reminder: every Sunday at 10:00 (demo)
+  if (window.userProfile.notifSauna && 'Notification' in window && Notification.permission === 'granted') {
+    let now = new Date();
+    let next = new Date(now);
+    next.setDate(now.getDate() + ((7 - now.getDay()) % 7)); // next Sunday
+    next.setHours(10, 0, 0, 0);
+    if (next < now) next.setDate(next.getDate() + 7);
+    let msToNext = next - now;
+    APP_STATE.notifTimers.sauna = setTimeout(() => {
+      new Notification('Sauna Reminder', { body: 'Don\'t forget your sauna session this week!', tag: 'addapt-sauna', renotify: true });
+      scheduleNotifications(); // reschedule for next week
+    }, msToNext);
+  }
+}
+
+window.scheduleNotifications = scheduleNotifications;
+document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleNotifications(); });
+window.addEventListener('load', scheduleNotifications);
 const WORKOUT_TIMER_STORAGE_KEY='addapt_workout_timer_v3';
 const OB_TOTAL=12;
 const WEEKDAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 // ── NAV ──
+// ── CUSTOM EXERCISES ──
+function getCustomExercises() {
+  try {
+    return JSON.parse(localStorage.getItem('customExercises') || '[]');
+  } catch { return []; }
+}
+function saveCustomExercises(list) {
+  localStorage.setItem('customExercises', JSON.stringify(list));
+}
+function openCustomExModal() {
+  renderCustomExList();
+  document.getElementById('customExModal').style.display = 'flex';
+}
+function closeCustomExModal() {
+  document.getElementById('customExModal').style.display = 'none';
+}
+function renderCustomExList() {
+  const list = getCustomExercises();
+  const wrap = document.getElementById('customExList');
+  if (!wrap) return;
+  if (!list.length) {
+    wrap.innerHTML = '<div style="color:#888;font-size:13px;">No custom exercises yet.</div>';
+    return;
+  }
+  wrap.innerHTML = list.map((ex, i) =>
+    `<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'>
+      <div>
+        <b>${ex.name}</b><br>
+        <span style='font-size:11px;color:#aaa;'>${cap(ex.muscle)}, ${ex.pattern}, ${ex.eq}</span>
+      </div>
+      <button class='btn btn-outline btn-sm' onclick='deleteCustomExercise(${i})' style='margin-left:8px;'>Delete</button>
+    </div>`
+  ).join('');
+}
+function saveCustomExercise() {
+  const name = document.getElementById('customExName').value.trim();
+  const muscle = document.getElementById('customExMuscle').value;
+  const pattern = document.getElementById('customExPattern').value;
+  const eq = document.getElementById('customExEq').value;
+  if (!name || !muscle || !pattern || !eq) {
+    showToast('Missing info', 'Fill all fields to add.');
+    return;
+  }
+  const list = getCustomExercises();
+  if (list.some(ex => ex.name.toLowerCase() === name.toLowerCase())) {
+    showToast('Exists', 'Exercise already in your list.');
+    return;
+  }
+  list.push({ name, muscle, pattern, eq });
+  saveCustomExercises(list);
+  renderCustomExList();
+  document.getElementById('customExName').value = '';
+  document.getElementById('customExMuscle').value = '';
+  document.getElementById('customExPattern').value = '';
+  document.getElementById('customExEq').value = '';
+  showToast('Added', 'Custom exercise added.');
+}
+function deleteCustomExercise(idx) {
+  const list = getCustomExercises();
+  list.splice(idx, 1);
+  saveCustomExercises(list);
+  renderCustomExList();
+  showToast('Deleted', 'Exercise removed.');
+}
+window.openCustomExModal = openCustomExModal;
+window.closeCustomExModal = closeCustomExModal;
+window.saveCustomExercise = saveCustomExercise;
+window.deleteCustomExercise = deleteCustomExercise;
+
+// Merge custom exercises into EX_LIB for selection
+function getAllExercises() {
+  const customs = getCustomExercises();
+  const lib = { ...EX_LIB };
+  customs.forEach(ex => {
+    // Use a unique key for custom exercises
+    const key = 'custom_' + ex.name.replace(/[^a-zA-Z0-9]/g, '_');
+    lib[key] = { ...ex, eq: [ex.eq] };
+  });
+  return lib;
+}
 function goTo(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -96,7 +225,112 @@ function setSD(s){['syncDot','ciSD','logSD'].forEach(id=>{const e=document.getEl
 
 // ── TOAST ──
 let toastTimer=null;
-function showToast(title,msg,dur=3500){const t=document.getElementById('toast');document.getElementById('toastTitle').textContent=title;document.getElementById('toastMsg').textContent=msg;t.classList.add('show');if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),dur);}
+
+function showToast(title,msg,dur=3500){
+  const t=document.getElementById('toast');
+  document.getElementById('toastTitle').textContent=title;
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// --- SOCIAL/SHARE & PROGRESS PHOTOS ---
+window.shareStreak = function() {
+  const canvas = document.getElementById('streaksChart');
+  if (canvas && window.navigator.share) {
+    canvas.toBlob(blob => {
+      const file = new File([blob], 'streaks.png', {type: 'image/png'});
+      window.navigator.share({
+        title: 'My Check-In Streaks',
+        text: 'Check out my training streaks on ADDAPT!',
+        files: [file]
+      }).catch(() => {});
+    });
+  } else if (canvas) {
+    // Fallback: copy image to clipboard
+    canvas.toBlob(blob => {
+      if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({'image/png': blob});
+        navigator.clipboard.write([item]);
+        showToast('Streak chart copied!','Image copied to clipboard.');
+      } else {
+        showToast('Sharing not supported.','');
+      }
+    });
+  } else {
+    showToast('Chart not found.','');
+  }
+}
+
+window.sharePR = function() {
+  const prText = document.getElementById('exPRText')?.textContent || '';
+  const prDate = document.getElementById('exPRDate')?.textContent || '';
+  const exTitle = document.getElementById('exChartTitle')?.textContent || '';
+  const text = `New PR in ${exTitle}: ${prText} (${prDate}) via ADDAPT`;
+  if (window.navigator.share) {
+    window.navigator.share({
+      title: 'Personal Record',
+      text
+    }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+    showToast('PR copied to clipboard!','');
+  } else {
+    showToast('Sharing not supported.','');
+  }
+}
+
+const PROGRESS_PHOTO_KEY = 'progressPhotos';
+window.uploadProgressPhoto = function(e) {
+  const file = e.target.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    let photos = JSON.parse(localStorage.getItem(PROGRESS_PHOTO_KEY) || '[]');
+    photos.push({
+      data: ev.target.result,
+      date: new Date().toISOString()
+    });
+    localStorage.setItem(PROGRESS_PHOTO_KEY, JSON.stringify(photos));
+    renderProgressPhotoGallery();
+    showToast('Photo added!','');
+  };
+  reader.readAsDataURL(file);
+}
+
+window.renderProgressPhotoGallery = function() {
+  const gallery = document.getElementById('progressPhotoGallery');
+  if (!gallery) return;
+  let photos = JSON.parse(localStorage.getItem(PROGRESS_PHOTO_KEY) || '[]');
+  gallery.innerHTML = '';
+  photos.slice().reverse().forEach(photo => {
+    const wrap = document.createElement('div');
+    wrap.style.position = 'relative';
+    wrap.style.width = '70px';
+    wrap.style.height = '70px';
+    wrap.style.overflow = 'hidden';
+    wrap.style.borderRadius = '10px';
+    wrap.style.border = '1px solid #222';
+    const img = document.createElement('img');
+    img.src = photo.data;
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    img.title = new Date(photo.date).toLocaleDateString();
+    wrap.appendChild(img);
+    gallery.appendChild(wrap);
+  });
+}
+
+// Patch goTo to render gallery on Strength screen
+const origGoTo = window.goTo;
+window.goTo = function(id) {
+  origGoTo(id);
+  if (id === 'strength') {
+    setTimeout(window.renderProgressPhotoGallery, 100);
+  }
+}
 
 function formatClock(seconds){const mins=String(Math.floor(seconds/60)).padStart(2,'0');const secs=String(seconds%60).padStart(2,'0');return `${mins}:${secs}`;}
 function getMinuteCue(minute){return APP_STATE.workoutTimer.cues[minute%APP_STATE.workoutTimer.cues.length];}
@@ -121,6 +355,16 @@ function loadWorkoutTimerState(){
 }
 function notifyMinuteCue(minute,cue){
   if(navigator.vibrate)navigator.vibrate(120);
+  // Voice cue (speech synthesis)
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      const utter = new window.SpeechSynthesisUtterance(cue);
+      utter.rate = 1.05;
+      utter.pitch = 1.0;
+      utter.volume = 1.0;
+      window.speechSynthesis.speak(utter);
+    } catch (e) {}
+  }
   if('Notification' in window&&Notification.permission==='granted'){new Notification('ADDAPT minute '+minute,{body:cue,silent:true,tag:'addapt-workout-minute',renotify:true});}
 }
 function updateMediaSession(minute,cue){
@@ -707,6 +951,106 @@ function calcWeightTrend(checkins,currentWeight,dietGoal){
   return{adj,msg,weeklyRate};
 }
 
+// ── LIGHTWEIGHT ML (ON-DEVICE) ──
+const ML_MODEL_VERSION=1;
+const ML_MODEL_STORAGE_KEY='addapt_ml_model_cache';
+
+function mlSigmoid(z){return 1/(1+Math.exp(-z));}
+function mlDot(a,b){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
+function mlSleepVal(v){return {'<5hrs':0,'5-6hrs':0.35,'7-8hrs':0.75,'8+hrs':1}[v]??0.5;}
+function mlLiftVal(v){return {regressed:0,same:0.45,slightly_up:0.72,pbs:1}[v]??0.5;}
+function mlDietVal(v){return {way_under:0.15,under:0.4,on_target:0.85,over:0.35}[v]??0.5;}
+function mlDatasetFingerprint(xs,ys){
+  // Cheap deterministic fingerprint for cache invalidation when history changes.
+  const head=xs.slice(0,3).flat().map(v=>Number(v).toFixed(3)).join('|');
+  const tail=xs.slice(-3).flat().map(v=>Number(v).toFixed(3)).join('|');
+  return `${xs.length}:${ys.join('')}:${head}:${tail}`;
+}
+function mlLoadCachedModel(fingerprint){
+  try{
+    const raw=localStorage.getItem(ML_MODEL_STORAGE_KEY);
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    if(parsed?.version!==ML_MODEL_VERSION)return null;
+    if(parsed?.fingerprint!==fingerprint)return null;
+    if(!Array.isArray(parsed?.w)||!parsed.w.length)return null;
+    return parsed;
+  }catch(_){return null;}
+}
+function mlSaveCachedModel(fingerprint,w,samples){
+  try{
+    localStorage.setItem(ML_MODEL_STORAGE_KEY,JSON.stringify({
+      version:ML_MODEL_VERSION,
+      fingerprint,
+      w,
+      samples,
+      savedAt:new Date().toISOString(),
+    }));
+  }catch(_){/* ignore storage failures */}
+}
+function mlFeatureVec(c){
+  return[
+    1,
+    Math.max(0,Math.min(1,(parseFloat(c.energy)||5)/10)),
+    Math.max(0,Math.min(1,1-((parseFloat(c.stress)||5)/10))),
+    mlSleepVal(c.sleep),
+    mlLiftVal(c.lifts),
+    mlDietVal(c.diet),
+    Math.max(0,Math.min(1,(parseFloat(c.weight)||75)/140)),
+  ];
+}
+function buildMlDataset(checkins){
+  const sorted=[...(checkins||[])].filter(c=>c&&c.createdAt).sort((a,b)=>toMs(a.createdAt)-toMs(b.createdAt));
+  const xs=[],ys=[];
+  for(let i=0;i<sorted.length-1;i++){
+    const c=sorted[i],next=sorted[i+1];
+    if(c.energy===undefined||c.stress===undefined)continue;
+    const x=mlFeatureVec(c);
+    const y=(next.lifts==='slightly_up'||next.lifts==='pbs')?1:0;
+    xs.push(x);ys.push(y);
+  }
+  return{xs,ys};
+}
+function trainMlLogReg(xs,ys,epochs=260,lr=0.22){
+  if(!xs.length)return null;
+  const d=xs[0].length;
+  const w=new Array(d).fill(0);
+  for(let e=0;e<epochs;e++){
+    const g=new Array(d).fill(0);
+    for(let i=0;i<xs.length;i++){
+      const p=mlSigmoid(mlDot(w,xs[i]));
+      const err=p-ys[i];
+      for(let j=0;j<d;j++)g[j]+=err*xs[i][j];
+    }
+    for(let j=0;j<d;j++)w[j]-=lr*(g[j]/xs.length);
+  }
+  return{w};
+}
+function evalMlModel(model,xs,ys){
+  if(!model||!xs.length)return null;
+  let correct=0,brier=0;
+  for(let i=0;i<xs.length;i++){
+    const p=mlSigmoid(mlDot(model.w,xs[i]));
+    const pred=p>=0.5?1:0;
+    if(pred===ys[i])correct++;
+    brier+=(p-ys[i])*(p-ys[i]);
+  }
+  return{accuracy:correct/xs.length,brier:brier/xs.length,samples:xs.length};
+}
+function getMlReadinessSignal(pastCheckins,currentCheckin){
+  const ds=buildMlDataset(pastCheckins);
+  if(ds.xs.length<8)return{enabled:false,samples:ds.xs.length,reason:'not-enough-data'};
+  const fingerprint=mlDatasetFingerprint(ds.xs,ds.ys);
+  const cached=mlLoadCachedModel(fingerprint);
+  const model=cached?.w?{w:cached.w}:trainMlLogReg(ds.xs,ds.ys);
+  if(!model)return{enabled:false,samples:ds.xs.length,reason:'train-failed'};
+  if(!cached)mlSaveCachedModel(fingerprint,model.w,ds.xs.length);
+  const p=mlSigmoid(mlDot(model.w,mlFeatureVec(currentCheckin)));
+  const confidence=Math.abs(p-0.5)*2;
+  const perf=evalMlModel(model,ds.xs,ds.ys);
+  return{enabled:true,samples:ds.xs.length,probability:p,confidence,version:ML_MODEL_VERSION,cached:!!cached,performance:perf};
+}
+
 // ── GAMIFICATION ──
 function getLevel(n){if(n>=24)return{name:t('level.elite'),color:'#ffd700'};if(n>=12)return{name:t('level.dedicated'),color:'#ff69b4'};if(n>=5)return{name:t('level.consistent'),color:'#00d4ff'};return{name:t('level.rookie'),color:'#888'};}
 function checkMilestones(n){const m=[{at:1,t:'First check-in complete',m:'The journey starts.'},{at:5,t:'Consistent rank unlocked',m:'5 check-ins in. You are building a real habit.'},{at:12,t:'Dedicated rank unlocked',m:'12 check-ins. That is elite behaviour.'},{at:24,t:'Elite rank unlocked',m:'24 check-ins. Top 1% of people who start.'}];for(const x of m){if(n===x.at){showToast(x.t,x.m,5000);break;}}}
@@ -1246,8 +1590,9 @@ const SESSION_EX_BANK={
 function pickEx(muscle,kind,equipment,used){
   const bank=SESSION_EX_BANK[muscle]||{};
   const order=kind==='anchor'?['anchor','work','iso']:kind==='work'?['work','iso','anchor']:['iso','work','anchor'];
-  for(const bucket of order){for(const id of(bank[bucket]||[])){const ex=EX_LIB[id];if(ex&&ex.eq.includes(equipment)&&!used.has(ex.name))return{id,...ex};}}
-  for(const bucket of['anchor','work','iso']){for(const id of(bank[bucket]||[])){const ex=EX_LIB[id];if(ex&&ex.eq.includes(equipment))return{id,...ex};}}
+  const allLib = getAllExercises();
+  for(const bucket of order){for(const id of(bank[bucket]||[])){const ex=allLib[id];if(ex&&ex.eq.includes(equipment)&&!used.has(ex.name))return{id,...ex};}}
+  for(const bucket of['anchor','work','iso']){for(const id of(bank[bucket]||[])){const ex=allLib[id];if(ex&&ex.eq.includes(equipment))return{id,...ex};}}
   return null;
 }
 function getScheme(isStr,tier,muscle){
@@ -1337,8 +1682,14 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[]){
   const{energy,stress,sleep,lifts,diet,weight:cw,calOverride}=checkin;
   const weight=cw||pw||75;
   let tier;if(energy<=3)tier=0;else if(energy<=5)tier=((sleep==='7-8hrs'||sleep==='8+hrs')&&stress<=5)?1:0;else if(energy<=7)tier=(sleep==='<5hrs'||stress>=8)?1:2;else tier=((sleep==='<5hrs'||sleep==='5-6hrs')&&stress>=7)?1:2;
+  const baseTier=tier;
   const autoDeloadReason=getAutoDeloadTrigger(pastCheckins,lastSessions);
   if(autoDeloadReason)tier=0;
+  const mlSignal=getMlReadinessSignal(pastCheckins,checkin);
+  if(!autoDeloadReason&&mlSignal.enabled&&mlSignal.confidence>=0.18){
+    if(mlSignal.probability>=0.67&&tier<2)tier++;
+    else if(mlSignal.probability<=0.33&&tier>0)tier--;
+  }
   const block=calcBlock(pastCheckins);const isStr=block.isStr&&tier!==0;
   const RR={beginner:{comp:{2:'10–15',1:'12–15',0:'15'},iso:{2:'12–15',1:'15',0:'15–20'}},intermediate:{comp:{2:'8–12',1:'10–12',0:'12–15'},iso:{2:'10–12',1:'12',0:'15'}},advanced:{comp:{2:'6–10',1:'8–10',0:'10–12'},iso:{2:'8–10',1:'10',0:'12'}}};
   const SRR={beginner:{comp:{2:'6–8',1:'8–10',0:'10–12'},iso:{2:'8–10',1:'10',0:'12'}},intermediate:{comp:{2:'3–6',1:'5–6',0:'8–10'},iso:{2:'6–8',1:'8',0:'10'}},advanced:{comp:{2:'1–5',1:'3–5',0:'6–8'},iso:{2:'4–6',1:'6',0:'8'}}};
@@ -1358,7 +1709,7 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[]){
   const splitDays=adaptiveSplit.splitDays;
   const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
   const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,dietGoal);
-  return{summary:{tier,kcal,protein,carbs,fat,days,goal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,block,isStr,calOverride,autoDeloadReason},splitDays,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
+  return{summary:{tier,kcal,protein,carbs,fat,days,goal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,block,isStr,calOverride,autoDeloadReason,ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
 }
 
 // ── MEAL BUILDER ──
@@ -1375,14 +1726,20 @@ function buildMeals(kcal,protein,carbs,fat,count,restrictions,dietGoal){
 // ════════════════════════════════════
 function renderPlan(plan,activeTab='overview'){
   const{analysis,splitDays,meals,tier,focusMuscles,experience,splitMeta}=plan;
-  const{energy,kcal,protein,carbs,fat,dietGoal,tdee,trendMsg,trendAdj,block,isStr,calOverride,autoDeloadReason}=analysis;
+  const{energy,kcal,protein,carbs,fat,dietGoal,tdee,trendMsg,trendAdj,block,isStr,calOverride,autoDeloadReason,ml}=analysis;
   const p=window.userProfile||{};
   const profileHtml=splitMeta?`<h2>Goal Profile</h2><ul><li><span>Priority muscles</span><span class="li-r">${splitMeta.goalProfile.priority.map(cap).join(' · ')}</span></li><li><span>Secondary muscles</span><span class="li-r">${splitMeta.goalProfile.secondary.map(cap).join(' · ')}</span></li><li><span>Maintenance muscles</span><span class="li-r">${splitMeta.goalProfile.maintenance.map(cap).join(' · ')}</span></li></ul>`:'';
   const freqHtml=splitMeta?`<h2>Frequency Engine</h2><ul>${Object.entries(splitMeta.frequency).map(([muscle,freq])=>`<li><span>${cap(muscle)}</span><span class="li-r">${freq}x / week</span></li>`).join('')}</ul>`:'';
   const setHtml=splitMeta?`<h2>Set Bank</h2><ul>${Object.entries(splitMeta.weeklySets).map(([muscle,total])=>`<li><span>${cap(muscle)}</span><span class="li-r">${total} sets · ${(splitMeta.frequency[muscle]||1)}x/week</span></li>`).join('')}</ul>`:'';
   const whyHtml=splitMeta?`<h2>Why This Split Works</h2><p>${splitMeta.rationale}</p>`:'';
   const dietMsg={way_under:'Calories raised. Use liquid calories — add milk to shakes.',under:'Slightly under. Add a glass of whole milk to 2 meals for +300 kcal.',on_target:'Diet adherence was on point. Keep it up.',over:'Over target. Tighten portions at meals 2 and 3.'}[analysis.diet]||'';
-  document.getElementById('tab-overview').innerHTML=`<div class="stat-row"><div class="stat-box"><div class="stat-val">${energy}/10</div><div class="stat-lbl">Energy</div></div><div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal${calOverride?' (custom)':''}</div></div><div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div><div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div></div><div class="block-card ${isStr?'str':'hyp'}"><div class="block-tag">${isStr?'Strength Block':'Hypertrophy Block'}</div><div class="block-name">${block.name} Block — Week ${block.week} of ${block.total}</div><div class="block-desc">${isStr?'Lower reps, heavier weight, 3–4 min rest. Neural adaptation.':'Higher reps, moderate weight, shorter rest. Muscle growth and volume.'}</div>${block.earlyTrigger?`<div style="font-size:12px;color:#ffaa00;margin-bottom:8px;">${block.earlyTrigger}</div>`:''}<div class="block-row"><div class="block-bar-track"><div class="block-bar-fill" style="width:${Math.round(block.week/block.total*100)}%;"></div></div><div class="block-weeks">${block.week}/${block.total} weeks</div></div></div><h2>Analysis</h2><p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>${autoDeloadReason?`<p style="color:#ffaa00;">${autoDeloadReason}</p>`:''}<p>${{regressed:'Lifts went backwards. Do not add weight — fix recovery and nutrition first.',same:'Held steady. Target +1 rep or 2.5kg on at least one compound.',slightly_up:'Good progress. Keep increments small and consistent.',pbs:'PRs hit. Ride this momentum carefully.'}[analysis.lifts]||''}</p><p>${dietMsg}</p>${trendMsg?`<div style="padding:12px;background:${trendAdj>0?'rgba(200,255,0,0.05)':trendAdj<0?'rgba(255,77,0,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${trendAdj>0?'rgba(200,255,0,0.15)':trendAdj<0?'rgba(255,77,0,0.15)':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:${trendAdj>0?'#c8ff00':trendAdj<0?'#ff4d00':'#888'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Weight Trend${trendAdj?` · ${trendAdj>0?'+':''}${trendAdj} kcal`:''}</div><div style="font-size:13px;color:#f2f2f2;">${trendMsg}</div></div>`:''}<h2>Macros</h2><ul><li><span>Daily Calories</span><span class="li-r">${kcal} kcal${calOverride?' (custom)':''}</span></li><li><span>TDEE estimate</span><span class="li-r">${tdee} kcal</span></li><li><span>Protein</span><span class="li-r">${protein}g · ${protein*4} kcal</span></li><li><span>Carbs</span><span class="li-r">${carbs}g · ${carbs*4} kcal</span></li><li><span>Fats</span><span class="li-r">${fat}g · ${fat*9} kcal</span></li></ul><h2>Profile</h2><ul><li><span>Goal</span><span class="li-r">${cap(p.goal||'general')}</span></li><li><span>Focus muscles</span><span class="li-r">${(focusMuscles||[]).map(cap).join(' & ')}</span></li><li><span>Experience</span><span class="li-r">${cap(experience)}</span></li><li><span>Split</span><span class="li-r">${p.days||4} days · ${p.sessionLen||60} min</span></li><li><span>Diet goal</span><span class="li-r">${cap(dietGoal)}</span></li></ul>${profileHtml}${freqHtml}${setHtml}${whyHtml}`;
+  const mlInsight=ml?.enabled
+    ?`<p style="font-size:12px;color:${ml.adjusted?'#c8ff00':'#888'};">ML readiness ${(ml.probability*100).toFixed(0)}% · confidence ${(ml.confidence*100).toFixed(0)}% · samples ${ml.samples}${ml.adjusted?` · mode adjusted ${ml.baseTier}→${tier}`:''}</p>`
+    :`<p style="font-size:12px;color:#666;">ML readiness model inactive (${ml?.samples||0} samples). Keep logging check-ins to enable it.</p>`;
+  const mlPerfCard=ml?.enabled&&ml?.performance
+    ?`<div style="padding:12px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.22);border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:#00d4ff;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">ML Performance · v${ml.version}${ml.cached?' · cached':''}</div><div style="font-size:13px;color:#f2f2f2;line-height:1.5;">Accuracy ${(ml.performance.accuracy*100).toFixed(0)}% · Brier loss ${ml.performance.brier.toFixed(3)} · ${ml.performance.samples} training samples</div></div>`
+    :'';
+  document.getElementById('tab-overview').innerHTML=`<div class="stat-row"><div class="stat-box"><div class="stat-val">${energy}/10</div><div class="stat-lbl">Energy</div></div><div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal${calOverride?' (custom)':''}</div></div><div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div><div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div></div><div class="block-card ${isStr?'str':'hyp'}"><div class="block-tag">${isStr?'Strength Block':'Hypertrophy Block'}</div><div class="block-name">${block.name} Block — Week ${block.week} of ${block.total}</div><div class="block-desc">${isStr?'Lower reps, heavier weight, 3–4 min rest. Neural adaptation.':'Higher reps, moderate weight, shorter rest. Muscle growth and volume.'}</div>${block.earlyTrigger?`<div style="font-size:12px;color:#ffaa00;margin-bottom:8px;">${block.earlyTrigger}</div>`:''}<div class="block-row"><div class="block-bar-track"><div class="block-bar-fill" style="width:${Math.round(block.week/block.total*100)}%;"></div></div><div class="block-weeks">${block.week}/${block.total} weeks</div></div></div><h2>Analysis</h2><p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>${mlInsight}${mlPerfCard}${autoDeloadReason?`<p style="color:#ffaa00;">${autoDeloadReason}</p>`:''}<p>${{regressed:'Lifts went backwards. Do not add weight — fix recovery and nutrition first.',same:'Held steady. Target +1 rep or 2.5kg on at least one compound.',slightly_up:'Good progress. Keep increments small and consistent.',pbs:'PRs hit. Ride this momentum carefully.'}[analysis.lifts]||''}</p><p>${dietMsg}</p>${trendMsg?`<div style="padding:12px;background:${trendAdj>0?'rgba(200,255,0,0.05)':trendAdj<0?'rgba(255,77,0,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${trendAdj>0?'rgba(200,255,0,0.15)':trendAdj<0?'rgba(255,77,0,0.15)':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:${trendAdj>0?'#c8ff00':trendAdj<0?'#ff4d00':'#888'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Weight Trend${trendAdj?` · ${trendAdj>0?'+':''}${trendAdj} kcal`:''}</div><div style="font-size:13px;color:#f2f2f2;">${trendMsg}</div></div>`:''}<h2>Macros</h2><ul><li><span>Daily Calories</span><span class="li-r">${kcal} kcal${calOverride?' (custom)':''}</span></li><li><span>TDEE estimate</span><span class="li-r">${tdee} kcal</span></li><li><span>Protein</span><span class="li-r">${protein}g · ${protein*4} kcal</span></li><li><span>Carbs</span><span class="li-r">${carbs}g · ${carbs*4} kcal</span></li><li><span>Fats</span><span class="li-r">${fat}g · ${fat*9} kcal</span></li></ul><h2>Profile</h2><ul><li><span>Goal</span><span class="li-r">${cap(p.goal||'general')}</span></li><li><span>Focus muscles</span><span class="li-r">${(focusMuscles||[]).map(cap).join(' & ')}</span></li><li><span>Experience</span><span class="li-r">${cap(experience)}</span></li><li><span>Split</span><span class="li-r">${p.days||4} days · ${p.sessionLen||60} min</span></li><li><span>Diet goal</span><span class="li-r">${cap(dietGoal)}</span></li></ul>${profileHtml}${freqHtml}${setHtml}${whyHtml}`;
   // Training tab
   let th='<h2>Training Plan</h2>'+renderTrainingScheduleEditor(splitDays);
   splitDays.forEach(day=>{
@@ -1456,19 +1813,33 @@ async function openLogDay(idx){
   const last=window.fbLoadLastSession?await window.fbLoadLastSession(day.name):null;
   const lastIdx={};
   if(last?.exercises)last.exercises.forEach(e=>{lastIdx[e.name]=e;});
-  const exList=day.exercises.filter(e=>e.scheme!=='—'&&e.muscle);
-  const exSel=document.getElementById('wTimerExerciseSel');
-  if(exSel){exSel.innerHTML='<option value="">Select exercise</option>'+exList.map(ex=>`<option value="${ex.name}">${ex.name}</option>`).join('');}
-  APP_STATE.workoutTimer.activeExercise=APP_STATE.workoutTimer.activeExercise||exList[0]?.name||'';
-  APP_STATE.workoutTimer.activeSet=1;
+  // Use merged exercise list for muscle info
+  const allLib = getAllExercises();
+  const exList = day.exercises.filter(e => e.scheme !== '—' && e.muscle);
+  const exSel = document.getElementById('wTimerExerciseSel');
+  if (exSel) {
+    exSel.innerHTML = '<option value="">Select exercise</option>' + exList.map(ex => `<option value="${ex.name}">${ex.name}</option>`).join('');
+  }
+  APP_STATE.workoutTimer.activeExercise = APP_STATE.workoutTimer.activeExercise || exList[0]?.name || '';
+  APP_STATE.workoutTimer.activeSet = 1;
   stopRestTimer(true);
-  document.getElementById('logExWrap').innerHTML=exList.map(ex=>{
-    const setCount=parseInt((ex.scheme||'').match(/\d+/)?.[0])||3;
-    const lastEx=lastIdx[ex.name];
-    const lastWt=lastEx?.maxWeight||'';
-    const safeName=ex.name.replace(/[^a-zA-Z0-9]/g,'_');
-    const setsHtml=Array.from({length:setCount},(_,si)=>`<div class="log-set-row"><div class="log-set-num">Set ${si+1}</div><input type="number" class="log-in" placeholder="${lastWt||'kg'}" step="0.5" id="w_${safeName}_${si}"><span class="log-lbl">kg ×</span><input type="number" class="log-in" placeholder="reps" id="r_${safeName}_${si}"><span class="log-lbl">reps</span></div>`).join('');
-    return`<div class="log-ex-card"><div class="log-ex-hdr"><div class="log-ex-name">${ex.name}</div><div class="log-ex-info">${ex.scheme}${lastEx?` · Last: ${lastEx.maxWeight}kg × ${lastEx.maxReps}`:''}</div></div><div class="log-sets">${setsHtml}</div></div>`;
+  document.getElementById('logExWrap').innerHTML = exList.map(ex => {
+    const setCount = parseInt((ex.scheme || '').match(/\d+/)?.[0]) || 3;
+    const lastEx = lastIdx[ex.name];
+    const lastWt = lastEx?.maxWeight || '';
+    const safeName = ex.name.replace(/[^a-zA-Z0-9]/g, '_');
+    // Try to get muscle/pattern/eq from merged library for display
+    let muscle = ex.muscle, pattern = ex.pattern, eq = ex.eq;
+    for (const k in allLib) {
+      if (allLib[k].name === ex.name) {
+        muscle = allLib[k].muscle;
+        pattern = allLib[k].pattern;
+        eq = allLib[k].eq;
+        break;
+      }
+    }
+    const setsHtml = Array.from({ length: setCount }, (_, si) => `<div class="log-set-row"><div class="log-set-num">Set ${si + 1}</div><input type="number" class="log-in" placeholder="${lastWt || 'kg'}" step="0.5" id="w_${safeName}_${si}"><span class="log-lbl">kg ×</span><input type="number" class="log-in" placeholder="reps" id="r_${safeName}_${si}"><span class="log-lbl">reps</span></div>`).join('');
+    return `<div class="log-ex-card"><div class="log-ex-hdr"><div class="log-ex-name">${ex.name}</div><div class="log-ex-info">${ex.scheme}${lastEx ? ` · Last: ${lastEx.maxWeight}kg × ${lastEx.maxReps}` : ''}</div></div><div class="log-sets">${setsHtml}</div></div>`;
   }).join('');
   wireLogInputHelpers();
   if(pendingLogMode==='emom'){startEmomTimer(12);pendingLogMode='normal';}
@@ -1495,10 +1866,160 @@ window.submitSessionLog=submitSessionLog;
 
 // ── STRENGTH ──
 let allEx=[];
-async function loadStrength(){const[sessions,checkins]=await Promise.all([window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([]),window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([])]);const exMap={};sessions.forEach(sess=>{(sess.exercises||[]).forEach(ex=>{if(!exMap[ex.name])exMap[ex.name]={name:ex.name,muscle:ex.muscle,history:[]};exMap[ex.name].history.push({date:sess.isoDate||sess.date,weight:ex.maxWeight,reps:ex.maxReps});});});allEx=Object.values(exMap).sort((a,b)=>a.name.localeCompare(b.name));renderExList('');renderVolume(sessions);drawWeightChart(checkins);}
-function renderExList(f){const filtered=allEx.filter(e=>e.name.toLowerCase().includes(f.toLowerCase()));const wrap=document.getElementById('exListWrap');if(!filtered.length){wrap.innerHTML='<div class="empty">No logged exercises yet.</div>';return;}wrap.innerHTML=filtered.map(e=>{const pr=Math.max(...e.history.map(h=>parseFloat(h.weight)||0));return`<div class="ex-item" onclick="showExChart('${e.name}')"><div><div class="ex-item-name">${e.name}</div><div style="font-size:11px;color:#888;margin-top:2px;">${cap(e.muscle||'')} · ${e.history.length} sessions</div></div><div class="pr-tag">PR: ${pr}kg</div></div>`;}).join('');}
+function loadStrength(){
+  Promise.all([
+    window.fbLoadSessions ? window.fbLoadSessions() : Promise.resolve([]),
+    window.fbLoadCheckins ? window.fbLoadCheckins() : Promise.resolve([])
+  ]).then(([sessions, checkins]) => {
+    const exMap = {};
+    // Use merged exercise list for muscle info
+    const allLib = getAllExercises();
+    sessions.forEach(sess => {
+      (sess.exercises || []).forEach(ex => {
+        if (!exMap[ex.name]) {
+          // Try to get muscle from merged library
+          let muscle = ex.muscle;
+          for (const k in allLib) {
+            if (allLib[k].name === ex.name) {
+              muscle = allLib[k].muscle;
+              break;
+            }
+          }
+          exMap[ex.name] = { name: ex.name, muscle, history: [] };
+        }
+        exMap[ex.name].history.push({ date: sess.isoDate || sess.date, weight: ex.maxWeight, reps: ex.maxReps });
+      });
+    });
+    allEx = Object.values(exMap).sort((a, b) => a.name.localeCompare(b.name));
+    renderExList('');
+    renderVolume(sessions);
+    drawWeightChart(checkins);
+    drawStreaksChart(checkins);
+  });
+}
+
+// Draw streaks chart (calendar bar)
+function drawStreaksChart(checkins){
+  const canvas = document.getElementById('streaksChart');
+  const empty = document.getElementById('streaksChartEmpty');
+  if(!canvas) return;
+  if(!checkins || checkins.length < 1){
+    canvas.style.display = 'none';
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+  canvas.style.display = 'block';
+  // Group check-ins by week
+  const weekMap = {};
+  checkins.forEach(c=>{
+    const d = new Date(toMs(c.createdAt));
+    d.setHours(0,0,0,0);
+    const weekStart = getWeekStartMs(d);
+    weekMap[weekStart] = (weekMap[weekStart]||0)+1;
+  });
+  // Get last 12 weeks
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  let weeks = [];
+  for(let i=11;i>=0;i--){
+    const w = getWeekStartMs(now.getTime() - i*7*24*60*60*1000);
+    weeks.push(w);
+  }
+  const vals = weeks.map(w=>weekMap[w]||0);
+  // Draw bar chart
+  const W = canvas.offsetWidth||280, H = 80;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const maxV = Math.max(...vals,1);
+  const pad = {l:28, r:10, t:10, b:18};
+  const cW = W-pad.l-pad.r, cH = H-pad.t-pad.b;
+  // Y axis
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l,pad.t);
+  ctx.lineTo(pad.l,pad.t+cH);
+  ctx.stroke();
+  // Bars
+  const barW = cW/weeks.length*0.7;
+  weeks.forEach((w,i)=>{
+    const x = pad.l + i*cW/weeks.length + (cW/weeks.length-barW)/2;
+    const y = pad.t + cH - (vals[i]/maxV)*cH;
+    ctx.fillStyle = vals[i]>0?'#00d4ff':'#222';
+    ctx.fillRect(x,y,barW,(vals[i]/maxV)*cH);
+    // Week label
+    ctx.fillStyle = '#888';
+    ctx.font = '9px sans-serif';
+    const dt = new Date(w);
+    ctx.fillText(`${dt.getDate()}/${dt.getMonth()+1}`,x+2,H-6);
+  });
+  // Y axis labels
+  ctx.fillStyle = '#888';
+  ctx.font = '10px sans-serif';
+  ctx.fillText(maxV,H>40?pad.l-18:2,pad.t+8);
+  ctx.fillText('0',H>40?pad.l-14:2,pad.t+cH);
+}
+function renderExList(f) {
+  // Use merged exercise list for muscle info
+  const allLib = getAllExercises();
+  const filtered = allEx.filter(e => e.name.toLowerCase().includes(f.toLowerCase()));
+  const wrap = document.getElementById('exListWrap');
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="empty">No logged exercises yet.</div>';
+    return;
+  }
+  wrap.innerHTML = filtered.map(e => {
+    const pr = Math.max(...e.history.map(h => parseFloat(h.weight) || 0));
+    // Try to get muscle from merged library for display
+    let muscle = e.muscle;
+    for (const k in allLib) {
+      if (allLib[k].name === e.name) {
+        muscle = allLib[k].muscle;
+        break;
+      }
+    }
+    return `<div class="ex-item" onclick="showExChart('${e.name}')"><div><div class="ex-item-name">${e.name}</div><div style="font-size:11px;color:#888;margin-top:2px;">${cap(muscle || '')} · ${e.history.length} sessions</div></div><div class="pr-tag">PR: ${pr}kg</div></div>`;
+  }).join('');
+}
 window.filterEx=v=>renderExList(v);
-function showExChart(name){const ex=allEx.find(e=>e.name===name);if(!ex)return;document.getElementById('exListWrap').style.display='none';document.getElementById('exChartWrap').style.display='block';document.getElementById('exChartTitle').textContent=name;if(ex.history.length<2){document.getElementById('exChart').style.display='none';document.getElementById('exChartEmpty').style.display='block';}else{document.getElementById('exChart').style.display='block';document.getElementById('exChartEmpty').style.display='none';drawLineChart(ex.history,'exChart',150,'#c8ff00');}const pr=Math.max(...ex.history.map(h=>parseFloat(h.weight)||0));const prEntry=ex.history.find(h=>parseFloat(h.weight)===pr);if(pr>0){document.getElementById('exPRBox').style.display='block';document.getElementById('exPRText').textContent=pr+'kg';document.getElementById('exPRDate').textContent='Set on '+(prEntry?.date||'');}}
+function showExChart(name){
+  const ex=allEx.find(e=>e.name===name);
+  if(!ex)return;
+  document.getElementById('exListWrap').style.display='none';
+  document.getElementById('exChartWrap').style.display='block';
+  document.getElementById('exChartTitle').textContent=name;
+  if(ex.history.length<2){
+    document.getElementById('exChart').style.display='none';
+    document.getElementById('exChartEmpty').style.display='block';
+  }else{
+    document.getElementById('exChart').style.display='block';
+    document.getElementById('exChartEmpty').style.display='none';
+    drawLineChart(ex.history,'exChart',150,'#c8ff00');
+  }
+  const pr=Math.max(...ex.history.map(h=>parseFloat(h.weight)||0));
+  const prEntry=ex.history.find(h=>parseFloat(h.weight)===pr);
+  if(pr>0){
+    document.getElementById('exPRBox').style.display='block';
+    document.getElementById('exPRText').textContent=pr+'kg';
+    document.getElementById('exPRDate').textContent='Set on '+(prEntry?.date||'');
+    // PR Timeline
+    const allPRs = ex.history.reduce((arr, h, i, src) => {
+      if(i===0 || parseFloat(h.weight) > Math.max(...src.slice(0,i).map(x=>parseFloat(x.weight)||0))) arr.push(h);
+      return arr;
+    }, []);
+    if(allPRs.length>1){
+      document.getElementById('exPRTimelineBox').style.display='block';
+      document.getElementById('exPRTimeline').innerHTML = allPRs.map(h=>`${h.weight}kg <span style='color:#888'>(${h.date})</span>`).join(' <span style=\"color:#00d4ff\">•</span> ');
+    }else{
+      document.getElementById('exPRTimelineBox').style.display='none';
+    }
+  }else{
+    document.getElementById('exPRBox').style.display='none';
+    document.getElementById('exPRTimelineBox').style.display='none';
+  }
+}
 window.showExChart=showExChart;
 function showExList(){document.getElementById('exListWrap').style.display='block';document.getElementById('exChartWrap').style.display='none';}
 window.showExList=showExList;
@@ -1531,7 +2052,56 @@ function viewCurrentPlan(){
 }
 window.viewCurrentPlan=viewCurrentPlan;
 
-function renderSettings(){const p=window.userProfile||{};document.getElementById('settingsBody').innerHTML=`<div style="margin-bottom:16px;"><div class="set-row"><div class="set-label">${t('settings.label.goal')}</div><div class="set-val">${goalLabel(p.goal)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.sex')}</div><div class="set-val">${trEnum('sex',p.sex)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.age')}</div><div class="set-val">${p.age||'—'}</div></div><div class="set-row"><div class="set-label">${t('settings.label.experience')}</div><div class="set-val">${trEnum('experience',p.experience)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.days')}</div><div class="set-val">${p.days||'—'}</div></div><div class="set-row"><div class="set-label">${t('settings.label.session')}</div><div class="set-val">${p.sessionLen||'—'} min</div></div><div class="set-row"><div class="set-label">${t('settings.label.focus')}</div><div class="set-val">${(p.focusMuscles||[]).map(m=>trEnum('muscle',m)).join(' & ')||'—'}</div></div><div class="set-row"><div class="set-label">${t('settings.label.equipment')}</div><div class="set-val">${trEnum('equipment',p.equipment)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.diet')}</div><div class="set-val">${trEnum('dietGoal',p.dietGoal)}</div></div><div class="set-row"><div class="set-label">${t('settings.label.goalWeight')}</div><div class="set-val">${p.goalWeight?p.goalWeight+'kg':'—'}</div></div></div><p style="font-size:12px;color:#888;margin-bottom:16px;">${t('settings.helper')}</p>`;}
+function renderSettings() {
+  const p = window.userProfile || {};
+  document.getElementById('settingsBody').innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div class="set-row"><div class="set-label">${t('settings.label.goal')}</div><div class="set-val">${goalLabel(p.goal)}</div></div>
+      <div class="set-row"><div class="set-label">${t('settings.label.sex')}</div><div class="set-val">${trEnum('sex', p.sex)}</div></div>
+      <div class="set-row"><div class="set-label">${t('settings.label.age')}</div><div class="set-val">${p.age || '—'}</div></div>
+      <div class="set-row"><div class="set-label">${t('settings.label.experience')}</div><div class="set-val">${trEnum('experience', p.experience)}</div></div>
+      <div class="set-row"><div class="set-label">${t('settings.label.days')}</div><div class="set-val">${p.days || '—'}</div></div>
+      <div class="set-row"><div class="set-label">${t('settings.label.session')}</div><div class="set-val">${p.sessionLen || '—'} min</div></div>
+      <div class="set-row"><div class="set-label">${t('settings.label.focus')}</div><div class="set-val">${(p.focusMuscles || []).map(m => trEnum('muscle', m)).join(' & ') || '—'}</div></div>
+      <div class="set-row"><div class="set-label">${t('settings.label.equipment')}</div><div class="set-val">${trEnum('equipment', p.equipment)}</div></div>
+      <div class="set-row"><div class="set-label">${t('settings.label.diet')}</div><div class="set-val">${trEnum('dietGoal', p.dietGoal)}</div></div>
+      <div class="set-row"><div class="set-label">${t('settings.label.goalWeight')}</div><div class="set-val">${p.goalWeight ? p.goalWeight + 'kg' : '—'}</div></div>
+    </div>
+    <div class="set-section" style="margin-bottom:18px;">
+      <div style="font-weight:600;font-size:15px;margin-bottom:6px;">Notifications</div>
+      <div class="set-row"><div class="set-label">Check-in reminders</div><div class="set-val"><input type="checkbox" id="notifCheckin" ${p.notifCheckin!==false?'checked':''} onchange="toggleNotifSetting('notifCheckin',this.checked)"></div></div>
+      <div class="set-row"><div class="set-label">EMOM reminders</div><div class="set-val"><input type="checkbox" id="notifEmom" ${p.notifEmom?'checked':''} onchange="toggleNotifSetting('notifEmom',this.checked)"></div></div>
+      <div class="set-row"><div class="set-label">Sauna reminders</div><div class="set-val"><input type="checkbox" id="notifSauna" ${p.notifSauna?'checked':''} onchange="toggleNotifSetting('notifSauna',this.checked)"></div></div>
+      <div style="font-size:12px;color:#888;margin-top:6px;">You must allow notifications in your browser for reminders to work.</div>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="testNotification()">Test Notification</button>
+    </div>
+    <p style="font-size:12px;color:#888;margin-bottom:16px;">${t('settings.helper')}</p>
+  `;
+}
+
+window.toggleNotifSetting = function(key, val) {
+  if (!window.userProfile) return;
+  window.userProfile[key] = val;
+  if (window.fbSaveProfile) window.fbSaveProfile(window.userProfile);
+  if (key === 'notifCheckin' && val && 'Notification' in window && Notification.permission !== 'granted') {
+    Notification.requestPermission();
+  }
+}
+
+window.testNotification = function() {
+  if ('Notification' in window) {
+    if (Notification.permission === 'granted') {
+      new Notification('ADDAPT Test Notification', { body: 'Reminders are enabled!', tag: 'addapt-test', renotify: true });
+    } else {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') new Notification('ADDAPT Test Notification', { body: 'Reminders are enabled!', tag: 'addapt-test', renotify: true });
+        else alert('Notifications are not enabled. Please allow them in your browser.');
+      });
+    }
+  } else {
+    alert('Notifications are not supported in this browser.');
+  }
+}
 
 function normalizeSchedule(days,count,fallback){if(Array.isArray(days)){const cleaned=[...new Set(days.filter(d=>WEEKDAYS.includes(d)))].sort((a,b)=>WEEKDAYS.indexOf(a)-WEEKDAYS.indexOf(b));if(cleaned.length===count)return cleaned;}return fallback.slice();}
 function getSaunaTargetCount(){return saunaState.goal==='recovery'?2:saunaState.goal==='cardio'?4:3;}

@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,10 +10,9 @@
 <title>ADDAPT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
-
-  <script type="module" crossorigin src="./assets/index-DJbX3ehY.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DLWe354g.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="./assets/index-D65EkkJi.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CCDCjp9w.css">
 </head>
 <body>
 
@@ -47,7 +44,7 @@
   <div class="ob-step" id="ob9"><div class="ob-sb"><div class="ob-num">9 of 12</div><div class="ob-q">Goal weight?</div><div class="ob-sub">Where do you want to end up? Used for your progress graph.</div><div class="wt-row" style="margin-bottom:14px;"><input type="number" class="wt-in" id="obGW" placeholder="80" oninput="checkOb9()"><span class="wt-unit">kg</span></div><div id="gwPreview" class="info-box" style="display:none;"><div class="info-lbl">Estimated timeline</div><div class="info-val" id="gwText"></div><canvas id="gwChart" style="width:100%;height:90px;margin-top:12px;display:block;"></canvas></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(9)">Back</button><button class="btn btn-acc" onclick="obNext(9)" id="ob9n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob10"><div class="ob-sb"><div class="ob-num">10 of 12</div><div class="ob-q">Diet goal?</div><div class="ob-sub">Sets your calorie target and macro split.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'dietGoal','bulk')"><div class="opt-label">Bulk</div><div class="opt-desc">Calorie surplus. Build muscle faster.</div></div><div class="opt-card" onclick="obSel(this,'dietGoal','maintain')"><div class="opt-label">Maintain</div><div class="opt-desc">Near maintenance. Slow recomposition.</div></div><div class="opt-card" onclick="obSel(this,'dietGoal','cut')"><div class="opt-label">Cut</div><div class="opt-desc">Calorie deficit. Lose fat, keep muscle.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(10)">Back</button><button class="btn btn-acc" onclick="obNext(10)" id="ob10n" disabled>Continue</button></div></div>
   <div class="ob-step" id="ob11"><div class="ob-sb"><div class="ob-num">11 of 12</div><div class="ob-q">Food restrictions?</div><div class="ob-sub">Select all that apply.</div><div class="chip-wrap" id="restrictChips"><div class="chip sel" onclick="selRestrict(this,'none')">None</div><div class="chip" onclick="selRestrict(this,'vegetarian')">Vegetarian</div><div class="chip" onclick="selRestrict(this,'vegan')">Vegan</div><div class="chip" onclick="selRestrict(this,'dairy_free')">Dairy-free</div><div class="chip" onclick="selRestrict(this,'gluten_free')">Gluten-free</div><div class="chip" onclick="selRestrict(this,'halal')">Halal</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(11)">Back</button><button class="btn btn-acc" onclick="obNext(11)" id="ob11n">Continue</button></div></div>
-  <div class="ob-step" id="ob12"><div class="ob-sb"><div class="ob-num">12 of 12</div><div class="ob-q">Notifications and quick tour</div><div class="ob-sub">You are about to unlock the full app. This is the fastest way to get value from it on day one.</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'notifications',true)"><div class="opt-label">Yes please</div><div class="opt-desc">Nudge if you haven't checked in after 7 days.</div></div><div class="opt-card" onclick="obSel(this,'notifications',false)"><div class="opt-label">No thanks</div><div class="opt-desc">I'll remember on my own.</div></div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.tour.kicker">How To Use ADDAPT</div><div class="intro-title" data-i18n="intro.tour.title">Check in, train, log, improve</div><div class="intro-copy" data-i18n="intro.tour.copy">The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADDAPT adjust the next block around what actually happened.</div></div><div class="intro-feature-list"><div class="intro-feature"><div class="intro-num">1</div><div><div class="intro-feature-title" data-i18n="intro.tour.f1.title">Check-In drives the plan</div><div class="intro-feature-copy" data-i18n="intro.tour.f1.copy">Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.</div></div></div><div class="intro-feature"><div class="intro-num">2</div><div><div class="intro-feature-title" data-i18n="intro.tour.f2.title">Training and analytics stay connected</div><div class="intro-feature-copy" data-i18n="intro.tour.f2.copy">Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.</div></div></div><div class="intro-feature"><div class="intro-num">3</div><div><div class="intro-feature-title" data-i18n="intro.tour.f3.title">Recovery gets its own system</div><div class="intro-feature-copy" data-i18n="intro.tour.f3.copy">Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.</div></div></div></div><div class="info-box" style="margin-top:14px;"><div style="font-size:13px;color:#888;line-height:1.6;" data-i18n="intro.tour.safari">In Safari: tap Share then Add to Home Screen for the full native app experience.</div><div class="quiet-note" data-i18n="intro.tour.legal">Built for general fitness and recovery planning. If you are dealing with injury, symptoms, or treatment decisions, use a qualified clinician for that part.</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(12)">Back</button><button class="btn btn-acc" onclick="finishOnboarding()">Build My Plan</button></div></div>
+  <div class="ob-step" id="ob12"><div class="ob-sb"><div class="ob-num">12 of 12</div><div class="ob-q">Notifications and quick tour</div><div class="ob-sub">You are about to unlock the full app. This is the fastest way to get value from it on day one.</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'notifications',true)"><div class="opt-label">Yes please</div><div class="opt-desc">Nudge if you haven't checked in after 7 days.</div></div><div class="opt-card" onclick="obSel(this,'notifications',false)"><div class="opt-label">No thanks</div><div class="opt-desc">I'll remember on my own.</div></div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.tour.kicker">How To Use ADDAPT</div><div class="intro-title" data-i18n="intro.tour.title">Check in, train, log, improve</div><div class="intro-copy" data-i18n="intro.tour.copy">The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADDAPT adjust the next block around what actually happened.</div></div><div class="intro-feature-list"><div class="intro-feature"><div class="intro-num">1</div><div><div class="intro-feature-title" data-i18n="intro.tour.f1.title">Check-In drives the plan</div><div class="intro-feature-copy" data-i18n="intro.tour.f1.copy">Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.</div></div></div><div class="intro-feature"><div class="intro-num">2</div><div><div class="intro-feature-title" data-i18n="intro.tour.f2.title">Training and analytics stay connected</div><div class="intro-feature-copy" data-i18n="intro.tour.f2.copy">Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.</div></div></div><div class="intro-feature"><div class="intro-num">3</div><div><div class="intro-feature-title" data-i18n="intro.tour.f3.title">Recovery gets its own system</div><div class="intro-feature-copy" data-i18n="intro.tour.f3.copy">Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.</div></div></div></div><div class="info-box" style="margin-top:14px;"><div style="font-size:13px;color:#888;line-height:1.6;" data-i18n="intro.tour.safari">In Safari: tap Share then Add to Home Screen for the full native app experience.</div><div class="quiet-note" data-i18n="intro.tour.legal">Built for general fitness and recovery planning. If you are dealing with injury, symptoms, or treatment decisions, use a qualified clinician for that part.</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(12)">Back</button><button class="btn btn-acc" onclick="finishOnboarding(); setTimeout(startFeatureWalkthrough, 600);">Build My Plan</button></div></div>
 </div>
 
 <!-- HOME -->
@@ -57,7 +54,7 @@
       <div class="user-row"><img id="userAvatar" class="user-av" src="" alt=""><span id="userName" class="user-name"></span><div style="display:flex;align-items:center;gap:8px;"><div class="sync-dot" id="syncDot"></div><button class="sign-out-btn" onclick="signOut()">Sign out</button></div></div>
       <div class="hero-greeting" id="heroGreeting">Hey</div>
       <div class="hero-sub" id="heroSub"></div>
-      <div class="hero-badges" id="heroBadges"></div>
+      <button id="showTipsBtn" class="btn btn-outline btn-sm" style="margin-top:10px;float:right;" onclick="startFeatureWalkthrough()">Show Tips</button>
     </div>
     <div class="cards">
       <div id="streakWrap"></div>
@@ -66,6 +63,8 @@
       <div class="card acc" id="wtCheckin" onclick="goTo('checkin')"><div class="card-top"><div class="card-title" data-i18n="home.card.checkin.title">Check-In</div><div class="card-arrow">→</div></div><div class="card-desc" id="checkinCardDesc" data-i18n="home.card.checkin.desc">Log energy, lifts and diet — get your updated plan instantly</div></div>
       <div class="card" id="wtPlan" onclick="viewCurrentPlan()"><div class="card-top"><div class="card-title" data-i18n="home.card.plan.title">Current Plan</div><div class="card-arrow">→</div></div><div class="card-desc" data-i18n="home.card.plan.desc">View your personalised training and diet</div></div>
       <div class="card" id="wtLog" onclick="goTo('logselect')"><div class="card-top"><div class="card-title" data-i18n="home.card.log.title">Log Session</div><div class="card-arrow">→</div></div><div class="card-desc" data-i18n="home.card.log.desc">Record today's lifts and track strength progress</div></div>
+      <div class="card emom" id="wtLogEmom" onclick="goTo('logemomselect')"><div class="card-top"><div class="card-title">Log EMOM</div><div class="sauna-chip">New</div></div><div class="card-desc">Log a custom or saved EMOM session</div></div>
+      <div class="card emom" id="wtEmom" onclick="goToEmomBuilder()"><div class="card-top"><div class="card-title" data-i18n="home.card.emom.title">EMOM</div><div class="sauna-chip">Fast</div></div><div class="card-desc" data-i18n="home.card.emom.desc">Quick minute-by-minute rounds with auto set tracking</div></div>
       <div class="card" id="wtStrength" onclick="goTo('strength')"><div class="card-top"><div class="card-title" data-i18n="home.card.strength.title">Strength Progress</div><div class="card-arrow">→</div></div><div class="card-desc" data-i18n="home.card.strength.desc">Exercise charts, PRs and volume</div></div>
       <div class="card sauna" id="wtSauna" onclick="goTo('sauna')"><div class="card-top"><div class="card-title" data-i18n="home.card.sauna.title">Sauna Calculator</div><div class="sauna-chip" data-i18n="home.card.sauna.badge">Hot New</div></div><div class="card-desc" data-i18n="home.card.sauna.desc">Heat protocol, timer, hydration and weekly planning for recovery work</div></div>
       <div class="card" id="wtHistory" onclick="goTo('history')"><div class="card-top"><div class="card-title" data-i18n="home.card.history.title">Check-In History</div><div class="card-arrow">→</div></div><div class="card-desc" data-i18n="home.card.history.desc">Weight chart and all past check-ins</div></div>
@@ -127,14 +126,116 @@
   <div class="foot"><button class="btn btn-outline btn-sm" onclick="goTo('home')">Home</button><button class="btn btn-acc btn-sm" onclick="goTo('logselect')">Log Session</button></div>
 </div>
 
-<!-- LOG SELECT -->
-<div id="logselect" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Log Session</div></div><div class="sb"><p style="font-size:13px;color:#888;margin-bottom:14px;">Which session did you train today?</p><div id="logDayList"></div></div></div>
+
+<!-- LOG SELECT (GYM) -->
+<div id="logselect" class="screen">
+  <div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Log Session</div></div>
+  <div class="sb">
+    <div style="margin-bottom:18px;">
+      <button class="btn btn-acc" style="width:100%;margin-bottom:10px;" onclick="goTo('logselect')">Log Gym Session</button>
+      <!-- Removed Log EMOM button for strict separation -->
+    </div>
+    <p id="logModeHint" style="font-size:13px;color:#888;margin-bottom:14px;">Which gym session did you train today?</p>
+    <div id="logDayList"></div>
+  </div>
+</div>
+
+<!-- LOG SELECT (EMOM) -->
+<div id="logemomselect" class="screen" style="display:none;">
+  <div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Log EMOM</div></div>
+  <div class="sb">
+    <div style="margin-bottom:18px;">
+      <button class="btn btn-outline" style="width:100%;margin-bottom:10px;" onclick="goTo('logselect')">Log Gym Session</button>
+      <button class="btn btn-acc" style="width:100%;" onclick="goTo('logemomselect')">Log EMOM</button>
+    </div>
+    <p style="font-size:13px;color:#888;margin-bottom:14px;">Log a custom or saved EMOM session below.</p>
+    <button class="btn btn-acc" style="width:100%;margin-bottom:10px;" onclick="goToEmomBuilder()">Start New EMOM</button>
+    <div id="emomLogTemplateList"></div>
+  </div>
+</div>
 
 <!-- LOG SESSION -->
-<div id="logsession" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('logselect')">←</button><div class="hdr-title" id="logTitle">Log Session</div><div class="sync-dot" id="logSD"></div></div><div class="sb"><div class="minute-card"><div class="minute-top"><div class="minute-title">Every Minute</div><div class="minute-chip" id="minuteTick">00:00</div></div><div class="minute-cue" id="minuteCue">Start your workout timer to trigger a cue every minute.</div></div><div class="w-timer-card"><div class="w-timer-row"><div class="w-timer-title">Workout Timer</div><div class="w-timer-clock" id="wTimerClock">00:00</div></div><div class="w-timer-sub" id="wTimerSub">Lockscreen card ready when timer starts.</div><div class="w-timer-meta"><select class="w-timer-select" id="wTimerExerciseSel" onchange="setWorkoutExerciseFromSelect()"><option value="">Select exercise</option></select><div class="w-timer-set" id="wTimerSet">Set 1</div></div><div class="w-rest-pill" id="wRestPill" style="display:none;">Rest <span id="wRestClock">00:00</span></div><div class="w-timer-actions"><button class="btn btn-acc btn-sm" id="wTimerBtn" onclick="toggleWorkoutTimer()">Start</button><button class="btn btn-outline btn-sm" onclick="bumpWorkoutSet()">+ Set</button><button class="btn btn-outline btn-sm" onclick="startRestTimer(90)">Rest 90s</button><button class="btn btn-outline btn-sm" onclick="resetWorkoutTimer()">Reset</button></div></div><div id="logDayInfo" style="background:#181818;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#888;"></div><div id="logExWrap"></div></div><div class="foot"><button class="btn btn-acc" onclick="submitSessionLog()">Save Session</button></div></div>
+<div id="logsession" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('logselect')">←</button><div class="hdr-title" id="logTitle">Log Session</div><div class="sync-dot" id="logSD"></div></div><div class="sb"><div class="minute-card"><div class="minute-top"><div class="minute-title">Every Minute</div><div class="minute-chip" id="minuteTick">00:00</div></div><div class="minute-cue" id="minuteCue">Start your workout timer to trigger a cue every minute.</div></div><div class="w-timer-card"><div class="w-timer-row"><div class="w-timer-title">Workout Timer</div><div class="w-timer-clock" id="wTimerClock">00:00</div></div><div class="w-timer-sub" id="wTimerSub">Lockscreen card ready when timer starts.</div><div class="w-timer-meta"><select class="w-timer-select" id="wTimerExerciseSel" onchange="setWorkoutExerciseFromSelect()"><option value="">Select exercise</option></select><div class="w-timer-set" id="wTimerSet">Set 1</div></div><div class="w-rest-pill" id="wRestPill" style="display:none;">Rest <span id="wRestClock">00:00</span></div><div class="w-timer-actions">
+  <button class="btn btn-acc btn-sm" id="wTimerBtn" onclick="toggleWorkoutTimer()">Start</button>
+  <button class="btn btn-outline btn-sm" onclick="bumpWorkoutSet()">+ Set</button>
+  <button class="btn btn-outline btn-sm" onclick="startRestTimer(60)">Rest 60s</button>
+  <button class="btn btn-outline btn-sm" onclick="startRestTimer(90)">Rest 90s</button>
+  <button class="btn btn-outline btn-sm" onclick="resetWorkoutTimer()">Reset</button>
+</div></div><div id="logDayInfo" style="background:#181818;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#888;"></div><div id="logExWrap"></div></div><div class="foot"><button class="btn btn-acc" onclick="submitSessionLog()">Save Session</button></div></div>
+
+<!-- EMOM BUILDER -->
+<div id="emomBuilder" class="screen" style="display:none;">
+  <div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Custom EMOM Builder</div></div>
+  <div class="sb">
+    <div class="emom-form">
+      <div class="form-row">
+        <label for="emomRounds">Rounds</label>
+        <input type="number" id="emomRounds" min="1" max="40" value="12" style="width:70px;">
+      </div>
+      <div class="form-row">
+        <label for="emomWork">Work (sec)</label>
+        <input type="number" id="emomWork" min="10" max="60" value="40" style="width:70px;">
+      </div>
+      <div class="form-row">
+        <label for="emomRest">Rest (sec)</label>
+        <input type="number" id="emomRest" min="0" max="50" value="20" style="width:70px;">
+      </div>
+      <div class="form-row">
+        <label for="emomExercises">Exercises (comma or line separated)</label>
+        <textarea id="emomExercises" rows="2" placeholder="e.g. Burpees, Push-ups, Air Squats"></textarea>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-acc" onclick="saveEmomTemplate()">Save as Template</button>
+        <button class="btn btn-outline" onclick="loadEmomTemplate()">Load Template</button>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-acc" onclick="startCustomEmom()">Start EMOM</button>
+      </div>
+    </div>
+    <div id="emomTemplateList" style="margin-top:18px;"></div>
+  </div>
+</div>
 
 <!-- STRENGTH -->
-<div id="strength" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Strength Progress</div></div><div class="sb"><div class="prog-tabs"><div class="prog-tab active" onclick="swPTab('charts',this)">Charts</div><div class="prog-tab" onclick="swPTab('volume',this)">Volume</div></div><div id="prog-charts"><input type="text" class="ex-search" id="exSearch" placeholder="Search exercise" oninput="filterEx(this.value)"><div id="exListWrap"></div><div id="exChartWrap" style="display:none;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><button class="back-btn" onclick="showExList()">←</button><div id="exChartTitle" style="font-family:'Syne',-apple-system,sans-serif;font-weight:700;font-size:16px;flex:1;"></div></div><div class="chart-wrap"><div class="chart-lbl">Max Weight Over Time</div><canvas id="exChart" style="width:100%;height:150px;"></canvas><div id="exChartEmpty" class="chart-empty" style="display:none;">No data yet — log this exercise to start tracking</div></div><div id="exPRBox" style="padding:13px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;margin-top:8px;display:none;"><div style="font-size:10px;color:#ffd700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">Personal Record</div><div id="exPRText" style="font-family:'Syne',-apple-system,sans-serif;font-weight:800;font-size:22px;"></div><div id="exPRDate" style="font-size:12px;color:#888;margin-top:2px;"></div></div></div></div><div id="prog-volume" style="display:none;"><div class="chart-wrap"><div class="chart-lbl">Bodyweight Over Time</div><canvas id="wtChart" style="width:100%;height:120px;"></canvas><div id="wtChartEmpty" class="chart-empty" style="display:none;">No weight data yet</div></div><div id="volWrap"></div></div></div></div>
+<div id="strength" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Strength Progress</div></div><div class="sb"><div class="prog-tabs"><div class="prog-tab active" onclick="swPTab('charts',this)">Charts</div><div class="prog-tab" onclick="swPTab('volume',this)">Volume</div></div><div id="prog-charts">
+      <div style="display:flex;gap:10px;margin-bottom:14px;">
+        <button class="btn btn-outline btn-sm" onclick="openCustomExModal()">Custom Exercises</button>
+        <button class="btn btn-outline btn-sm" onclick="shareStreak()">Share Streak</button>
+        <button class="btn btn-outline btn-sm" onclick="sharePR()">Share PR</button>
+      </div>
+  <input type="text" class="ex-search" id="exSearch" placeholder="Search exercise" oninput="filterEx(this.value)">
+  <div id="exListWrap"></div>
+  <div id="exChartWrap" style="display:none;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <button class="back-btn" onclick="showExList()">←</button>
+      <div id="exChartTitle" style="font-family:'Syne',-apple-system,sans-serif;font-weight:700;font-size:16px;flex:1;"></div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-lbl">Max Weight Over Time</div>
+      <canvas id="exChart" style="width:100%;height:150px;"></canvas>
+      <div id="exChartEmpty" class="chart-empty" style="display:none;">No data yet — log this exercise to start tracking</div>
+    </div>
+    <div id="exPRBox" style="padding:13px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;margin-top:8px;display:none;">
+      <div style="font-size:10px;color:#ffd700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">Personal Record</div>
+      <div id="exPRText" style="font-family:'Syne',-apple-system,sans-serif;font-weight:800;font-size:22px;"></div>
+      <div id="exPRDate" style="font-size:12px;color:#888;margin-top:2px;"></div>
+    </div>
+    <div id="exPRTimelineBox" style="padding:13px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:12px;margin-top:8px;display:none;">
+      <div style="font-size:10px;color:#00d4ff;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">PR Timeline</div>
+      <div id="exPRTimeline" style="font-size:13px;color:#f2f2f2;"></div>
+    </div>
+  </div>
+  <div class="chart-wrap" style="margin-top:24px;">
+    <div class="chart-lbl">Streaks (Check-Ins Per Week)</div>
+    <canvas id="streaksChart" style="width:100%;height:80px;"></canvas>
+    <div id="streaksChartEmpty" class="chart-empty" style="display:none;">No check-in data yet</div>
+  </div>
+  <div class="chart-wrap" style="margin-top:24px;">
+    <div class="chart-lbl">Progress Photos</div>
+    <input type="file" id="progressPhotoInput" accept="image/*" style="margin-bottom:10px;" onchange="uploadProgressPhoto(event)">
+    <div id="progressPhotoGallery" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+  </div>
+</div><div id="prog-volume" style="display:none;"><div class="chart-wrap"><div class="chart-lbl">Bodyweight Over Time</div><canvas id="wtChart" style="width:100%;height:120px;"></canvas><div id="wtChartEmpty" class="chart-empty" style="display:none;">No weight data yet</div></div><div id="volWrap"></div></div></div></div>
 
 <!-- SAUNA -->
 <div id="sauna" class="screen">
@@ -244,7 +345,49 @@
   </div>
 </div>
 
+<!-- Custom Exercise Modal -->
+<div id="customExModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
+  <div class="modal-sheet" style="background:#181818;padding:24px 18px 18px 18px;border-radius:16px;max-width:340px;width:94vw;box-shadow:0 8px 32px #000a;">
+    <div style="font-size:18px;font-weight:700;margin-bottom:10px;">Custom Exercises</div>
+    <div id="customExList" style="margin-bottom:14px;"></div>
+    <div style="margin-bottom:10px;">
+      <input id="customExName" class="ex-search" style="width:100%;margin-bottom:6px;" placeholder="Exercise name">
+      <select id="customExMuscle" style="width:100%;margin-bottom:6px;">
+        <option value="">Muscle group</option>
+        <option value="chest">Chest</option>
+        <option value="back">Back</option>
+        <option value="shoulders">Shoulders</option>
+        <option value="biceps">Biceps</option>
+        <option value="triceps">Triceps</option>
+        <option value="glutes">Glutes</option>
+        <option value="quads">Quads</option>
+        <option value="hamstrings">Hamstrings</option>
+        <option value="core">Core</option>
+        <option value="calves">Calves</option>
+      </select>
+      <select id="customExPattern" style="width:100%;margin-bottom:6px;">
+        <option value="">Movement pattern</option>
+        <option value="push_h">Horizontal Push</option>
+        <option value="push_v">Vertical Push</option>
+        <option value="pull_h">Horizontal Pull</option>
+        <option value="pull_v">Vertical Pull</option>
+        <option value="squat">Squat Pattern</option>
+        <option value="hinge">Hip Hinge</option>
+        <option value="iso">Isolation</option>
+      </select>
+      <select id="customExEq" style="width:100%;margin-bottom:6px;">
+        <option value="">Equipment</option>
+        <option value="full">Full Gym</option>
+        <option value="dumbbells">Dumbbells</option>
+        <option value="bands">Bands</option>
+        <option value="none">Bodyweight</option>
+      </select>
+      <button class="btn btn-acc btn-sm" style="width:100%;margin-top:4px;" onclick="saveCustomExercise()">Add Exercise</button>
+    </div>
+    <button class="btn btn-outline btn-sm" style="width:100%;margin-top:2px;" onclick="closeCustomExModal()">Close</button>
+  </div>
+</div>
+
 
 </body>
 </html>
->>>>>>> be10be4 (Initial commit of ADDAPT app)
