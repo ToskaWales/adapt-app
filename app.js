@@ -41,7 +41,9 @@ window.fbLoadCheckins=async()=>{const u=window.currentUser;if(!u)return[];try{co
 window.fbSaveSession=async sd=>{const u=window.currentUser;if(!u)return;const id=sd.isoDate+'_'+sd.dayName.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);const el=document.getElementById('logSD');if(el)el.className='sync-dot saving';try{await setDoc(doc(db,'users',u.uid,'sessions',id),{...sd,createdAt:serverTimestamp()});if(el)el.className='sync-dot saved';}catch(e){console.error(e);if(el)el.className='sync-dot error';}};
 window.fbLoadSessions=async()=>{const u=window.currentUser;if(!u)return[];try{const q=query(collection(db,'users',u.uid,'sessions'),orderBy('createdAt','desc'),limit(80));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){console.error(e);return[];}};
 window.fbLoadLastSession=async dn=>{const u=window.currentUser;if(!u)return null;try{const q=query(collection(db,'users',u.uid,'sessions'),where('dayName','==',dn),orderBy('createdAt','desc'),limit(1));const s=await getDocs(q);return s.empty?null:{id:s.docs[0].id,...s.docs[0].data()};}catch(e){console.error(e);return null;}};
-window.fbResetUserData=async()=>{const u=window.currentUser;if(!u)return false;setSD('saving');try{const checkins=await getDocs(collection(db,'users',u.uid,'checkins'));for(const snap of checkins.docs)await deleteDoc(snap.ref);const sessions=await getDocs(collection(db,'users',u.uid,'sessions'));for(const snap of sessions.docs)await deleteDoc(snap.ref);await deleteDoc(doc(db,'users',u.uid,'profile','data'));setSD('saved');return true;}catch(e){console.error(e);setSD('error');return false;}};
+window.fbResetUserData=async()=>{const u=window.currentUser;if(!u)return false;setSD('saving');try{const checkins=await getDocs(collection(db,'users',u.uid,'checkins'));for(const snap of checkins.docs)await deleteDoc(snap.ref);const sessions=await getDocs(collection(db,'users',u.uid,'sessions'));for(const snap of sessions.docs)await deleteDoc(snap.ref);const activities=await getDocs(collection(db,'users',u.uid,'activities'));for(const snap of activities.docs)await deleteDoc(snap.ref);await deleteDoc(doc(db,'users',u.uid,'profile','data'));setSD('saved');return true;}catch(e){console.error(e);setSD('error');return false;}};
+window.fbSaveActivity=async a=>{const u=window.currentUser;if(!u)return;const el=document.getElementById('cardioSD');if(el)el.className='sync-dot saving';try{await addDoc(collection(db,'users',u.uid,'activities'),{...a,createdAt:serverTimestamp()});if(el)el.className='sync-dot saved';}catch(e){console.error(e);if(el)el.className='sync-dot error';}};
+window.fbLoadActivities=async()=>{const u=window.currentUser;if(!u)return[];try{const q=query(collection(db,'users',u.uid,'activities'),orderBy('createdAt','desc'),limit(30));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){console.error(e);return[];}};
 
 
 
@@ -55,6 +57,35 @@ const APP_STATE={
   gamification:{xp:0,level:1,nextXp:100},
   notifTimers: {checkin: null, emom: null, sauna: null}
 };
+
+// ── CARDIO SPORTS ──
+const CARDIO_SPORTS=[
+  {key:'running',label:'Running',met:8.3,icon:'🏃'},
+  {key:'swimming',label:'Swimming',met:7.0,icon:'🏊'},
+  {key:'cycling',label:'Cycling',met:7.5,icon:'🚴'},
+  {key:'walking',label:'Walking',met:3.5,icon:'🚶'},
+  {key:'hiit',label:'HIIT',met:10.0,icon:'⚡'},
+  {key:'rowing',label:'Rowing',met:7.0,icon:'🚣'},
+  {key:'jumprope',label:'Jump Rope',met:11.0,icon:'⭕'},
+  {key:'elliptical',label:'Elliptical',met:5.0,icon:'🔄'},
+  {key:'hiking',label:'Hiking',met:6.0,icon:'🥾'},
+  {key:'yoga',label:'Yoga',met:3.0,icon:'🧘'},
+];
+function getActivityTimestamp(a){
+  return a.createdAt?.toMillis?a.createdAt.toMillis():a.isoDate?new Date(a.isoDate).getTime():0;
+}
+function calcActivityCalories(sportKey,durationMins,weightKg){
+  const sport=CARDIO_SPORTS.find(s=>s.key===sportKey);
+  if(!sport||!durationMins)return 0;
+  return Math.round(sport.met*(weightKg||75)*(durationMins/60));
+}
+function calcWeeklyCardioAdj(activities,weightKg){
+  if(!activities||!activities.length)return 0;
+  const cutoff=Date.now()-7*24*60*60*1000;
+  const recent=activities.filter(a=>getActivityTimestamp(a)>=cutoff);
+  const totalBurn=recent.reduce((sum,a)=>sum+calcActivityCalories(a.sport,a.duration,weightKg),0);
+  return Math.round(totalBurn/7);
+}
 
 // ── NOTIFICATION SCHEDULING ──
 function scheduleNotifications() {
@@ -200,6 +231,7 @@ function goTo(id){
   if(id==='emomBuilder')renderEmomTemplateList();
   if(id==='strength')loadStrength();
   if(id==='checkin')populateCheckinMeta();
+  if(id==='logcardio')renderLogCardio();
   if(id==='home'&&window.userProfile?.walkthroughSeen===false)setTimeout(()=>startFeatureWalkthrough(),450);
   window.scrollTo(0,0);
 }
@@ -1221,10 +1253,10 @@ function calcGamification(checkins,sessions){
 // ── HOME UI ──
 function getDefaultDashboardCheckin(){return{energy:7,stress:3,sleep:'7-8hrs',lifts:'same',diet:'on_target',weight:null,notes:'',isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB'),calOverride:null};}
 function getTodayWeekday(){return WEEKDAYS[(new Date().getDay()+6)%7];}
-function buildLivePlan(checkins,sessions,checkinOverride){
+function buildLivePlan(checkins,sessions,checkinOverride,activities=[]){
   const ci=checkinOverride||window.currentCheckin||getDefaultDashboardCheckin();
   window.currentCheckin=ci;
-  window.currentPlanData=buildPlan(window.userProfile,ci,sessions,checkins);
+  window.currentPlanData=buildPlan(window.userProfile,ci,sessions,checkins,activities);
   return window.currentPlanData;
 }
 function getDashboardPlan(checkins,sessions){
@@ -1490,15 +1522,25 @@ function renderHomeDashboard({p,checkins,sessions,plan,streak,game}){
       :`<div class="section-kicker">Quick Actions</div><div class="home-actions"><button class="mini-action-card" id="wtCheckin" onclick="goTo('checkin')"><div class="mini-action-head"><span class="mini-action-icon lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><h4>Check-In</h4></div><p>${checkins.length?`Last update ${daysAgo(toMs(checkins[0].createdAt))}d ago`:'Run your first check-in to generate the plan.'}</p></button><button class="mini-action-card" id="wtLog" onclick="goTo('logselect')"><div class="mini-action-head"><span class="mini-action-icon cyan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14h4l2-4 4 8 2-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h4>Log Training</h4></div><p>Save gym work and keep the plan adaptive.</p></button><button class="mini-action-card" id="wtEmom" onclick="goToEmomBuilder()"><div class="mini-action-head"><span class="mini-action-icon blue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/></svg></span><h4>Log EMOM</h4></div><p>Fast builder with saved intervals and cues.</p></button><button class="mini-action-card" id="wtStrength" onclick="goTo('statsHub')"><div class="mini-action-head"><span class="mini-action-icon gold"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><h4>Statistics</h4></div><p>Strength, goal progress, and recovery metrics.</p></button></div>`;
   }
 }
-function renderTrainingHub({plan}){
+function renderTrainingHub({plan,activities=[]}){
   const weekWrap=document.getElementById('trainingWeekOverview');
   const todayWrap=document.getElementById('trainingTodayCard');
+  const cardioWrap=document.getElementById('trainingCardioCard');
   if(!weekWrap||!todayWrap||!plan)return;
   const today=getTodayWeekday();
   weekWrap.innerHTML=`<div class="week-chip-row">${plan.splitDays.map(day=>`<div class="week-chip ${day.day===today?'today':''} ${day.tag==='rest'||day.tag==='active'?'rest':''}"><div class="week-chip-day">${day.day}</div><div class="week-chip-name">${day.name}</div><div class="week-chip-tag">${day.tag==='rest'?'Recovery':day.tag==='active'?'Active':(day.exercises||[]).filter(ex=>ex.scheme!=='—').length+' lifts'}</div></div>`).join('')}</div>`;
   const primary=getPrimarySession(plan).session;
   const list=(primary?.exercises||[]).filter(ex=>ex.scheme!=='—').slice(0,8);
   todayWrap.innerHTML=`<div class="session-feature"><div class="session-feature-head"><div><div class="section-kicker">Actual Session</div><div class="session-feature-title">${primary?.day||today} · ${primary?.name||'Training day'}</div><div class="session-feature-copy">${primary?.note||'Use this as the anchor session for today. Open the full plan if you want the full rationale and diet/recovery tabs.'}</div></div><button class="btn btn-outline btn-sm" onclick="goTo('result')">Open plan</button></div><div class="session-ex-list">${list.length?list.map(ex=>`<div class="session-ex-item"><div><div class="session-ex-name">${ex.name}</div><div class="session-ex-meta">${ex.muscle?cap(ex.muscle):'Accessory'}${ex.isFocus?' · focus':''}</div></div><div class="session-ex-scheme">${ex.scheme}</div></div>`).join(''):'<div class="chart-empty">Today is set aside for recovery. Use the add activity button below if you trained anyway.</div>'}</div></div>`;
+  if(cardioWrap)cardioWrap.innerHTML=renderCardioSummaryHTML(activities,window.userProfile?.weight);
+}
+function renderCardioSummaryHTML(activities,weightKg){
+  if(!activities||!activities.length)return`<div class="info-box" style="margin-bottom:14px;"><div class="info-lbl">Cardio &amp; Activities</div><div style="font-size:13px;color:#888;">No cardio logged yet. Tap Log Cardio Activity to add runs, swims, cycles and more — calorie burn is factored into your daily target.</div></div>`;
+  const cutoff=Date.now()-7*24*60*60*1000;
+  const recent=activities.filter(a=>getActivityTimestamp(a)>=cutoff);
+  const weeklyBurn=recent.reduce((sum,a)=>sum+calcActivityCalories(a.sport,a.duration,weightKg),0);
+  const rows=activities.slice(0,5).map(a=>{const sport=CARDIO_SPORTS.find(s=>s.key===a.sport)||{label:a.sport,icon:'🏃'};const kcal=calcActivityCalories(a.sport,a.duration,weightKg);return`<div class="session-ex-item"><div><div class="session-ex-name">${sport.icon} ${sport.label}</div><div class="session-ex-meta">${a.duration} min · ${a.date||a.isoDate||''}</div></div><div class="session-ex-scheme">+${kcal} kcal</div></div>`;}).join('');
+  return`<div class="info-box" style="margin-bottom:14px;"><div class="info-lbl" style="display:flex;justify-content:space-between;align-items:center;"><span>Cardio &amp; Activities</span>${weeklyBurn?`<span style="color:#c8ff00;font-weight:700;">+${weeklyBurn} kcal this week</span>`:''}</div><div class="session-ex-list" style="margin-top:8px;">${rows}</div></div>`;
 }
 function renderNutritionHub({checkins,plan}){
   const macroWrap=document.getElementById('nutritionMacroStrip');
@@ -1534,12 +1576,12 @@ async function refreshPrimarySurfaces(){
   const sub=document.getElementById('heroSub');
   if(greeting)greeting.textContent=tf('home.greeting',{name});
   if(sub)sub.textContent=tf('home.goalSub',{goal:goalLabel(p.goal)||'ADDAPT'});
-  const [checkins,sessions]=await Promise.all([window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([]),window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([])]);
+  const [checkins,sessions,activities]=await Promise.all([window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([]),window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([]),window.fbLoadActivities?window.fbLoadActivities():Promise.resolve([])]);
   const streak=calcStreak(checkins);
   const game=calcGamification(checkins,sessions);
   APP_STATE.gamification={xp:game.xp,level:game.level,nextXp:game.nextXp};
-  const plan=buildLivePlan(checkins,sessions);
-  const ctx={p,checkins,sessions,plan,streak,game};
+  const plan=buildLivePlan(checkins,sessions,undefined,activities);
+  const ctx={p,checkins,sessions,activities,plan,streak,game};
   renderHomeDashboard(ctx);
   renderTrainingHub(ctx);
   renderNutritionHub(ctx);
@@ -1561,8 +1603,8 @@ function submitCheckin(){
   goTo('generating');runSteps();
   setTimeout(async()=>{
     finishSteps();
-    const[lastSessions,pastCheckins]=await Promise.all([window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([]),window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([])]);
-    const plan=buildPlan(window.userProfile,window.currentCheckin,lastSessions,pastCheckins);
+    const[lastSessions,pastCheckins,recentActivities]=await Promise.all([window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([]),window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([]),window.fbLoadActivities?window.fbLoadActivities():Promise.resolve([])]);
+    const plan=buildPlan(window.userProfile,window.currentCheckin,lastSessions,pastCheckins,recentActivities);
     window.currentPlanData=plan;
     if(window.fbSaveCheckin)await window.fbSaveCheckin({...window.currentCheckin,planSummary:plan.summary});
     renderPlan(plan);checkMilestones(pastCheckins.length+1);goTo('result');
@@ -1573,6 +1615,66 @@ function runSteps(){if(stepInterval){clearInterval(stepInterval);stepInterval=nu
 function finishSteps(){if(stepInterval){clearInterval(stepInterval);stepInterval=null;}for(let i=1;i<=8;i++){const s=document.getElementById('gs'+i);if(s){s.className='gstep done';s.querySelector('.gstep-icon').textContent='✓';}}}
 function swTab(n,el){document.querySelectorAll('.tab-body').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+n).classList.add('active');el.classList.add('active');}
 window.swTab=swTab;
+
+// ════════════════════════════════════
+// CARDIO ACTIVITY LOGGER
+// ════════════════════════════════════
+let selectedCardioSport=null;
+function renderLogCardio(){
+  selectedCardioSport=null;
+  const chipsWrap=document.getElementById('cardioSportChips');
+  if(chipsWrap){
+    chipsWrap.innerHTML=CARDIO_SPORTS.map(s=>`<div class="chip" onclick="selectCardioSport(this,'${s.key}')">${s.icon} ${s.label}</div>`).join('');
+  }
+  const dur=document.getElementById('cardioDurSlider');
+  if(dur)dur.value=30;
+  const durVal=document.getElementById('cardioDurVal');
+  if(durVal)durVal.textContent='30 min';
+  const preview=document.getElementById('cardioCalPreview');
+  if(preview)preview.style.display='none';
+  const btn=document.getElementById('cardioSaveBtn');
+  if(btn)btn.disabled=true;
+}
+window.renderLogCardio=renderLogCardio;
+function selectCardioSport(el,key){
+  document.querySelectorAll('#cardioSportChips .chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedCardioSport=key;
+  updateCardioCalPreview();
+}
+window.selectCardioSport=selectCardioSport;
+function updateCardioDur(val){
+  const durVal=document.getElementById('cardioDurVal');
+  if(durVal)durVal.textContent=val+' min';
+  updateCardioCalPreview();
+}
+window.updateCardioDur=updateCardioDur;
+function updateCardioCalPreview(){
+  const dur=parseInt(document.getElementById('cardioDurSlider')?.value||30);
+  const weightKg=window.userProfile?.weight||75;
+  const preview=document.getElementById('cardioCalPreview');
+  const calVal=document.getElementById('cardioCalVal');
+  const btn=document.getElementById('cardioSaveBtn');
+  if(!selectedCardioSport){if(preview)preview.style.display='none';if(btn)btn.disabled=true;return;}
+  const kcal=calcActivityCalories(selectedCardioSport,dur,weightKg);
+  if(calVal)calVal.textContent='+'+kcal+' kcal burned';
+  if(preview)preview.style.display='block';
+  if(btn)btn.disabled=false;
+}
+async function submitActivityLog(){
+  if(!selectedCardioSport){showToast('Select a sport','Choose what you did before saving.');return;}
+  const dur=parseInt(document.getElementById('cardioDurSlider')?.value||30);
+  const isoDate=new Date().toISOString().split('T')[0];
+  const date=new Date().toLocaleDateString('en-GB');
+  const weightKg=window.userProfile?.weight||75;
+  const kcal=calcActivityCalories(selectedCardioSport,dur,weightKg);
+  const activity={sport:selectedCardioSport,duration:dur,kcal,isoDate,date};
+  if(window.fbSaveActivity)await window.fbSaveActivity(activity);
+  showToast('Activity logged',`${CARDIO_SPORTS.find(s=>s.key===selectedCardioSport)?.label||selectedCardioSport} · ${dur} min · +${kcal} kcal`);
+  refreshPrimarySurfaces();
+  goTo('trainingHub');
+}
+window.submitActivityLog=submitActivityLog;
 
 // ════════════════════════════════════
 // EXPANDED EXERCISE LIBRARY
@@ -2135,7 +2237,7 @@ function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,
 // ════════════════════════════════════
 // PLAN ENGINE
 // ════════════════════════════════════
-function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[]){
+function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivities=[]){
   if(!profile)profile={goal:'general',experience:'intermediate',days:4,sessionLen:60,focusMuscles:['chest','back'],equipment:'full',dietGoal:'maintain',restrictions:['none'],weight:75,height:175,age:25,sex:'male'};
   const{goal='general',experience='beginner',days=3,sessionLen=60,focusMuscles=[],equipment='full',dietGoal='maintain',restrictions=['none'],weight:pw,height=175,age=25,sex='male',customCalories}=profile;
   const{energy,stress,sleep,lifts,diet,weight:cw,calOverride}=checkin;
@@ -2162,13 +2264,14 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[]){
   let kcalBase;if(calOverride){kcalBase=calOverride;}else if(customCalories){kcalBase=customCalories;}else{kcalBase={bulk:tdee+350,maintain:tdee,cut:tdee-400}[dietGoal]||tdee;}
   const dietAdj={way_under:200,under:100,on_target:0,over:-150}[diet]||0;
   const trend=calcWeightTrend(pastCheckins,weight,dietGoal);
-  let kcal=kcalBase+dietAdj+trend.adj;if(tier===0)kcal=Math.max(kcal,tdee-50);kcal=Math.round(kcal/50)*50;
+  const cardioAdj=calcWeeklyCardioAdj(recentActivities,weight);
+  let kcal=kcalBase+dietAdj+trend.adj+cardioAdj;if(tier===0)kcal=Math.max(kcal,tdee-50);kcal=Math.round(kcal/50)*50;
   const protein=Math.round(weight*(dietGoal==='cut'?2.4:2.0));const fatK=Math.round(kcal*0.28);const fat=Math.round(fatK/9);const carbs=Math.round((kcal-protein*4-fatK)/4);
   const adaptiveSplit=assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,suggestW,profile.trainingDayMap||profile.trainingSchedule);
   const splitDays=adaptiveSplit.splitDays;
   const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
   const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,dietGoal);
-  return{summary:{tier,kcal,protein,carbs,fat,days,goal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,block,isStr,calOverride,autoDeloadReason,ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
+  return{summary:{tier,kcal,protein,carbs,fat,days,goal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,cardioAdj,block,isStr,calOverride,autoDeloadReason,ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
 }
 
 // ── MEAL BUILDER ──
@@ -2185,7 +2288,7 @@ function buildMeals(kcal,protein,carbs,fat,count,restrictions,dietGoal){
 // ════════════════════════════════════
 function renderPlan(plan,activeTab='overview'){
   const{analysis,splitDays,meals,tier,focusMuscles,experience,splitMeta}=plan;
-  const{energy,kcal,protein,carbs,fat,dietGoal,tdee,trendMsg,trendAdj,block,isStr,calOverride,autoDeloadReason,ml}=analysis;
+  const{energy,kcal,protein,carbs,fat,dietGoal,tdee,trendMsg,trendAdj,cardioAdj,block,isStr,calOverride,autoDeloadReason,ml}=analysis;
   const p=window.userProfile||{};
   const profileHtml=splitMeta?`<h2>Goal Profile</h2><ul><li><span>Priority muscles</span><span class="li-r">${splitMeta.goalProfile.priority.map(cap).join(' · ')}</span></li><li><span>Secondary muscles</span><span class="li-r">${splitMeta.goalProfile.secondary.map(cap).join(' · ')}</span></li><li><span>Maintenance muscles</span><span class="li-r">${splitMeta.goalProfile.maintenance.map(cap).join(' · ')}</span></li></ul>`:'';
   const freqHtml=splitMeta?`<h2>Frequency Engine</h2><ul>${Object.entries(splitMeta.frequency).map(([muscle,freq])=>`<li><span>${cap(muscle)}</span><span class="li-r">${freq}x / week</span></li>`).join('')}</ul>`:'';
@@ -2198,7 +2301,8 @@ function renderPlan(plan,activeTab='overview'){
   const mlPerfCard=ml?.enabled&&ml?.performance
     ?`<div style="padding:12px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.22);border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:#00d4ff;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">ML Performance · v${ml.version}${ml.cached?' · cached':''}</div><div style="font-size:13px;color:#f2f2f2;line-height:1.5;">Accuracy ${(ml.performance.accuracy*100).toFixed(0)}% · Brier loss ${ml.performance.brier.toFixed(3)} · ${ml.performance.samples} training samples</div></div>`
     :'';
-  document.getElementById('tab-overview').innerHTML=`<div class="stat-row"><div class="stat-box"><div class="stat-val">${energy}/10</div><div class="stat-lbl">Energy</div></div><div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal${calOverride?' (custom)':''}</div></div><div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div><div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div></div><div class="block-card ${isStr?'str':'hyp'}"><div class="block-tag">${isStr?'Strength Block':'Hypertrophy Block'}</div><div class="block-name">${block.name} Block — Week ${block.week} of ${block.total}</div><div class="block-desc">${isStr?'Lower reps, heavier weight, 3–4 min rest. Neural adaptation.':'Higher reps, moderate weight, shorter rest. Muscle growth and volume.'}</div>${block.earlyTrigger?`<div style="font-size:12px;color:#ffaa00;margin-bottom:8px;">${block.earlyTrigger}</div>`:''}<div class="block-row"><div class="block-bar-track"><div class="block-bar-fill" style="width:${Math.round(block.week/block.total*100)}%;"></div></div><div class="block-weeks">${block.week}/${block.total} weeks</div></div></div><h2>Analysis</h2><p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>${mlInsight}${mlPerfCard}${autoDeloadReason?`<p style="color:#ffaa00;">${autoDeloadReason}</p>`:''}<p>${{regressed:'Lifts went backwards. Do not add weight — fix recovery and nutrition first.',same:'Held steady. Target +1 rep or 2.5kg on at least one compound.',slightly_up:'Good progress. Keep increments small and consistent.',pbs:'PRs hit. Ride this momentum carefully.'}[analysis.lifts]||''}</p><p>${dietMsg}</p>${trendMsg?`<div style="padding:12px;background:${trendAdj>0?'rgba(200,255,0,0.05)':trendAdj<0?'rgba(255,77,0,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${trendAdj>0?'rgba(200,255,0,0.15)':trendAdj<0?'rgba(255,77,0,0.15)':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:${trendAdj>0?'#c8ff00':trendAdj<0?'#ff4d00':'#888'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Weight Trend${trendAdj?` · ${trendAdj>0?'+':''}${trendAdj} kcal`:''}</div><div style="font-size:13px;color:#f2f2f2;">${trendMsg}</div></div>`:''}<h2>Macros</h2><ul><li><span>Daily Calories</span><span class="li-r">${kcal} kcal${calOverride?' (custom)':''}</span></li><li><span>TDEE estimate</span><span class="li-r">${tdee} kcal</span></li><li><span>Protein</span><span class="li-r">${protein}g · ${protein*4} kcal</span></li><li><span>Carbs</span><span class="li-r">${carbs}g · ${carbs*4} kcal</span></li><li><span>Fats</span><span class="li-r">${fat}g · ${fat*9} kcal</span></li></ul><h2>Profile</h2><ul><li><span>Goal</span><span class="li-r">${cap(p.goal||'general')}</span></li><li><span>Focus muscles</span><span class="li-r">${(focusMuscles||[]).map(cap).join(' & ')}</span></li><li><span>Experience</span><span class="li-r">${cap(experience)}</span></li><li><span>Split</span><span class="li-r">${p.days||4} days · ${p.sessionLen||60} min</span></li><li><span>Diet goal</span><span class="li-r">${cap(dietGoal)}</span></li></ul>${profileHtml}${freqHtml}${setHtml}${whyHtml}`;
+  const cardioAdjHtml=cardioAdj?`<div style="padding:12px;background:rgba(200,255,0,0.05);border:1px solid rgba(200,255,0,0.15);border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:#c8ff00;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Cardio Adjustment · +${cardioAdj} kcal/day</div><div style="font-size:13px;color:#f2f2f2;">Weekly cardio activity is raising your daily calorie target to offset the burn. Keep logging runs, swims and cycles to keep it accurate.</div></div>`:'';
+  document.getElementById('tab-overview').innerHTML=`<div class="stat-row"><div class="stat-box"><div class="stat-val">${energy}/10</div><div class="stat-lbl">Energy</div></div><div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal${calOverride?' (custom)':''}</div></div><div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div><div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div></div><div class="block-card ${isStr?'str':'hyp'}"><div class="block-tag">${isStr?'Strength Block':'Hypertrophy Block'}</div><div class="block-name">${block.name} Block — Week ${block.week} of ${block.total}</div><div class="block-desc">${isStr?'Lower reps, heavier weight, 3–4 min rest. Neural adaptation.':'Higher reps, moderate weight, shorter rest. Muscle growth and volume.'}</div>${block.earlyTrigger?`<div style="font-size:12px;color:#ffaa00;margin-bottom:8px;">${block.earlyTrigger}</div>`:''}<div class="block-row"><div class="block-bar-track"><div class="block-bar-fill" style="width:${Math.round(block.week/block.total*100)}%;"></div></div><div class="block-weeks">${block.week}/${block.total} weeks</div></div></div><h2>Analysis</h2><p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>${mlInsight}${mlPerfCard}${autoDeloadReason?`<p style="color:#ffaa00;">${autoDeloadReason}</p>`:''}<p>${{regressed:'Lifts went backwards. Do not add weight — fix recovery and nutrition first.',same:'Held steady. Target +1 rep or 2.5kg on at least one compound.',slightly_up:'Good progress. Keep increments small and consistent.',pbs:'PRs hit. Ride this momentum carefully.'}[analysis.lifts]||''}</p><p>${dietMsg}</p>${trendMsg?`<div style="padding:12px;background:${trendAdj>0?'rgba(200,255,0,0.05)':trendAdj<0?'rgba(255,77,0,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${trendAdj>0?'rgba(200,255,0,0.15)':trendAdj<0?'rgba(255,77,0,0.15)':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:${trendAdj>0?'#c8ff00':trendAdj<0?'#ff4d00':'#888'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Weight Trend${trendAdj?` · ${trendAdj>0?'+':''}${trendAdj} kcal`:''}</div><div style="font-size:13px;color:#f2f2f2;">${trendMsg}</div></div>`:''}${cardioAdjHtml}<h2>Macros</h2><ul><li><span>Daily Calories</span><span class="li-r">${kcal} kcal${calOverride?' (custom)':''}</span></li><li><span>TDEE estimate</span><span class="li-r">${tdee} kcal</span></li>${cardioAdj?`<li><span>Cardio adjustment</span><span class="li-r" style="color:#c8ff00;">+${cardioAdj} kcal/day</span></li>`:''}<li><span>Protein</span><span class="li-r">${protein}g · ${protein*4} kcal</span></li><li><span>Carbs</span><span class="li-r">${carbs}g · ${carbs*4} kcal</span></li><li><span>Fats</span><span class="li-r">${fat}g · ${fat*9} kcal</span></li></ul><h2>Profile</h2><ul><li><span>Goal</span><span class="li-r">${cap(p.goal||'general')}</span></li><li><span>Focus muscles</span><span class="li-r">${(focusMuscles||[]).map(cap).join(' & ')}</span></li><li><span>Experience</span><span class="li-r">${cap(experience)}</span></li><li><span>Split</span><span class="li-r">${p.days||4} days · ${p.sessionLen||60} min</span></li><li><span>Diet goal</span><span class="li-r">${cap(dietGoal)}</span></li></ul>${profileHtml}${freqHtml}${setHtml}${whyHtml}`;
   // Training tab
   let th='<h2>Training Plan</h2>'+renderTrainingScheduleEditor(splitDays);
   splitDays.forEach(day=>{
