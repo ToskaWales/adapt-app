@@ -31,7 +31,7 @@ window.signOut=async()=>{await fbSO(auth);window.userProfile=null;goTo('login');
 onAuthStateChanged(auth,async u=>{
   if(u){window.currentUser=u;const av=document.getElementById('userAvatar'),nm=document.getElementById('userName');if(av)av.src=u.photoURL||'';if(nm)nm.textContent=u.displayName?.split(' ')[0]||'';
     const snap=await getDoc(doc(db,'users',u.uid,'profile','data'));
-    if(snap.exists()){window.userProfile=snap.data();updateHomeUI();goTo('home');}else{window.userProfile=null;startOb();goTo('onboarding');}
+    if(snap.exists()){window.userProfile=snap.data();syncProfileDrivenState();updateHomeUI();goTo('home');}else{window.userProfile=null;startOb();goTo('onboarding');}
     resetLoginButton();
   }else{window.currentUser=null;goTo('login');resetLoginButton();}
 });
@@ -47,7 +47,7 @@ window.fbResetUserData=async()=>{const u=window.currentUser;if(!u)return false;s
 
 'use strict';
 window.currentUser=null;window.userProfile=null;window.currentPlanData=null;window.currentCheckin=null;
-let obAnswers={},selectedMuscles=[],selectedRestricts=['none'],stepInterval=null,currentLogDay=null,swapTargetEx=null,calOverrideActive=false;
+let obAnswers={},selectedMuscles=[],selectedRestricts=['none'],selectedTrainDays=[],selectedNotifPrefs={checkin:true,emom:false,sauna:false},stepInterval=null,currentLogDay=null,swapTargetEx=null,calOverrideActive=false;
 let lastTrainingMove=null;
 let pendingLogMode='normal';
 const APP_STATE={
@@ -918,8 +918,25 @@ window.selC=selC;
 
 // ── ONBOARDING ──
 let obStep=1;
-function startOb(){obStep=1;obAnswers={};selectedMuscles=[];selectedRestricts=['none'];document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));document.getElementById('ob1').classList.add('active');document.getElementById('obBar').style.width=(1/OB_TOTAL*100)+'%';document.querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel','sel-p'));document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel','sel2'));const nc=document.querySelector('#restrictChips [data-val="none"]');if(nc)nc.classList.add('sel');}
+function resetOnboardingState(){
+  selectedTrainDays=[];
+  selectedNotifPrefs={checkin:true,emom:false,sauna:false};
+  syncOnboardingPrefills();
+}
+function startOb(){obStep=1;obAnswers={};selectedMuscles=[];selectedRestricts=['none'];document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));document.getElementById('ob1').classList.add('active');document.getElementById('obBar').style.width=(1/OB_TOTAL*100)+'%';document.querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel','sel-p'));document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel','sel2'));document.querySelectorAll('#daysSel .day-btn,#trainDaySel .day-btn').forEach(b=>b.classList.remove('sel'));const nc=document.querySelector('#restrictChips [data-val="none"]');if(nc)nc.classList.add('sel');resetOnboardingState();}
 window.startOb=startOb;
+function syncOnboardingPrefills(){
+  selectedTrainDays=[];
+  selectedNotifPrefs={checkin:true,emom:false,sauna:false};
+  document.querySelectorAll('#trainDaySel .day-btn').forEach(btn=>btn.classList.remove('sel'));
+  document.querySelectorAll('#notifChips .chip').forEach(chip=>chip.classList.remove('sel'));
+  const checkinChip=[...document.querySelectorAll('#notifChips .chip')].find(el=>el.textContent.trim()==='Check-In');
+  if(checkinChip)checkinChip.classList.add('sel');
+  const note=document.getElementById('trainDayNote');
+  if(note)note.style.display='none';
+  const target=document.getElementById('obTrainDayTarget');
+  if(target)target.textContent=String(parseInt(obAnswers.days,10)||0);
+}
 function syncSplitSuggestion(){const days=parseInt(obAnswers.days,10);if(!days)return;const g=obAnswers.goal||'general';const splitText=document.getElementById('splitText');const splitDaysText=document.getElementById('splitDaysText');const splitSug=document.getElementById('splitSug');if(splitText)splitText.textContent=(SPLITS[g]||SPLITS.general)[days]||'';if(splitDaysText)splitDaysText.textContent=SCHED[days]||'';if(splitSug)splitSug.style.display='block';}
 function obSel(el,key,val){el.closest('.opt-grid').querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel','sel-p'));el.classList.add(key==='goal'&&val==='hourglass'?'sel-p':'sel');obAnswers[key]=val;if(key==='goal')syncSplitSuggestion();const nb=document.getElementById('ob'+obStep+'n');if(nb)nb.disabled=false;}
 window.obSel=obSel;
@@ -927,24 +944,54 @@ window.obSel=obSel;
 const SPLITS={vtaper:{1:'Full Body',2:'Full Body A / Full Body B',3:'Upper A / Lower / Upper B',4:'Upper A / Lower / Upper B / Lower',5:'Upper A / Lower / Upper B / Lower / Shoulder+Back Focus',6:'Push / Pull / Legs / Push / Pull / Shoulder+Back Focus',7:'6-day + Active Recovery'},hourglass:{1:'Full Body (Glute Focus)',2:'Full Body A (Glute) / Full Body B (Pull+Ham)',3:'Lower Glute / Lower Ham / Upper',4:'Lower Glute / Upper / Lower Ham / Upper',5:'Lower Glute / Upper / Lower Ham / Lower Glute / Upper',6:'Lower Glute / Upper / Glute Focus / Lower Glute / Upper / Glute Focus',7:'6-day + Active Recovery'},strength:{1:'Full Body (Compound)',2:'Full Body A / Full Body B',3:'Squat / Press / Deadlift',4:'Squat / Bench / Deadlift / OHP',5:'Squat / Bench / Deadlift / OHP / Row',6:'Squat / Bench / Deadlift / OHP / Row / Squat Variation',7:'6-day + Active Recovery'},general:{1:'Full Body',2:'Full Body A / Full Body B',3:'Push / Pull / Legs',4:'Upper A / Lower / Upper B / Lower',5:'Upper A / Lower / Upper B / Lower / Full Body',6:'Push / Pull / Legs / Push / Pull / Legs',7:'6-day + Active Recovery'}};
 const SCHED={1:'Mon',2:'Mon · Thu',3:'Mon · Wed · Fri',4:'Mon · Tue · Thu · Fri',5:'Mon · Tue · Thu · Fri · Sat',6:'Mon–Sat',7:'Mon–Sun'};
 
-function selDay(el,n){document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');obAnswers.days=n;document.getElementById('ob4n').disabled=false;syncSplitSuggestion();}
+function selDay(el,n){document.querySelectorAll('#daysSel .day-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');obAnswers.days=n;selectedTrainDays=[];syncOnboardingPrefills();document.getElementById('ob4n').disabled=false;syncSplitSuggestion();}
 window.selDay=selDay;
-function selMuscle(el,val){if(el.classList.contains('sel')||el.classList.contains('sel2')){el.classList.remove('sel','sel2');selectedMuscles=selectedMuscles.filter(m=>m!==val);}else{if(selectedMuscles.length>=2){document.getElementById('muscleNote').textContent='Deselect one first.';return;}selectedMuscles.push(val);el.classList.add(selectedMuscles.length===1?'sel':'sel2');}document.getElementById('muscleNote').textContent=selectedMuscles.length===2?selectedMuscles.map(cap).join(' and ')+' — priority every session.':selectedMuscles.length===1?'Pick one more.':'Pick 2 muscles.';document.getElementById('ob6n').disabled=selectedMuscles.length!==2;}
+function toggleTrainDay(el,day){
+  const targetCount=parseInt(obAnswers.days,10)||0;
+  if(!targetCount)return;
+  if(el.classList.contains('sel')){el.classList.remove('sel');selectedTrainDays=selectedTrainDays.filter(d=>d!==day);}else{
+    if(selectedTrainDays.length>=targetCount){document.getElementById('trainDayText').textContent=`Choose exactly ${targetCount} days.`;document.getElementById('trainDayNote').style.display='block';return;}
+    el.classList.add('sel');selectedTrainDays.push(day);
+  }
+  selectedTrainDays=selectedTrainDays.sort((a,b)=>WEEKDAYS.indexOf(a)-WEEKDAYS.indexOf(b));
+  const note=document.getElementById('trainDayNote');
+  const text=document.getElementById('trainDayText');
+  if(note&&text){
+    note.style.display='block';
+    text.textContent=selectedTrainDays.length===targetCount?selectedTrainDays.join(' · '):`${selectedTrainDays.length}/${targetCount} days selected`;
+  }
+  document.getElementById('ob5n').disabled=selectedTrainDays.length!==targetCount;
+}
+window.toggleTrainDay=toggleTrainDay;
+function selMuscle(el,val){if(el.classList.contains('sel')||el.classList.contains('sel2')){el.classList.remove('sel','sel2');selectedMuscles=selectedMuscles.filter(m=>m!==val);}else{if(selectedMuscles.length>=2){document.getElementById('muscleNote').textContent='Deselect one first.';return;}selectedMuscles.push(val);el.classList.add(selectedMuscles.length===1?'sel':'sel2');}document.getElementById('muscleNote').textContent=selectedMuscles.length===2?selectedMuscles.map(cap).join(' and ')+' — priority every session.':selectedMuscles.length===1?'Pick one more.':'Pick 2 muscles.';document.getElementById('ob7n').disabled=selectedMuscles.length!==2;}
 window.selMuscle=selMuscle;
-function selRestrict(el,val){if(val==='none'){document.querySelectorAll('#restrictChips .chip').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');selectedRestricts=['none'];}else{document.querySelector('#restrictChips [data-val="none"]').classList.remove('sel');el.classList.toggle('sel');if(el.classList.contains('sel')){if(!selectedRestricts.includes(val))selectedRestricts.push(val);}else selectedRestricts=selectedRestricts.filter(r=>r!==val);selectedRestricts=selectedRestricts.filter(r=>r!=='none');if(!selectedRestricts.length){selectedRestricts=['none'];document.querySelector('#restrictChips [data-val="none"]').classList.add('sel');}}}
+function selRestrict(el,val){const noneChip=document.querySelector('#restrictChips [data-val="none"]');if(val==='none'){document.querySelectorAll('#restrictChips .chip').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');selectedRestricts=['none'];}else{if(noneChip)noneChip.classList.remove('sel');el.classList.toggle('sel');if(el.classList.contains('sel')){if(!selectedRestricts.includes(val))selectedRestricts.push(val);}else selectedRestricts=selectedRestricts.filter(r=>r!==val);selectedRestricts=selectedRestricts.filter(r=>r!=='none');if(!selectedRestricts.length){selectedRestricts=['none'];if(noneChip)noneChip.classList.add('sel');}}}
 window.selRestrict=selRestrict;
 function checkOb8(){const h=document.getElementById('obH').value,w=document.getElementById('obW').value,a=document.getElementById('obA').value;document.getElementById('ob8n').disabled=!(h&&w&&a);if(h&&w&&a){const sAdj=(obAnswers.sex||'male')==='female'?-161:5;const tdee=Math.round((10*parseFloat(w)+6.25*parseFloat(h)-5*parseFloat(a)+sAdj)*1.55);document.getElementById('tdeeText').textContent=tdee+' kcal/day (moderate activity)';document.getElementById('tdeePreview').style.display='block';}}
 window.checkOb8=checkOb8;
-function checkOb9(){const gw=parseFloat(document.getElementById('obGW').value),cw=parseFloat(document.getElementById('obW').value)||75,dg=obAnswers.dietGoal||'maintain';document.getElementById('ob9n').disabled=!gw;if(gw){const diff=gw-cw,rate=dg==='bulk'?0.3:dg==='cut'?-0.4:0.1,weeks=Math.round(Math.abs(diff)/Math.abs(rate)||0);document.getElementById('gwText').textContent=Math.abs(diff).toFixed(1)+'kg to '+(diff>0?'gain':'lose')+'. About '+weeks+' weeks at current rate.';document.getElementById('gwPreview').style.display='block';drawTimelineChart(cw,gw,weeks,'gwChart');}}
+function checkOb9(){const h=document.getElementById('obH').value,w=document.getElementById('obW').value,a=document.getElementById('obA').value;document.getElementById('ob9n').disabled=!(h&&w&&a);if(h&&w&&a){const sAdj=(obAnswers.sex||'male')==='female'?-161:5;const tdee=Math.round((10*parseFloat(w)+6.25*parseFloat(h)-5*parseFloat(a)+sAdj)*1.55);document.getElementById('tdeeText').textContent=tdee+' kcal/day (moderate activity)';document.getElementById('tdeePreview').style.display='block';}}
 window.checkOb9=checkOb9;
+function checkOb10(){document.getElementById('ob10n').disabled=!obAnswers.dietGoal;}
+window.checkOb10=checkOb10;
+function checkOb11(){const gw=parseFloat(document.getElementById('obGW').value),cw=parseFloat(document.getElementById('obW').value)||75,dg=obAnswers.dietGoal||'maintain';document.getElementById('ob11n').disabled=!gw;if(gw){const diff=gw-cw,rate=dg==='bulk'?0.3:dg==='cut'?-0.4:0.1,weeks=Math.round(Math.abs(diff)/Math.abs(rate)||0);document.getElementById('gwText').textContent=Math.abs(diff).toFixed(1)+'kg to '+(diff>0?'gain':'lose')+'. About '+weeks+' weeks at current rate.';document.getElementById('gwPreview').style.display='block';drawTimelineChart(cw,gw,weeks,'gwChart');}}
+window.checkOb11=checkOb11;
+function toggleNotifPref(el,key){el.classList.toggle('sel');selectedNotifPrefs[key]=el.classList.contains('sel');}
+window.toggleNotifPref=toggleNotifPref;
+function checkOb12(){document.getElementById('ob12n')?.removeAttribute('disabled');}
+window.checkOb12=checkOb12;
 function drawTimelineChart(start,goal,weeks,cid){const c=document.getElementById(cid);if(!c)return;const W=c.offsetWidth||280,H=90;c.width=W;c.height=H;const ctx=c.getContext('2d');const pts=Array.from({length:Math.max(weeks,2)+1},(_,i)=>start+(goal-start)*(i/Math.max(weeks,2)));const minV=Math.min(start,goal)-2,maxV=Math.max(start,goal)+2,range=maxV-minV||1;const pad={l:38,r:10,t:8,b:18};const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;ctx.clearRect(0,0,W,H);ctx.strokeStyle='#2a2a2a';ctx.lineWidth=1;[0,0.5,1].forEach(f=>{const y=pad.t+cH*f;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();ctx.fillStyle='#555';ctx.font='9px sans-serif';ctx.fillText((maxV-range*f).toFixed(0)+'kg',0,y+3);});const coords=pts.map((v,i)=>({x:pad.l+(i/(pts.length-1))*cW,y:pad.t+((maxV-v)/range)*cH}));ctx.beginPath();ctx.moveTo(coords[0].x,coords[0].y);coords.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.strokeStyle='rgba(200,255,0,0.4)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.arc(coords[0].x,coords[0].y,4,0,Math.PI*2);ctx.fillStyle='#c8ff00';ctx.fill();ctx.beginPath();ctx.arc(coords[coords.length-1].x,coords[coords.length-1].y,4,0,Math.PI*2);ctx.fillStyle='#888';ctx.fill();}
-function obNext(s){const cur=document.getElementById('ob'+s),nxt=document.getElementById('ob'+(s+1));if(!nxt)return;if(s===8){obAnswers.height=parseFloat(document.getElementById('obH').value);obAnswers.weight=parseFloat(document.getElementById('obW').value);obAnswers.age=parseFloat(document.getElementById('obA').value);}if(s===9)obAnswers.goalWeight=parseFloat(document.getElementById('obGW').value);cur.classList.remove('active');nxt.classList.add('active');obStep=s+1;document.getElementById('obBar').style.width=(obStep/OB_TOTAL*100)+'%';}
+function obNext(s){const cur=document.getElementById('ob'+s),nxt=document.getElementById('ob'+(s+1));if(!nxt)return;if(s===5){obAnswers.trainingDays=[...selectedTrainDays];obAnswers.trainingDayMap=Object.fromEntries(selectedTrainDays.map((day,index)=>[day,index]));}if(s===9){obAnswers.height=parseFloat(document.getElementById('obH').value);obAnswers.weight=parseFloat(document.getElementById('obW').value);obAnswers.age=parseFloat(document.getElementById('obA').value);}if(s===10){const customCalories=parseInt(document.getElementById('obCustomCalories').value,10);obAnswers.customCalories=Number.isFinite(customCalories)&&customCalories>0?customCalories:null;}if(s===11)obAnswers.goalWeight=parseFloat(document.getElementById('obGW').value);cur.classList.remove('active');nxt.classList.add('active');obStep=s+1;document.getElementById('obBar').style.width=(obStep/OB_TOTAL*100)+'%';}
 window.obNext=obNext;
 function obBack(s){const cur=document.getElementById('ob'+s),prv=document.getElementById('ob'+(s-1));if(!prv)return;cur.classList.remove('active');prv.classList.add('active');obStep=s-1;document.getElementById('obBar').style.width=(obStep/OB_TOTAL*100)+'%';}
 window.obBack=obBack;
 function sanitizeOnboardingProfile(raw){
   const parseNum=(v,fallback,min,max)=>{const n=parseFloat(v);if(!Number.isFinite(n))return fallback;return Math.min(max,Math.max(min,n));};
   const focus=(selectedMuscles||[]).slice(0,2);
+  const trainingDays=(selectedTrainDays||[]).slice(0,Math.min(7,Math.max(1,parseInt(raw.days,10)||4)));
+  const saunaGoal=raw.saunaGoal||'recovery';
+  const saunaDefaults={cardio:['Tue','Thu','Sat','Sun'],recovery:['Tue','Fri'],stress:['Wed','Sat','Sun'],longevity:['Mon','Thu','Sat']};
+  const saunaSchedule=(saunaDefaults[saunaGoal]||saunaDefaults.recovery).slice(0,saunaGoal==='cardio'?4:saunaGoal==='recovery'?2:3);
+  const customCaloriesValue=parseInt(raw.customCalories,10);
   return{
     ...raw,
     goal:raw.goal||'general',
@@ -961,9 +1008,22 @@ function sanitizeOnboardingProfile(raw){
     goalWeight:parseNum(raw.goalWeight,parseNum(raw.weight,75,35,300),35,300),
     focusMuscles:focus.length===2?focus:['chest','back'],
     restrictions:(selectedRestricts&&selectedRestricts.length)?selectedRestricts:['none'],
+    trainingDays:trainingDays.length?trainingDays:WEEKDAYS.slice(0,Math.min(7,Math.max(1,parseInt(raw.days,10)||4))),
+    trainingDayMap:trainingDays.length?Object.fromEntries(trainingDays.map((day,index)=>[day,index])):undefined,
+    customCalories:Number.isFinite(customCaloriesValue)&&customCaloriesValue>0?customCaloriesValue:null,
+    saunaGoal,
+    saunaSchedule,
+    notifCheckin:selectedNotifPrefs.checkin!==false,
+    notifEmom:!!selectedNotifPrefs.emom,
+    notifSauna:!!selectedNotifPrefs.sauna,
   };
 }
-async function finishOnboarding(){const profile=sanitizeOnboardingProfile(obAnswers);const payload={...profile,setupComplete:true,walkthroughSeen:false,createdAt:new Date().toISOString()};if(payload.notifications===true&&'Notification' in window)Notification.requestPermission();if(window.fbSaveProfile)await window.fbSaveProfile(payload);window.userProfile=payload;updateHomeUI();showToast(t('toast.welcome.title'),t('toast.welcome.body'));goTo('home');}
+function syncProfileDrivenState(){
+  if(!window.userProfile)return;
+  if(window.userProfile.weight)saunaState.weight=parseInt(window.userProfile.weight,10)||saunaState.weight;
+  if(window.userProfile.saunaGoal)saunaState.goal=window.userProfile.saunaGoal;
+}
+async function finishOnboarding(){const profile=sanitizeOnboardingProfile(obAnswers);const payload={...profile,setupComplete:true,walkthroughSeen:false,createdAt:new Date().toISOString()};if((payload.notifCheckin||payload.notifEmom||payload.notifSauna)&&'Notification' in window)Notification.requestPermission();if(window.fbSaveProfile)await window.fbSaveProfile(payload);window.userProfile=payload;syncProfileDrivenState();updateHomeUI();showToast(t('toast.welcome.title'),t('toast.welcome.body'));goTo('home');}
 window.finishOnboarding=finishOnboarding;
 async function resetMyData(){
   const ok=window.confirm(t('confirm.reset'));
@@ -1431,6 +1491,7 @@ function renderStatsHub({p,checkins,sessions,plan,game,streak}){
 async function refreshPrimarySurfaces(){
   const p=window.userProfile;
   if(!p?.setupComplete)return;
+  syncProfileDrivenState();
   const name=(window.currentUser?.displayName||'').split(' ')[0]||'there';
   const greeting=document.getElementById('heroGreeting');
   const sub=document.getElementById('heroSub');
