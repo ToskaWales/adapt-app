@@ -475,13 +475,14 @@ window.selC=selC;
 let obStep=1;
 function startOb(){obStep=1;obAnswers={};selectedMuscles=[];selectedRestricts=['none'];document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));document.getElementById('ob1').classList.add('active');document.getElementById('obBar').style.width=(1/OB_TOTAL*100)+'%';document.querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel','sel-p'));document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel','sel2'));const nc=document.querySelector('#restrictChips [data-val="none"]');if(nc)nc.classList.add('sel');}
 window.startOb=startOb;
-function obSel(el,key,val){el.closest('.opt-grid').querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel','sel-p'));el.classList.add(key==='goal'&&val==='hourglass'?'sel-p':'sel');obAnswers[key]=val;const nb=document.getElementById('ob'+obStep+'n');if(nb)nb.disabled=false;}
+function syncSplitSuggestion(){const days=parseInt(obAnswers.days,10);if(!days)return;const g=obAnswers.goal||'general';const splitText=document.getElementById('splitText');const splitDaysText=document.getElementById('splitDaysText');const splitSug=document.getElementById('splitSug');if(splitText)splitText.textContent=(SPLITS[g]||SPLITS.general)[days]||'';if(splitDaysText)splitDaysText.textContent=SCHED[days]||'';if(splitSug)splitSug.style.display='block';}
+function obSel(el,key,val){el.closest('.opt-grid').querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel','sel-p'));el.classList.add(key==='goal'&&val==='hourglass'?'sel-p':'sel');obAnswers[key]=val;if(key==='goal')syncSplitSuggestion();const nb=document.getElementById('ob'+obStep+'n');if(nb)nb.disabled=false;}
 window.obSel=obSel;
 
 const SPLITS={vtaper:{1:'Full Body',2:'Full Body A / Full Body B',3:'Upper A / Lower / Upper B',4:'Upper A / Lower / Upper B / Lower',5:'Upper A / Lower / Upper B / Lower / Shoulder+Back Focus',6:'Push / Pull / Legs / Push / Pull / Shoulder+Back Focus',7:'6-day + Active Recovery'},hourglass:{1:'Full Body (Glute Focus)',2:'Full Body A (Glute) / Full Body B (Pull+Ham)',3:'Lower Glute / Lower Ham / Upper',4:'Lower Glute / Upper / Lower Ham / Upper',5:'Lower Glute / Upper / Lower Ham / Lower Glute / Upper',6:'Lower Glute / Upper / Glute Focus / Lower Glute / Upper / Glute Focus',7:'6-day + Active Recovery'},strength:{1:'Full Body (Compound)',2:'Full Body A / Full Body B',3:'Squat / Press / Deadlift',4:'Squat / Bench / Deadlift / OHP',5:'Squat / Bench / Deadlift / OHP / Row',6:'Squat / Bench / Deadlift / OHP / Row / Squat Variation',7:'6-day + Active Recovery'},general:{1:'Full Body',2:'Full Body A / Full Body B',3:'Push / Pull / Legs',4:'Upper A / Lower / Upper B / Lower',5:'Upper A / Lower / Upper B / Lower / Full Body',6:'Push / Pull / Legs / Push / Pull / Legs',7:'6-day + Active Recovery'}};
 const SCHED={1:'Mon',2:'Mon · Thu',3:'Mon · Wed · Fri',4:'Mon · Tue · Thu · Fri',5:'Mon · Tue · Thu · Fri · Sat',6:'Mon–Sat',7:'Mon–Sun'};
 
-function selDay(el,n){document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');obAnswers.days=n;document.getElementById('ob4n').disabled=false;const g=obAnswers.goal||'general';document.getElementById('splitText').textContent=(SPLITS[g]||SPLITS.general)[n]||'';document.getElementById('splitDaysText').textContent=SCHED[n]||'';document.getElementById('splitSug').style.display='block';}
+function selDay(el,n){document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');obAnswers.days=n;document.getElementById('ob4n').disabled=false;syncSplitSuggestion();}
 window.selDay=selDay;
 function selMuscle(el,val){if(el.classList.contains('sel')||el.classList.contains('sel2')){el.classList.remove('sel','sel2');selectedMuscles=selectedMuscles.filter(m=>m!==val);}else{if(selectedMuscles.length>=2){document.getElementById('muscleNote').textContent='Deselect one first.';return;}selectedMuscles.push(val);el.classList.add(selectedMuscles.length===1?'sel':'sel2');}document.getElementById('muscleNote').textContent=selectedMuscles.length===2?selectedMuscles.map(cap).join(' and ')+' — priority every session.':selectedMuscles.length===1?'Pick one more.':'Pick 2 muscles.';document.getElementById('ob6n').disabled=selectedMuscles.length!==2;}
 window.selMuscle=selMuscle;
@@ -496,7 +497,28 @@ function obNext(s){const cur=document.getElementById('ob'+s),nxt=document.getEle
 window.obNext=obNext;
 function obBack(s){const cur=document.getElementById('ob'+s),prv=document.getElementById('ob'+(s-1));if(!prv)return;cur.classList.remove('active');prv.classList.add('active');obStep=s-1;document.getElementById('obBar').style.width=(obStep/OB_TOTAL*100)+'%';}
 window.obBack=obBack;
-async function finishOnboarding(){obAnswers.focusMuscles=selectedMuscles;obAnswers.restrictions=selectedRestricts;const profile={...obAnswers,setupComplete:true,walkthroughSeen:false,createdAt:new Date().toISOString()};if(obAnswers.notifications===true&&'Notification' in window)Notification.requestPermission();if(window.fbSaveProfile)await window.fbSaveProfile(profile);window.userProfile=profile;updateHomeUI();showToast(t('toast.welcome.title'),t('toast.welcome.body'));goTo('home');}
+function sanitizeOnboardingProfile(raw){
+  const parseNum=(v,fallback,min,max)=>{const n=parseFloat(v);if(!Number.isFinite(n))return fallback;return Math.min(max,Math.max(min,n));};
+  const focus=(selectedMuscles||[]).slice(0,2);
+  return{
+    ...raw,
+    goal:raw.goal||'general',
+    sex:raw.sex||'male',
+    experience:raw.experience||'intermediate',
+    days:Math.min(7,Math.max(1,parseInt(raw.days,10)||4)),
+    sessionLen:[30,45,60,90].includes(parseInt(raw.sessionLen,10))?parseInt(raw.sessionLen,10):60,
+    equipment:raw.equipment||'full',
+    dietGoal:raw.dietGoal||'maintain',
+    notifications:raw.notifications===true,
+    height:parseNum(raw.height,175,120,230),
+    weight:parseNum(raw.weight,75,35,300),
+    age:Math.round(parseNum(raw.age,25,14,90)),
+    goalWeight:parseNum(raw.goalWeight,parseNum(raw.weight,75,35,300),35,300),
+    focusMuscles:focus.length===2?focus:['chest','back'],
+    restrictions:(selectedRestricts&&selectedRestricts.length)?selectedRestricts:['none'],
+  };
+}
+async function finishOnboarding(){const profile=sanitizeOnboardingProfile(obAnswers);const payload={...profile,setupComplete:true,walkthroughSeen:false,createdAt:new Date().toISOString()};if(payload.notifications===true&&'Notification' in window)Notification.requestPermission();if(window.fbSaveProfile)await window.fbSaveProfile(payload);window.userProfile=payload;updateHomeUI();showToast(t('toast.welcome.title'),t('toast.welcome.body'));goTo('home');}
 window.finishOnboarding=finishOnboarding;
 async function resetMyData(){
   const ok=window.confirm(t('confirm.reset'));
@@ -1474,18 +1496,16 @@ async function moveScheduledDay(group,fromDay,toDay){
     window.userProfile=profile;
     lastTrainingMove={from:fromDay,to:toDay};
     if(window.fbSaveProfile)window.fbSaveProfile(profile);// fire-and-forget, don't await
-    // Re-render using the existing plan data — no full rebuild needed
+    // Re-render using existing sessions to guarantee visible day cards move immediately.
     if(window.currentPlanData){
-      window.currentPlanData.splitDays=assembleSplitDays(
-        window.userProfile,
-        window.userProfile.equipment||'full',
-        window.userProfile.sessionLen||60,
-        window.userProfile.focusMuscles||[],
-        window.currentPlanData.analysis?.isStr||false,
-        window.currentPlanData.tier||2,
-        null,
-        dayMap
-      ).splitDays;
+      const trainingPool=window.currentPlanData.splitDays.filter(d=>d.tag!=='rest'&&d.tag!=='active').map(d=>({...d,exercises:(d.exercises||[]).map(ex=>({...ex}))}));
+      const hasActive=window.userProfile?.days===7;
+      const filler=hasActive?{name:'Active Recovery',tag:'active',exercises:[{name:'Walk or mobility',scheme:'20–30 min',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'Keep moving without adding fatigue.'}:{name:'Rest Day',tag:'rest',exercises:[{name:'Rest and recover',scheme:'—',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'Eat well and sleep 7–9 hrs.'};
+      window.currentPlanData.splitDays=WEEKDAYS.map(day=>{
+        const idx=dayMap[day];
+        if(idx!==undefined&&trainingPool[idx])return{day,...trainingPool[idx]};
+        return{day,...filler};
+      });
       renderPlan(window.currentPlanData,'training');
     }
   } else {
@@ -1524,6 +1544,15 @@ function resetSaunaTimer(){clearInterval(saunaState.timerInterval);saunaState.ti
 function toggleSaunaTimer(){if(saunaState.timerRunning){clearInterval(saunaState.timerInterval);saunaState.timerRunning=false;document.getElementById('saunaTimerBtn').textContent='Resume';return;}if(!saunaState.timerSeconds)resetSaunaTimer();saunaState.timerRunning=true;document.getElementById('saunaTimerBtn').textContent='Pause';saunaState.timerInterval=setInterval(()=>{saunaState.timerSeconds--;document.getElementById('saunaTimerClock').textContent=formatSaunaClock(Math.max(0,saunaState.timerSeconds));if(saunaState.timerSeconds<=0){const stages=getSaunaStages();saunaState.stageIndex++;if(saunaState.stageIndex>=stages.length){clearInterval(saunaState.timerInterval);saunaState.timerRunning=false;document.getElementById('saunaTimerBtn').textContent='Start';document.getElementById('saunaTimerClock').textContent='00:00';document.getElementById('saunaTimerLabel').textContent='Session complete';showToast('Sauna complete','Nice work. Rehydrate slowly.');return;}saunaState.timerSeconds=stages[saunaState.stageIndex].seconds;document.getElementById('saunaTimerLabel').textContent=stages[saunaState.stageIndex].label;}},1000);}
 function addSaunaSession(){saunaState.sessions=Math.min(saunaState.sessions+1,50);buildSaunaBenefits();}
 function removeSaunaSession(){saunaState.sessions=Math.max(saunaState.sessions-1,0);buildSaunaBenefits();}
+window.showSaunaPage=showSaunaPage;
+window.setSaunaType=setSaunaType;
+window.setSaunaGoal=setSaunaGoal;
+window.updateSaunaWeight=updateSaunaWeight;
+window.updateSaunaTemp=updateSaunaTemp;
+window.toggleSaunaTimer=toggleSaunaTimer;
+window.resetSaunaTimer=resetSaunaTimer;
+window.addSaunaSession=addSaunaSession;
+window.removeSaunaSession=removeSaunaSession;
 buildSaunaProtocol();buildSaunaHydration();buildSaunaWeek();buildSaunaBenefits();
 
 function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1).replace(/_/g,' '):'';};
