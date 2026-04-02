@@ -1409,27 +1409,27 @@ function getGoalProfile(goal,focusMuscles=[]){
 }
 
 // ── 2. WEEKLY SET TARGETS ─────────────────────────────────────────
-function getWeeklySetTargets(profile,goal,days,sessionLen,tier){
+function getWeeklySetTargets(gp,goal,days,sessionLen,tier){
   const deloadMult=tier===0?0.5:tier===1?0.8:1.0;
   const lenAdj=sessionLen<=30?-3:sessionLen<=45?-1:sessionLen>=90?2:0;
   const trainDays=Math.min(days,6);
   const targets={};
-  const allMuscles=[...profile.priority,...profile.secondary,...profile.maintenance];
+  const allMuscles=[...gp.priority,...gp.secondary,...gp.maintenance];
   for(const muscle of allMuscles){
     let base;
-    if(profile.priority.includes(muscle)){
+    if(gp.priority.includes(muscle)){
       base=goal==='strength'?14:16;
       // extra volume for custom focus muscles beyond the default priority pair
       const defaultPriority={vtaper:['back','shoulders'],hourglass:['glutes','shoulders'],strength:['quads','hamstrings','chest','back','shoulders'],general:['back','quads']}[goal]||['back','quads'];
       if(!defaultPriority.includes(muscle))base+=2;
-    } else if(profile.secondary.includes(muscle)){
+    } else if(gp.secondary.includes(muscle)){
       base=10;
     } else {
       base=trainDays<=2?6:8;
     }
     base+=lenAdj;
     base=Math.round(base*deloadMult);
-    base=Math.max(profile.maintenance.includes(muscle)?4:6,base);
+    base=Math.max(gp.maintenance.includes(muscle)?4:6,base);
     targets[muscle]=base;
   }
   return targets;
@@ -1556,16 +1556,16 @@ function distributeVolume(templates,weeklyTargets){
 
 // ── 5. EXERCISE PICKER ───────────────────────────────────────────
 const SESSION_EX_BANK={
-  chest:     {anchor:['bench','db_bench','pushup'],           work:['incline_bench','incline_db','chest_press_m'],  iso:['cable_fly_mid','pec_deck','db_fly','incline_db_fly']},
-  back:      {anchor:['barbell_row','pullups','lat_pulldown'], work:['cable_row','db_row','close_pulldown'],         iso:['straight_pulldown','pullover','machine_row','db_pullover']},
+  chest:     {anchor:['bench','db_bench','pushup'],           work:['incline_bench','incline_db','chest_press_m'],  iso:['cable_fly_mid','pec_deck','db_fly','incline_db']},
+  back:      {anchor:['barbell_row','pullups_bw','lat_pulldown'], work:['cable_row','db_row','machine_row'],         iso:['pullover','db_pullover','machine_row','hyperext']},
   shoulders: {anchor:['ohp','db_ohp','arnold'],               work:['lat_raise','cable_lat','rear_delt'],           iso:['face_pull','cable_rear','lean_lat','reverse_pec']},
   biceps:    {anchor:['chin_bw','barbell_curl'],              work:['ez_curl','db_curl','hammer_curl'],             iso:['incline_curl','cable_curl','preacher_curl','conc_curl']},
-  triceps:   {anchor:['cg_bench','dips_tri'],                 work:['rope_pushdown','skull_crush','overhead_ext'],  iso:['bar_pushdown','cable_overhead','db_kickback']},
-  glutes:    {anchor:['hip_thrust','bss'],                    work:['glute_bridge','cable_kickback','abductor_m'],  iso:['band_walk','clamshell','donkey_kick','fire_hydrant']},
+  triceps:   {anchor:['cg_bench','dips_tri'],                 work:['rope_pushdown','skull_crush','overhead_ext'],  iso:['bar_pushdown','overhead_ext','db_kickback']},
+  glutes:    {anchor:['hip_thrust','db_hip_thrust','bss'],                    work:['glute_bridge','hip_thrust','abductor_m'],  iso:['band_walk','clamshell','donkey_kick','fire_hydrant']},
   quads:     {anchor:['back_squat','front_squat','leg_press'],work:['hack_squat','bss','walking_lunge'],            iso:['leg_ext','sissy_squat','goblet_squat']},
   hamstrings:{anchor:['deadlift','rdl','db_rdl'],             work:['leg_curl','seated_curl','good_morning'],       iso:['nordic','band_leg_curl','single_rdl']},
-  calves:    {anchor:['standing_calf'],                       work:['seated_calf','leg_press_calf'],                iso:['sl_calf','db_calf','bw_calf']},
-  core:      {anchor:['plank'],                               work:['cable_crunch','leg_raise','ab_wheel'],         iso:['side_plank','hollow_hold','dead_bug','bicycle_crunch']},
+  calves:    {anchor:['standing_calf'],                       work:['seated_calf','smith_calf'],                iso:['sl_calf','db_calf','bw_calf']},
+  core:      {anchor:['plank'],                               work:['cable_crunch','leg_raise','ab_wheel'],         iso:['side_plank','hollow_hold','dead_bug','bw_crunch']},
 };
 function pickEx(muscle,kind,equipment,used){
   const bank=SESSION_EX_BANK[muscle]||{};
@@ -1699,10 +1699,10 @@ function renderPlan(plan,activeTab='overview'){
   const{analysis,splitDays,meals,tier,focusMuscles,experience,splitMeta}=plan;
   const{energy,kcal,protein,carbs,fat,dietGoal,tdee,trendMsg,trendAdj,block,isStr,calOverride}=analysis;
   const p=window.userProfile||{};
-  const profileHtml=splitMeta?`<h2>Goal Profile</h2><ul><li><span>Priority muscles</span><span class="li-r">${splitMeta.goalProfile.priority.map(cap).join(' · ')}</span></li><li><span>Secondary muscles</span><span class="li-r">${splitMeta.goalProfile.secondary.map(cap).join(' · ')}</span></li><li><span>Maintenance muscles</span><span class="li-r">${splitMeta.goalProfile.maintenance.map(cap).join(' · ')}</span></li><li><span>Fatigue sensitivity</span><span class="li-r">${cap(splitMeta.goalProfile.fatigueSensitivity)}</span></li></ul>`:'';
+  const profileHtml=splitMeta?`<h2>Goal Profile</h2><ul><li><span>Priority muscles</span><span class="li-r">${splitMeta.goalProfile.priority.map(cap).join(' · ')}</span></li><li><span>Secondary muscles</span><span class="li-r">${splitMeta.goalProfile.secondary.map(cap).join(' · ')}</span></li><li><span>Maintenance muscles</span><span class="li-r">${splitMeta.goalProfile.maintenance.map(cap).join(' · ')}</span></li></ul>`:'';
   const freqHtml=splitMeta?`<h2>Frequency Engine</h2><ul>${Object.entries(splitMeta.frequency).map(([muscle,freq])=>`<li><span>${cap(muscle)}</span><span class="li-r">${freq}x / week</span></li>`).join('')}</ul>`:'';
-  const setHtml=splitMeta?`<h2>Set Bank</h2><ul>${Object.entries(splitMeta.weeklySets).map(([muscle,total])=>`<li><span>${cap(muscle)}</span><span class="li-r">${total} sets · ${(splitMeta.setsPerSession[muscle]||[]).join(' / ')}</span></li>`).join('')}</ul>`:'';
-  const whyHtml=splitMeta?`<h2>Why This Split Works</h2><p>${splitMeta.rationale}</p>${!splitMeta.validation.valid?`<p style="color:#ffaa00;">Validation warning: ${splitMeta.validation.issues.join(' ')}</p>`:''}`:'';
+  const setHtml=splitMeta?`<h2>Set Bank</h2><ul>${Object.entries(splitMeta.weeklySets).map(([muscle,total])=>`<li><span>${cap(muscle)}</span><span class="li-r">${total} sets · ${(splitMeta.frequency[muscle]||1)}x/week</span></li>`).join('')}</ul>`:'';
+  const whyHtml=splitMeta?`<h2>Why This Split Works</h2><p>${splitMeta.rationale}</p>`:'';
   const dietMsg={way_under:'Calories raised. Use liquid calories — add milk to shakes.',under:'Slightly under. Add a glass of whole milk to 2 meals for +300 kcal.',on_target:'Diet adherence was on point. Keep it up.',over:'Over target. Tighten portions at meals 2 and 3.'}[analysis.diet]||'';
   document.getElementById('tab-overview').innerHTML=`<div class="stat-row"><div class="stat-box"><div class="stat-val">${energy}/10</div><div class="stat-lbl">Energy</div></div><div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal${calOverride?' (custom)':''}</div></div><div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div><div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div></div><div class="block-card ${isStr?'str':'hyp'}"><div class="block-tag">${isStr?'Strength Block':'Hypertrophy Block'}</div><div class="block-name">${block.name} Block — Week ${block.week} of ${block.total}</div><div class="block-desc">${isStr?'Lower reps, heavier weight, 3–4 min rest. Neural adaptation.':'Higher reps, moderate weight, shorter rest. Muscle growth and volume.'}</div>${block.earlyTrigger?`<div style="font-size:12px;color:#ffaa00;margin-bottom:8px;">${block.earlyTrigger}</div>`:''}<div class="block-row"><div class="block-bar-track"><div class="block-bar-fill" style="width:${Math.round(block.week/block.total*100)}%;"></div></div><div class="block-weeks">${block.week}/${block.total} weeks</div></div></div><h2>Analysis</h2><p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p><p>${{regressed:'Lifts went backwards. Do not add weight — fix recovery and nutrition first.',same:'Held steady. Target +1 rep or 2.5kg on at least one compound.',slightly_up:'Good progress. Keep increments small and consistent.',pbs:'PRs hit. Ride this momentum carefully.'}[analysis.lifts]||''}</p><p>${dietMsg}</p>${trendMsg?`<div style="padding:12px;background:${trendAdj>0?'rgba(200,255,0,0.05)':trendAdj<0?'rgba(255,77,0,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${trendAdj>0?'rgba(200,255,0,0.15)':trendAdj<0?'rgba(255,77,0,0.15)':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:${trendAdj>0?'#c8ff00':trendAdj<0?'#ff4d00':'#888'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Weight Trend${trendAdj?` · ${trendAdj>0?'+':''}${trendAdj} kcal`:''}</div><div style="font-size:13px;color:#f2f2f2;">${trendMsg}</div></div>`:''}<h2>Macros</h2><ul><li><span>Daily Calories</span><span class="li-r">${kcal} kcal${calOverride?' (custom)':''}</span></li><li><span>TDEE estimate</span><span class="li-r">${tdee} kcal</span></li><li><span>Protein</span><span class="li-r">${protein}g · ${protein*4} kcal</span></li><li><span>Carbs</span><span class="li-r">${carbs}g · ${carbs*4} kcal</span></li><li><span>Fats</span><span class="li-r">${fat}g · ${fat*9} kcal</span></li></ul><h2>Profile</h2><ul><li><span>Goal</span><span class="li-r">${cap(p.goal||'general')}</span></li><li><span>Focus muscles</span><span class="li-r">${(focusMuscles||[]).map(cap).join(' & ')}</span></li><li><span>Experience</span><span class="li-r">${cap(experience)}</span></li><li><span>Split</span><span class="li-r">${p.days||4} days · ${p.sessionLen||60} min</span></li><li><span>Diet goal</span><span class="li-r">${cap(dietGoal)}</span></li></ul>${profileHtml}${freqHtml}${setHtml}${whyHtml}`;
   // Training tab
