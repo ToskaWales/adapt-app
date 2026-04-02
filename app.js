@@ -1161,12 +1161,15 @@ function calcGamification(checkins,sessions){
 // ── HOME UI ──
 function getDefaultDashboardCheckin(){return{energy:7,stress:3,sleep:'7-8hrs',lifts:'same',diet:'on_target',weight:null,notes:'',isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB'),calOverride:null};}
 function getTodayWeekday(){return WEEKDAYS[(new Date().getDay()+6)%7];}
-function getDashboardPlan(checkins,sessions){
-  if(window.currentPlanData)return window.currentPlanData;
-  const ci=window.currentCheckin||getDefaultDashboardCheckin();
+function buildLivePlan(checkins,sessions,checkinOverride){
+  const ci=checkinOverride||window.currentCheckin||getDefaultDashboardCheckin();
   window.currentCheckin=ci;
   window.currentPlanData=buildPlan(window.userProfile,ci,sessions,checkins);
   return window.currentPlanData;
+}
+function getDashboardPlan(checkins,sessions){
+  const ci=window.currentCheckin||getDefaultDashboardCheckin();
+  return buildLivePlan(checkins,sessions,ci);
 }
 function getPrimarySession(plan){
   const today=getTodayWeekday();
@@ -1371,8 +1374,12 @@ function renderHomeDashboard({p,checkins,sessions,plan,streak,game}){
   const primary=getPrimarySession(plan);
   const todaySession=primary.session;
   const exerciseCount=todaySession?.exercises?.filter(ex=>ex.scheme!=='—').length||0;
+  const ml=plan.analysis?.ml;
+  const mlBadge=ml?.enabled
+    ?`<div class="tiny-stat">ML ${(ml.probability*100).toFixed(0)}% readiness${ml.adjusted?` · mode ${ml.baseTier}→${plan.analysis.tier}`:''}</div>`
+    :`<div class="tiny-stat">ML warming up · ${ml?.samples||0}/8 samples</div>`;
   if(protocolCard){
-    protocolCard.innerHTML=`<div class="section-kicker">Daily System</div><div class="section-title">${todaySession?.name||'Plan loading'}</div><div class="section-copy">${todaySession?.tag==='rest'?'Low-friction recovery day. Keep moving, eat to plan, and use the sauna protocol if recovery is the priority.':`${primary.label} you have ${exerciseCount} exercise${exerciseCount===1?'':'s'} lined up. Recovery and diet are shown underneath so the day stays connected.`}</div><div class="protocol-strip"><div class="protocol-row"><div><div class="protocol-label">Training</div><div class="protocol-value">${todaySession?.tag==='rest'?'Rest / active recovery':todaySession?.day+' · '+todaySession?.name}</div></div><div class="day-tag t-${todaySession?.tag||'r'}">${(todaySession?.tag||'rest').toUpperCase()}</div></div><div class="protocol-row"><div><div class="protocol-label">Recovery</div><div class="protocol-value">${saunaState.goal==='recovery'?'Sauna recovery block recommended':'Sauna '+cap(saunaState.goal)+' protocol ready'}</div></div><button class="btn btn-outline btn-sm" id="wtSauna" onclick="goTo('sauna')">Open</button></div><div class="protocol-row"><div><div class="protocol-label">Nutrition</div><div class="protocol-value">${plan.analysis.kcal} kcal · ${plan.analysis.protein}g protein</div></div><button class="btn btn-outline btn-sm" id="wtPlan" onclick="viewCurrentPlan()">Plan</button></div></div>`;
+    protocolCard.innerHTML=`<div class="section-kicker">Daily System</div><div class="section-title">${todaySession?.name||'Plan loading'}</div><div class="section-copy">${todaySession?.tag==='rest'?'Low-friction recovery day. Keep moving, eat to plan, and use the sauna protocol if recovery is the priority.':`${primary.label} you have ${exerciseCount} exercise${exerciseCount===1?'':'s'} lined up. Recovery and diet are shown underneath so the day stays connected.`}</div><div class="tiny-stat-row">${mlBadge}<div class="tiny-stat">${plan.analysis.autoDeloadReason?'Auto deload active':'Adaptive tier live'}</div></div><div class="protocol-strip"><div class="protocol-row"><div><div class="protocol-label">Training</div><div class="protocol-value">${todaySession?.tag==='rest'?'Rest / active recovery':todaySession?.day+' · '+todaySession?.name}</div></div><div class="day-tag t-${todaySession?.tag||'r'}">${(todaySession?.tag||'rest').toUpperCase()}</div></div><div class="protocol-row"><div><div class="protocol-label">Recovery</div><div class="protocol-value">${saunaState.goal==='recovery'?'Sauna recovery block recommended':'Sauna '+cap(saunaState.goal)+' protocol ready'}</div></div><button class="btn btn-outline btn-sm" id="wtSauna" onclick="goTo('sauna')">Open</button></div><div class="protocol-row"><div><div class="protocol-label">Nutrition</div><div class="protocol-value">${plan.analysis.kcal} kcal · ${plan.analysis.protein}g protein</div></div><button class="btn btn-outline btn-sm" id="wtPlan" onclick="viewCurrentPlan()">Plan</button></div></div>`;
   }
   if(nutritionCard){
     nutritionCard.innerHTML=`<div class="section-kicker">Diet Overview</div><div class="metric-big">${plan.analysis.kcal}</div><div class="metric-sub">Daily target with ${plan.meals.length} meal slot${plan.meals.length===1?'':'s'} · ${plan.analysis.protein}g protein · ${plan.analysis.carbs}g carbs</div><div class="tiny-stat-row"><div class="tiny-stat">Protein ${plan.analysis.protein}g</div><div class="tiny-stat">Carbs ${plan.analysis.carbs}g</div><div class="tiny-stat">Fats ${plan.analysis.fat}g</div></div>`;
@@ -1414,6 +1421,8 @@ function renderStatsHub({p,checkins,sessions,plan,game,streak}){
   trainingSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div class="stats-card-head-main"><span class="stats-card-icon cyan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14h4l2-4 4 8 2-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="stats-card-title">Training</div><div class="stats-card-copy">Strength access plus weekly set landmarks from your recent logs.</div></div></div><button class="btn btn-outline btn-sm" onclick="goTo('strength')">Strength</button></div><div id="statsVolumeWrap"></div></div>`;
   renderVolumeInto(sessions,'statsVolumeWrap');
   nutritionSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div class="stats-card-head-main"><span class="stats-card-icon lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4c1.7 2 2.5 4 2.5 6S8.7 14 7 16c-1.7-2-2.5-4-2.5-6S5.3 6 7 4zm10 0c1.7 2 2.5 4 2.5 6s-.8 4-2.5 6c-1.7-2-2.5-4-2.5-6S15.3 6 17 4zM12 10v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="stats-card-title">Nutrition</div><div class="stats-card-copy">Bodyweight trend, goal progress, and the gamified layer underneath it.</div></div></div><button class="btn btn-outline btn-sm" onclick="goTo('nutritionHub')">Nutrition</button></div><div class="chart-shell"><div class="chart-shell-head"><span>Weight Change</span><span>Tap chart</span></div><canvas id="statsWeightChart" style="width:100%;height:120px;"></canvas><div id="statsWeightChartMeta" class="chart-meta"></div><div id="statsWeightEmpty" class="chart-empty" style="display:none;">Add bodyweight in check-ins to start this graph.</div></div><div class="stats-grid">${buildGoalProgressMarkup(checkins,p,game)}<div class="stats-mini"><strong>${streak.count} week${streak.count===1?'':'s'}</strong><span>${game.xp} XP earned · next level at ${game.nextXp} XP.</span></div></div></div>`;
+  const ml=plan.analysis?.ml;
+  nutritionSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div class="stats-card-head-main"><span class="stats-card-icon lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4c1.7 2 2.5 4 2.5 6S8.7 14 7 16c-1.7-2-2.5-4-2.5-6S5.3 6 7 4zm10 0c1.7 2 2.5 4 2.5 6s-.8 4-2.5 6c-1.7-2-2.5-4-2.5-6S15.3 6 17 4zM12 10v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="stats-card-title">Nutrition</div><div class="stats-card-copy">Bodyweight trend, goal progress, and the gamified layer underneath it.</div></div></div><button class="btn btn-outline btn-sm" onclick="goTo('nutritionHub')">Nutrition</button></div><div class="chart-shell"><div class="chart-shell-head"><span>Weight Change</span><span>Tap chart</span></div><canvas id="statsWeightChart" style="width:100%;height:120px;"></canvas><div id="statsWeightChartMeta" class="chart-meta"></div><div id="statsWeightEmpty" class="chart-empty" style="display:none;">Add bodyweight in check-ins to start this graph.</div></div><div class="stats-grid">${buildGoalProgressMarkup(checkins,p,game)}<div class="stats-mini"><strong>${streak.count} week${streak.count===1?'':'s'}</strong><span>${game.xp} XP earned · next level at ${game.nextXp} XP.</span></div><div class="stats-mini"><strong>${ml?.enabled?(ml.probability*100).toFixed(0)+'%' : (ml?.samples||0)+'/8'}</strong><span>${ml?.enabled?`ML readiness confidence ${(ml.confidence*100).toFixed(0)}%${ml.adjusted?` · mode adjusted ${ml.baseTier}→${plan.analysis.tier}`:''}`:'ML trainer inactive until enough check-ins are logged.'}</span></div></div></div>`;
   renderInsightChart(checkins.filter(c=>c.weight).reverse().slice(-12).map(item=>({value:parseFloat(item.weight),label:item.date||''})),'statsWeightChart','statsWeightEmpty','#c8ff00',{height:120,formatter:(value)=>`${value.toFixed(1)} kg`,metaLabel:'First log',metaMidLabel:'Latest'});
   const recoveryScore=Math.min(100,Math.round((saunaState.sessions/getSaunaTargetCount())*100));
   const recoveryMode=saunaState.goal==='recovery'?'Soft Reset':saunaState.goal==='cardio'?'Heat Engine':saunaState.goal==='stress'?'Calm Operator':'Long Game';
@@ -1431,7 +1440,7 @@ async function refreshPrimarySurfaces(){
   const streak=calcStreak(checkins);
   const game=calcGamification(checkins,sessions);
   APP_STATE.gamification={xp:game.xp,level:game.level,nextXp:game.nextXp};
-  const plan=getDashboardPlan(checkins,sessions);
+  const plan=buildLivePlan(checkins,sessions);
   const ctx={p,checkins,sessions,plan,streak,game};
   renderHomeDashboard(ctx);
   renderTrainingHub(ctx);
@@ -2434,13 +2443,13 @@ function drawLineChart(data,cid,H,color){const canvas=document.getElementById(ci
 
 // ── HISTORY ──
 async function loadHistory(){const body=document.getElementById('histBody');body.innerHTML=`<div class="empty">${t('history.loading')}</div>`;const entries=window.fbLoadCheckins?await window.fbLoadCheckins():[];if(!entries.length){body.innerHTML=`<div class="empty">${t('history.empty')}</div>`;return;}body.innerHTML=entries.map(e=>{const en=parseInt(e.energy)||5;const cls=en>=7?'e-hi':en>=4?'e-mid':'e-lo';const d=daysAgo(toMs(e.createdAt));const whenLbl=d===0?t('history.today'):d===1?t('history.yesterday'):tf('history.daysAgo',{days:d});return`<div class="hist-badge" onclick="viewHist('${e.id}')"><div><div style="font-weight:500;font-size:14px;">${e.date||''} <span style="font-size:11px;color:#888;">· ${whenLbl}</span></div><div style="font-size:12px;color:#888;margin-top:2px;">${e.weight?e.weight+'kg · ':''} ${(e.lifts||'').replace(/_/g,' ')} · ${e.sleep||''}</div></div><div style="text-align:right;"><div class="e-val ${cls}">${e.energy}<span style="font-size:12px;font-weight:400;">/10</span></div><div style="font-size:11px;color:#888;">${t('history.energy')}</div></div></div>`;}).join('');}
-window.viewHist=async function(id){const entries=window.fbLoadCheckins?await window.fbLoadCheckins():[];const e=entries.find(x=>x.id===id);if(!e)return;window.currentCheckin=e;const plan=buildPlan(window.userProfile,e,[],[]);window.currentPlanData=plan;renderPlan(plan);goTo('result');};
+window.viewHist=async function(id){const[entries,sessions]=await Promise.all([window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([]),window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([])]);const e=entries.find(x=>x.id===id);if(!e)return;window.currentCheckin=e;const plan=buildLivePlan(entries,sessions,e);renderPlan(plan);goTo('result');};
 
 function viewCurrentPlan(){
-  if(window.currentPlanData){renderPlan(window.currentPlanData);goTo('result');return;}
   const ci={energy:7,stress:3,sleep:'7-8hrs',lifts:'same',diet:'on_target',weight:null,notes:'',isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB'),calOverride:null};
-  window.currentCheckin=ci;
-  Promise.all([window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([]),window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([])]).then(([sessions,checkins])=>{const plan=buildPlan(window.userProfile,ci,sessions,checkins);window.currentPlanData=plan;renderPlan(plan);goTo('result');});
+  const activeCheckin=window.currentCheckin||ci;
+  window.currentCheckin=activeCheckin;
+  Promise.all([window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([]),window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([])]).then(([sessions,checkins])=>{const plan=buildLivePlan(checkins,sessions,activeCheckin);renderPlan(plan);goTo('result');});
 }
 window.viewCurrentPlan=viewCurrentPlan;
 
