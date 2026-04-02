@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -133,9 +132,9 @@
   <div class="sb">
     <div style="margin-bottom:18px;">
       <button class="btn btn-acc" style="width:100%;margin-bottom:10px;" onclick="goTo('logselect')">Log Gym Session</button>
-      <button class="btn btn-outline" style="width:100%;" onclick="goTo('logemomselect')">Log EMOM</button>
+      <!-- Removed Log EMOM button for strict separation -->
     </div>
-    <p id="logModeHint" style="font-size:13px;color:#888;margin-bottom:14px;">Which session did you train today?</p>
+    <p id="logModeHint" style="font-size:13px;color:#888;margin-bottom:14px;">Which gym session did you train today?</p>
     <div id="logDayList"></div>
   </div>
 </div>
@@ -155,7 +154,13 @@
 </div>
 
 <!-- LOG SESSION -->
-<div id="logsession" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('logselect')">←</button><div class="hdr-title" id="logTitle">Log Session</div><div class="sync-dot" id="logSD"></div></div><div class="sb"><div class="minute-card"><div class="minute-top"><div class="minute-title">Every Minute</div><div class="minute-chip" id="minuteTick">00:00</div></div><div class="minute-cue" id="minuteCue">Start your workout timer to trigger a cue every minute.</div></div><div class="w-timer-card"><div class="w-timer-row"><div class="w-timer-title">Workout Timer</div><div class="w-timer-clock" id="wTimerClock">00:00</div></div><div class="w-timer-sub" id="wTimerSub">Lockscreen card ready when timer starts.</div><div class="w-timer-meta"><select class="w-timer-select" id="wTimerExerciseSel" onchange="setWorkoutExerciseFromSelect()"><option value="">Select exercise</option></select><div class="w-timer-set" id="wTimerSet">Set 1</div></div><div class="w-rest-pill" id="wRestPill" style="display:none;">Rest <span id="wRestClock">00:00</span></div><div class="w-timer-actions"><button class="btn btn-acc btn-sm" id="wTimerBtn" onclick="toggleWorkoutTimer()">Start</button><button class="btn btn-outline btn-sm" onclick="bumpWorkoutSet()">+ Set</button><button class="btn btn-outline btn-sm" onclick="startRestTimer(60)">Rest 60s</button><button class="btn btn-outline btn-sm" onclick="startRestTimer(90)">Rest 90s</button><button class="btn btn-outline btn-sm" onclick="startEmomTimer(12)">EMOM 12</button><button class="btn btn-outline btn-sm" onclick="resetWorkoutTimer()">Reset</button></div></div><div id="logDayInfo" style="background:#181818;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#888;"></div><div id="logExWrap"></div></div><div class="foot"><button class="btn btn-acc" onclick="submitSessionLog()">Save Session</button></div></div>
+<div id="logsession" class="screen"><div class="hdr"><button class="back-btn" onclick="goTo('logselect')">←</button><div class="hdr-title" id="logTitle">Log Session</div><div class="sync-dot" id="logSD"></div></div><div class="sb"><div class="minute-card"><div class="minute-top"><div class="minute-title">Every Minute</div><div class="minute-chip" id="minuteTick">00:00</div></div><div class="minute-cue" id="minuteCue">Start your workout timer to trigger a cue every minute.</div></div><div class="w-timer-card"><div class="w-timer-row"><div class="w-timer-title">Workout Timer</div><div class="w-timer-clock" id="wTimerClock">00:00</div></div><div class="w-timer-sub" id="wTimerSub">Lockscreen card ready when timer starts.</div><div class="w-timer-meta"><select class="w-timer-select" id="wTimerExerciseSel" onchange="setWorkoutExerciseFromSelect()"><option value="">Select exercise</option></select><div class="w-timer-set" id="wTimerSet">Set 1</div></div><div class="w-rest-pill" id="wRestPill" style="display:none;">Rest <span id="wRestClock">00:00</span></div><div class="w-timer-actions">
+  <button class="btn btn-acc btn-sm" id="wTimerBtn" onclick="toggleWorkoutTimer()">Start</button>
+  <button class="btn btn-outline btn-sm" onclick="bumpWorkoutSet()">+ Set</button>
+  <button class="btn btn-outline btn-sm" onclick="startRestTimer(60)">Rest 60s</button>
+  <button class="btn btn-outline btn-sm" onclick="startRestTimer(90)">Rest 90s</button>
+  <button class="btn btn-outline btn-sm" onclick="resetWorkoutTimer()">Reset</button>
+</div></div><div id="logDayInfo" style="background:#181818;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#888;"></div><div id="logExWrap"></div></div><div class="foot"><button class="btn btn-acc" onclick="submitSessionLog()">Save Session</button></div></div>
 
 <!-- EMOM BUILDER -->
 <div id="emomBuilder" class="screen" style="display:none;">
