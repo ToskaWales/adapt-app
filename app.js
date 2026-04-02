@@ -178,7 +178,44 @@ window.closeCustomExModal = closeCustomExModal;
 window.saveCustomExercise = saveCustomExercise;
 window.deleteCustomExercise = deleteCustomExercise;
 
-// Merge custom exercises into EX_LIB for selection
+// ════════════════════════════════════
+// ADD WEIGHT MODAL
+// ════════════════════════════════════
+function openAddWeightModal() {
+  const input = document.getElementById('addWeightInput');
+  if (input) input.value = '';
+  document.getElementById('addWeightModal').style.display = 'flex';
+}
+function closeAddWeightModal() {
+  document.getElementById('addWeightModal').style.display = 'none';
+}
+async function saveWeightEntry() {
+  const input = document.getElementById('addWeightInput');
+  const weight = input && input.value ? parseFloat(input.value) : null;
+  if (!weight || isNaN(weight) || weight < 20 || weight > 300) {
+    showToast('Invalid weight', 'Please enter a weight between 20 and 300 kg.');
+    return;
+  }
+  const entry = {
+    weight,
+    isoDate: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-GB'),
+    // Marks this as a weight-only log (no energy, sleep, lifts, diet, or stress fields)
+    weightOnly: true
+  };
+  try {
+    if (window.fbSaveCheckin) await window.fbSaveCheckin(entry);
+    closeAddWeightModal();
+    showToast('Weight saved', `${weight} kg logged.`);
+  } catch (e) {
+    showToast('Save failed', 'Could not save weight. Please try again.');
+  }
+}
+window.openAddWeightModal = openAddWeightModal;
+window.closeAddWeightModal = closeAddWeightModal;
+window.saveWeightEntry = saveWeightEntry;
+
+
 function getAllExercises() {
   const customs = getCustomExercises();
   const lib = { ...EX_LIB };
