@@ -196,6 +196,7 @@ function goTo(id){
   if(id==='settings')renderSettings();
   if(id==='logselect')renderLogSelect();
   if(id==='logemomselect')renderLogEmomSelect();
+  if(id==='emomBuilder')renderEmomTemplateList();
   if(id==='strength')loadStrength();
   if(id==='checkin')populateCheckinMeta();
   if(id==='home'&&window.userProfile?.walkthroughSeen===false)setTimeout(()=>startFeatureWalkthrough(),450);
@@ -203,11 +204,60 @@ function goTo(id){
 }
 window.goTo=goTo;
 
+function getEmomTemplates(){
+  try{
+    const data=JSON.parse(localStorage.getItem('emomTemplates')||'[]');
+    return Array.isArray(data)?data:[];
+  }catch{return[];}
+}
+function saveEmomTemplates(list){localStorage.setItem('emomTemplates',JSON.stringify(Array.isArray(list)?list:[]));}
+function parseEmomExercises(text){
+  return String(text||'')
+    .split(/[\n,]/)
+    .map(x=>x.trim())
+    .filter(Boolean)
+    .slice(0,20);
+}
+function readEmomBuilderConfig(){
+  const rounds=Math.max(1,Math.min(40,parseInt(document.getElementById('emomRounds')?.value,10)||12));
+  const work=Math.max(10,Math.min(60,parseInt(document.getElementById('emomWork')?.value,10)||40));
+  const rest=Math.max(0,Math.min(50,parseInt(document.getElementById('emomRest')?.value,10)||20));
+  const exercises=parseEmomExercises(document.getElementById('emomExercises')?.value);
+  if(document.getElementById('emomRounds'))document.getElementById('emomRounds').value=String(rounds);
+  if(document.getElementById('emomWork'))document.getElementById('emomWork').value=String(work);
+  if(document.getElementById('emomRest'))document.getElementById('emomRest').value=String(rest);
+  return{rounds,work,rest,exercises};
+}
+function applyEmomBuilderConfig(cfg){
+  if(!cfg)return;
+  if(document.getElementById('emomRounds'))document.getElementById('emomRounds').value=String(cfg.rounds||12);
+  if(document.getElementById('emomWork'))document.getElementById('emomWork').value=String(cfg.work||40);
+  if(document.getElementById('emomRest'))document.getElementById('emomRest').value=String(cfg.rest||20);
+  if(document.getElementById('emomExercises'))document.getElementById('emomExercises').value=(cfg.exercises||[]).join(', ');
+}
+function renderEmomTemplateList(){
+  const wrap=document.getElementById('emomTemplateList');
+  if(!wrap)return;
+  const templates=getEmomTemplates();
+  if(!templates.length){
+    wrap.innerHTML='<div style="color:#888;font-size:13px;">No saved templates yet.</div>';
+    return;
+  }
+  wrap.innerHTML=templates.map((t,i)=>
+    `<div class='emom-tpl-row' style='margin-bottom:8px;'>
+      <b>Rounds:</b> ${t.rounds}, <b>Work:</b> ${t.work}s, <b>Rest:</b> ${t.rest}s<br>
+      <b>Exercises:</b> ${(t.exercises||[]).join(', ')||'None'}<br>
+      <button class='btn btn-outline btn-sm' onclick='loadEmomTemplate(${i})'>Load</button>
+      <button class='btn btn-acc btn-sm' style='margin-left:8px;' onclick='startSavedEmom(${i})'>Start</button>
+      <button class='btn btn-outline btn-sm' style='margin-left:8px;' onclick='deleteEmomTemplate(${i})'>Delete</button>
+    </div>`
+  ).join('');
+}
 function renderLogEmomSelect(){
   // Show saved EMOM templates for logging
   const wrap = document.getElementById('emomLogTemplateList');
   if(!wrap) return;
-  let templates = JSON.parse(localStorage.getItem('emomTemplates')||'[]');
+  const templates = getEmomTemplates();
   if(!templates.length){
     wrap.innerHTML = '<div style="color:#888;font-size:13px;">No EMOM templates saved yet. Use the EMOM builder to create one.</div>';
     return;
@@ -217,10 +267,44 @@ function renderLogEmomSelect(){
       <b>Rounds:</b> ${t.rounds}, <b>Work:</b> ${t.work}s, <b>Rest:</b> ${t.rest}s<br>
       <b>Exercises:</b> ${t.exercises.join(', ')}<br>
       <button class='btn btn-outline btn-sm' onclick='loadEmomTemplate(${i});goToEmomBuilder();'>Edit</button>
-      <button class='btn btn-acc btn-sm' style='margin-left:8px;' onclick='startEmomTimer(${t.rounds},${t.work},${t.rest},${JSON.stringify(t.exercises)})'>Log This EMOM</button>
+      <button class='btn btn-acc btn-sm' style='margin-left:8px;' onclick='startSavedEmom(${i})'>Log This EMOM</button>
     </div>`
   ).join('');
 }
+function goToEmomBuilder(){goTo('emomBuilder');}
+window.goToEmomBuilder=goToEmomBuilder;
+function saveEmomTemplate(){
+  const cfg=readEmomBuilderConfig();
+  if(!cfg.exercises.length){showToast('Add exercises','Enter at least one exercise.');return;}
+  const templates=getEmomTemplates();
+  templates.unshift(cfg);
+  saveEmomTemplates(templates.slice(0,20));
+  renderEmomTemplateList();
+  renderLogEmomSelect();
+  showToast('Template saved','Your EMOM template is ready.');
+}
+window.saveEmomTemplate=saveEmomTemplate;
+function loadEmomTemplate(index){
+  const templates=getEmomTemplates();
+  if(!templates.length){showToast('No templates','Save a template first.');return null;}
+  const idx=Number.isInteger(index)?index:0;
+  const tpl=templates[idx];
+  if(!tpl){showToast('Template missing','Please choose another template.');return null;}
+  applyEmomBuilderConfig(tpl);
+  renderEmomTemplateList();
+  return tpl;
+}
+window.loadEmomTemplate=loadEmomTemplate;
+function deleteEmomTemplate(index){
+  const templates=getEmomTemplates();
+  if(!templates[index])return;
+  templates.splice(index,1);
+  saveEmomTemplates(templates);
+  renderEmomTemplateList();
+  renderLogEmomSelect();
+  showToast('Template deleted','Removed from your EMOM list.');
+}
+window.deleteEmomTemplate=deleteEmomTemplate;
 function setSD(s){['syncDot','ciSD','logSD'].forEach(id=>{const e=document.getElementById(id);if(e)e.className='sync-dot'+(s?' '+s:'');});}
 
 // ── TOAST ──
@@ -472,15 +556,21 @@ function setWorkoutExerciseFromSelect(){const sel=document.getElementById('wTime
 window.setWorkoutExerciseFromSelect=setWorkoutExerciseFromSelect;
 function bumpWorkoutSet(){APP_STATE.workoutTimer.activeSet++;renderWorkoutTimer();updateMediaSession(Math.floor(APP_STATE.workoutTimer.seconds/60),null);}
 window.bumpWorkoutSet=bumpWorkoutSet;
-function startEmomTimer(minutes=12){
+function startEmomTimer(minutes=12,workSeconds=40,restSeconds=20,exerciseList=[]){
   const wt=APP_STATE.workoutTimer;
   wt.emomEnabled=true;
-  wt.emomTargetMinutes=Math.max(4,Math.min(30,parseInt(minutes,10)||12));
+  wt.emomTargetMinutes=Math.max(1,Math.min(40,parseInt(minutes,10)||12));
+  wt.emomWork=Math.max(10,Math.min(60,parseInt(workSeconds,10)||40));
+  wt.emomRest=Math.max(0,Math.min(50,parseInt(restSeconds,10)||20));
+  wt.emomExercises=Array.isArray(exerciseList)?exerciseList.map(x=>String(x||'').trim()).filter(Boolean):[];
+  wt.activeExercise=wt.emomExercises[0]||wt.activeExercise||'';
   wt.activeSet=1;
   wt.lastMinute=-1;
-  if(!wt.running&&wt.seconds===0)wt.startEpoch=Date.now();
+  wt.seconds=0;
+  wt.startEpoch=Date.now();
+  stopRestTimer(true);
   setWorkoutTimerActive(true);
-  showToast('EMOM started',`${wt.emomTargetMinutes} rounds. One minute per round.`);
+  showToast('EMOM started',`${wt.emomTargetMinutes} rounds · ${wt.emomWork}s work / ${wt.emomRest}s rest.`);
 }
 window.startEmomTimer=startEmomTimer;
 function stopRestTimer(resetDisplay){const wt=APP_STATE.workoutTimer;clearInterval(wt.restInterval);wt.restInterval=null;if(resetDisplay)wt.restSeconds=0;renderWorkoutTimer();}
@@ -1801,6 +1891,46 @@ window.swapMeal=swapMeal;
 // ── LOG SESSION ──
 function renderLogSelect(){const plan=window.currentPlanData,body=document.getElementById('logDayList'),hint=document.getElementById('logModeHint');if(hint)hint.textContent=pendingLogMode==='emom'?'EMOM mode is armed: pick today\'s session to auto-start a 12-minute EMOM timer.':'Which session did you train today?';if(!plan){body.innerHTML='<div class="empty">Complete a check-in first to generate your plan.</div>';return;}body.innerHTML=plan.splitDays.filter(d=>d.tag!=='rest'&&d.tag!=='active').map((d,i)=>`<div class="card" onclick="openLogDay(${i})"><div class="card-top"><div class="day-tag t-${d.tag}" style="font-size:10px;">${d.tag.toUpperCase()}</div><div class="card-arrow">→</div></div><div class="card-title">${d.day} — ${d.name}</div><div class="card-desc">${d.exercises.filter(e=>e.scheme!=='—').length} exercises</div></div>`).join('');}
 let logDayIndex=null;
+function openCustomEmomLogSession(config){
+  const rounds=Math.max(1,Math.min(40,parseInt(config?.rounds,10)||12));
+  const exercises=(Array.isArray(config?.exercises)?config.exercises:[]).map(x=>String(x||'').trim()).filter(Boolean);
+  if(!exercises.length){showToast('Add exercises','Enter at least one exercise.');return false;}
+  currentLogDay={
+    day:'EMOM',
+    name:'Custom EMOM',
+    tag:'emom',
+    exercises:exercises.map(name=>({name,muscle:'conditioning',pattern:'conditioning',scheme:`${rounds}×1`,isEmom:true}))
+  };
+  document.getElementById('logTitle').textContent='EMOM - Custom';
+  document.getElementById('logDayInfo').textContent=`${rounds} rounds · Log your best set for each movement`;
+  const exSel=document.getElementById('wTimerExerciseSel');
+  if(exSel)exSel.innerHTML='<option value="">Select exercise</option>'+exercises.map(name=>`<option value="${name}">${name}</option>`).join('');
+  APP_STATE.workoutTimer.activeExercise=exercises[0]||'';
+  APP_STATE.workoutTimer.activeSet=1;
+  stopRestTimer(true);
+  document.getElementById('logExWrap').innerHTML=exercises.map(name=>{
+    const safeName=name.replace(/[^a-zA-Z0-9]/g,'_');
+    return `<div class="log-ex-card"><div class="log-ex-hdr"><div class="log-ex-name">${name}</div><div class="log-ex-info">Best set after EMOM</div></div><div class="log-sets"><div class="log-set-row"><div class="log-set-num">Best</div><input type="number" class="log-in" placeholder="kg" step="0.5" id="w_${safeName}_0"><span class="log-lbl">kg ×</span><input type="number" class="log-in" placeholder="reps" id="r_${safeName}_0"><span class="log-lbl">reps</span></div></div></div>`;
+  }).join('');
+  wireLogInputHelpers();
+  renderWorkoutTimer();
+  if('mediaSession' in navigator)updateMediaSession(Math.floor(APP_STATE.workoutTimer.seconds/60),'Custom EMOM');
+  goTo('logsession');
+  return true;
+}
+function startSavedEmom(index){
+  const template=loadEmomTemplate(index);
+  if(!template)return;
+  if(!openCustomEmomLogSession(template))return;
+  startEmomTimer(template.rounds,template.work,template.rest,template.exercises);
+}
+window.startSavedEmom=startSavedEmom;
+function startCustomEmom(){
+  const config=readEmomBuilderConfig();
+  if(!openCustomEmomLogSession(config))return;
+  startEmomTimer(config.rounds,config.work,config.rest,config.exercises);
+}
+window.startCustomEmom=startCustomEmom;
 async function openLogDay(idx){
   const plan=window.currentPlanData;
   if(!plan)return;
