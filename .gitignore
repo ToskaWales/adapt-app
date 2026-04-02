@@ -1,0 +1,8 @@
+# Windows desktop noise
+*.lnk
+*.url
+desktop.ini
+Thumbs.db
+
+# Common local artifacts
+$RECYCLE.BIN/
