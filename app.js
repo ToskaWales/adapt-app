@@ -192,6 +192,7 @@ function getAllExercises() {
 function goTo(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  updateAppNavState(id);
   if(id!=='home'&&walkthroughState.active)closeFeatureWalkthrough(false);
   if(id==='history')loadHistory();
   if(id==='settings')renderSettings();
@@ -412,7 +413,6 @@ window.renderProgressPhotoGallery = function() {
 const origGoTo = window.goTo;
 window.goTo = function(id) {
   origGoTo(id);
-  updateAppNavState(id);
   if(['home','trainingHub','nutritionHub','statsHub','sauna'].includes(id))refreshPrimarySurfaces();
   if (id === 'strength') {
     setTimeout(window.renderProgressPhotoGallery, 100);
