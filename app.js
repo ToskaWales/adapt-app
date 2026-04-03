@@ -1919,6 +1919,54 @@ function buildProfileReminderSummary(profile){
   if(profile?.notifSauna)items.push('Sauna');
   return items.length?items.join(' · '):'Reminders off';
 }
+// ── ADVANCED ANALYTICS ──
+function estimate1RM(weight,reps){
+  if(!weight||!reps||reps<1||reps>20)return weight;
+  return Math.round(weight/(1.0278-0.0278*reps)*10)/10;
+}
+function calcExerciseStats(sessions,exerciseName){
+  const relevant=sessions.filter(s=>(s.exercises||[]).some(ex=>ex.name&&ex.name.toLowerCase().includes(exerciseName.toLowerCase())));
+  if(!relevant.length)return null;
+  const allSets=relevant.flatMap(s=>(s.exercises||[]).filter(ex=>ex.name&&ex.name.toLowerCase().includes(exerciseName.toLowerCase())).flatMap(ex=>ex.sets||[]));
+  if(!allSets.length)return null;
+  const heaviest=allSets.reduce((max,set)=>Math.max(max,parseFloat(set.weight)||0),0);
+  const totalVolume=allSets.reduce((sum,set)=>{const w=parseFloat(set.weight)||0,r=parseInt(set.reps,10)||0;return sum+w*r;},0);
+  const estMax=estimate1RM(heaviest,allSets.find(s=>parseFloat(s.weight)===heaviest)?.reps||5);
+  return {heaviest,estMax,totalVolume,setCount:allSets.length,recent:relevant.slice(0,3)};
+}
+function buildInsightCard(title,changed,reason,action){
+  return '<div class="insight-card"><div class="insight-title">'+title+'</div><div class="insight-section"><div class="insight-label">What changed</div><div class="insight-text">'+changed+'</div></div><div class="insight-section"><div class="insight-label">Why</div><div class="insight-text">'+reason+'</div></div><div class="insight-section"><div class="insight-label">What to do</div><div class="insight-text">'+action+'</div></div></div>';
+}
+function generateInsightCards(checkins,sessions){
+  const cards=[];
+  if(!sessions.length)return cards;
+  const recentSessions=sessions.slice(0,7);
+  const avgVolume=recentSessions.reduce((sum,s)=>{const vol=(s.exercises||[]).reduce((sv,ex)=>(ex.sets||[]).length+sv,0);return sum+vol},0)/Math.max(recentSessions.length,1);
+  const eightWeekVolume=sessions.slice(0,28).reduce((sum,s)=>{const vol=(s.exercises||[]).reduce((sv,ex)=>(ex.sets||[]).length+sv,0);return sum+vol},0)/4;
+  if(avgVolume>eightWeekVolume*1.15){
+    cards.push(buildInsightCard('Volume Surge','Your recent session volume is 15% higher than your 2-month baseline.','You may have increased intensity or added volume to drive adaptation.','Monitor fatigue; consider strategic deloads to avoid overuse.'));
+  }else if(avgVolume<eightWeekVolume*0.85){
+    cards.push(buildInsightCard('Volume Dip','Your recent session volume is 15% lower than average.','Possible reasons: recovering from a block, missing sessions, or lighter training week.','Check your energy levels in the latest check-in and adjust plan intensity if needed.'));
+  }
+  const recentCheckins=getHabitCheckins(checkins).slice(0,5);
+  if(recentCheckins.length>=3){
+    const avgEnergy=recentCheckins.reduce((sum,c)=>sum+(c.energy||0),0)/recentCheckins.length;
+    if(avgEnergy>=8){
+      cards.push(buildInsightCard('Energy Peak','Your energy score is consistently 8/10 or higher.','High energy usually precedes breakthrough weeks; capitalize now.','Push for a session PR or increase volume volume this week.'));
+    }else if(avgEnergy<=4){
+      cards.push(buildInsightCard('Recovery Needed','Your energy score is consistently 4/10 or lower.','Fatigue may be accumulating from training, stress, or sleep debt.','Use deload week, increase sauna sessions, and prioritize sleep.'));
+    }
+  }
+  const liftTrend=recentCheckins.map(c=>c.lifts).slice(0,5);
+  if(liftTrend.length>=3){
+    const recentLifts=liftTrend.filter(l=>l==='pbs'||l==='slightly_up').length;
+    if(recentLifts>=3){
+      cards.push(buildInsightCard('Strength Progression','3+ recent check-ins show PR or "up" lift trends.','Your plan periodization is working; you are in an expansion phase.','Log your lifts carefully to capture new PRs and track 1RM growth.'));
+    }
+  }
+  return cards;
+}
+}
 function getHomeNextAction({checkins,sessions,todaySession,plan}){
   const todayIso=new Date().toISOString().split('T')[0];
   const lastCheckinMs=checkins.length?toMs(checkins[0].createdAt):0;
@@ -2035,6 +2083,15 @@ function renderStatsHub({p,checkins,sessions,plan,game,streak}){
   if(!trainingSection||!nutritionSection||!recoverySection||!plan)return;
   trainingSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div class="stats-card-head-main"><span class="stats-card-icon cyan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14h4l2-4 4 8 2-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="stats-card-title">Training</div><div class="stats-card-copy">Strength access plus weekly set landmarks from your recent logs.</div></div></div><button class="btn btn-outline btn-sm" onclick="goTo('strength')">Strength</button></div><div id="statsVolumeWrap"></div></div>`;
   renderVolumeInto(sessions,'statsVolumeWrap');
+  const insightCards=generateInsightCards(checkins,sessions);
+  if(insightCards.length){
+    const insightHtml=`<div style="margin-top:16px;"><div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#888;margin-bottom:12px;padding:0 16px;">Clinical Insights</div><div style="padding:0 16px;">${insightCards.join('')}</div></div>`;
+    trainingSection.innerHTML+=insightHtml;
+    insightCards.forEach((card,idx)=>{
+      const types=['volume_surge','energy_peak','strength_progression'];
+      trackFlowEvent('insight_shown',{insightType:types[idx%3],position:'stats_hub_training'});
+    });
+  }
   nutritionSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div class="stats-card-head-main"><span class="stats-card-icon lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4c1.7 2 2.5 4 2.5 6S8.7 14 7 16c-1.7-2-2.5-4-2.5-6S5.3 6 7 4zm10 0c1.7 2 2.5 4 2.5 6s-.8 4-2.5 6c-1.7-2-2.5-4-2.5-6S15.3 6 17 4zM12 10v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="stats-card-title">Nutrition</div><div class="stats-card-copy">Bodyweight trend, goal progress, and the gamified layer underneath it.</div></div></div><button class="btn btn-outline btn-sm" onclick="goTo('nutritionHub')">Nutrition</button></div><div class="chart-shell"><div class="chart-shell-head"><span>Weight Change</span><span>Tap chart</span></div><canvas id="statsWeightChart" style="width:100%;height:120px;"></canvas><div id="statsWeightChartMeta" class="chart-meta"></div><div id="statsWeightEmpty" class="chart-empty" style="display:none;">Add bodyweight in check-ins to start this graph.</div></div><div class="stats-grid">${buildGoalProgressMarkup(checkins,p,game)}<div class="stats-mini"><strong>${streak.count} week${streak.count===1?'':'s'}</strong><span>${game.xp} XP earned · next level at ${game.nextXp} XP.</span></div></div></div>`;
   const ml=plan.analysis?.ml;
   nutritionSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div class="stats-card-head-main"><span class="stats-card-icon lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4c1.7 2 2.5 4 2.5 6S8.7 14 7 16c-1.7-2-2.5-4-2.5-6S5.3 6 7 4zm10 0c1.7 2 2.5 4 2.5 6s-.8 4-2.5 6c-1.7-2-2.5-4-2.5-6S15.3 6 17 4zM12 10v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="stats-card-title">Nutrition</div><div class="stats-card-copy">Bodyweight trend, goal progress, and the gamified layer underneath it.</div></div></div><button class="btn btn-outline btn-sm" onclick="goTo('nutritionHub')">Nutrition</button></div><div class="chart-shell"><div class="chart-shell-head"><span>Weight Change</span><span>Tap chart</span></div><canvas id="statsWeightChart" style="width:100%;height:120px;"></canvas><div id="statsWeightChartMeta" class="chart-meta"></div><div id="statsWeightEmpty" class="chart-empty" style="display:none;">Add bodyweight in check-ins to start this graph.</div></div><div class="stats-grid">${buildGoalProgressMarkup(checkins,p,game)}<div class="stats-mini"><strong>${streak.count} week${streak.count===1?'':'s'}</strong><span>${game.xp} XP earned · next level at ${game.nextXp} XP.</span></div><div class="stats-mini"><strong>${ml?.enabled?(ml.probability*100).toFixed(0)+'%' : (ml?.samples||0)+'/8'}</strong><span>${ml?.enabled?`ML readiness confidence ${(ml.confidence*100).toFixed(0)}%${ml.adjusted?` · mode adjusted ${ml.baseTier}→${plan.analysis.tier}`:''}`:'ML trainer inactive until enough check-ins are logged.'}</span></div></div></div>`;

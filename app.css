@@ -577,6 +577,13 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 .stats-mini{padding:12px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);}
 .stats-mini strong{display:block;font-family:'Syne',-apple-system,sans-serif;font-size:18px;}
 .stats-mini span{display:block;font-size:11px;color:#8d969d;margin-top:4px;line-height:1.45;}
+.insight-card{background:linear-gradient(135deg,rgba(0,212,255,0.08),rgba(200,255,0,0.08));border:1px solid rgba(200,255,0,0.15);border-radius:16px;padding:14px;margin-bottom:10px;}
+.insight-title{font-family:'Syne',-apple-system,sans-serif;font-size:14px;font-weight:700;color:#c8ff00;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.insight-title:before{content:'💡';font-size:16px;}
+.insight-section{margin-bottom:8px;display:grid;gap:4px;}
+.insight-section:last-child{margin-bottom:0;}
+.insight-label{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#00d4ff;font-weight:600;}
+.insight-text{font-size:12px;color:#d0d0d0;line-height:1.5;}
 .launch-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px;}
 .launch-card{padding:11px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);}
 .launch-card strong{display:block;font-family:'Syne',-apple-system,sans-serif;font-size:14px;color:#f2f2f2;}
