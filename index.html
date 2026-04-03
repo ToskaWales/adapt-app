@@ -80,19 +80,18 @@
 
 <div id="trainingHub" class="screen main-screen">
   <div class="sb app-scroll">
-    <div class="hub-hero">
+    <div class="hub-hero hub-hero-compact">
       <div>
-        <div class="hub-kicker">Training</div>
-        <div class="hub-title">This week in motion</div>
+        <div class="hub-kicker" id="trainingHubWeekLabel">Week</div>
+        <div class="hub-title hub-title-compact" id="trainingHubTitle">Today's session</div>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="viewCurrentPlan()">Full plan</button>
     </div>
     <div id="trainingWeekOverview"></div>
     <div id="trainingTodayCard"></div>
     <div id="trainingCardioCard"></div>
     <div class="hub-action-row">
-      <button class="btn btn-acc" onclick="goTo('logselect')">+ Log Weights</button>
-      <button class="btn btn-outline" onclick="goToEmomBuilder()">EMOM Builder</button>
+      <button class="btn btn-acc" onclick="goTo('logselect')">Log gym session</button>
+      <button class="btn btn-outline" onclick="goToEmomBuilder()">Open EMOM</button>
     </div>
     <button class="btn btn-outline" style="margin-top:10px;" onclick="goTo('logcardio')">🏃 Log Cardio Activity</button>
   </div>
@@ -103,18 +102,27 @@
     <div class="hub-hero">
       <div>
         <div class="hub-kicker">Nutrition</div>
-        <div class="hub-title">Calories, meals, bodyweight</div>
+        <div class="hub-title">Fuel and bodyweight</div>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="goTo('checkin')">Optimize kcal</button>
+      <button class="btn btn-outline btn-sm" onclick="openPlanTab('diet')">Open diet</button>
     </div>
     <div id="nutritionMacroStrip"></div>
     <div class="chart-wrap nutrition-chart-card">
-      <div class="chart-lbl">Calorie Target Trend</div>
+      <div class="chart-lbl">Calorie Trend</div>
       <canvas id="nutritionKcalChart" style="width:100%;height:130px;"></canvas>
-      <div id="nutritionKcalEmpty" class="chart-empty" style="display:none;">Log more check-ins to see calorie target movement.</div>
+      <div id="nutritionKcalEmpty" class="chart-empty" style="display:none;">Log more check-ins to see calorie shifts.</div>
     </div>
     <div id="nutritionMeals"></div>
-    <button class="btn btn-outline" onclick="openAddWeightModal()">Add Weight</button>
+    <div class="nutrition-weight-card">
+      <div>
+        <div class="chart-lbl">Quick Weight Log</div>
+        <div class="nutrition-weight-meta" id="nutritionWeightMeta">No bodyweight logged yet. Save one here to start your trend.</div>
+      </div>
+      <div class="nutrition-weight-form">
+        <input type="number" id="nutritionWeightInput" class="settings-input" placeholder="Bodyweight in kg" step="0.1" min="20" max="400" onkeydown="if(event.key==='Enter'){event.preventDefault();saveNutritionWeight();}">
+        <button class="btn btn-outline" onclick="saveNutritionWeight()">Save</button>
+      </div>
+    </div>
   </div>
 </div>
 
