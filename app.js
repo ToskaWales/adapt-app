@@ -1959,7 +1959,6 @@ function generateInsightCards(checkins,sessions){
   }
   return cards;
 }
-}
 function getHomeNextAction({checkins,sessions,todaySession,plan}){
   const todayIso=new Date().toISOString().split('T')[0];
   const lastCheckinMs=checkins.length?toMs(checkins[0].createdAt):0;
