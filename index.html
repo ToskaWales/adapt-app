@@ -114,7 +114,7 @@
       <div id="nutritionKcalEmpty" class="chart-empty" style="display:none;">Log more check-ins to see calorie target movement.</div>
     </div>
     <div id="nutritionMeals"></div>
-    <button class="btn btn-outline" onclick="goTo('checkin')">Add Weight</button>
+    <button class="btn btn-outline" onclick="openAddWeightModal()">Add Weight</button>
   </div>
 </div>
 
@@ -477,6 +477,20 @@
       <button class="btn btn-acc btn-sm" style="width:100%;margin-top:4px;" onclick="saveCustomExercise()">Add Exercise</button>
     </div>
     <button class="btn btn-outline btn-sm" style="width:100%;margin-top:2px;" onclick="closeCustomExModal()">Close</button>
+  </div>
+</div>
+
+<!-- Add Weight Modal -->
+<div id="addWeightModal" class="modal">
+  <div class="modal-sheet">
+    <div class="modal-title">Add Weight</div>
+    <div class="ci-q" style="margin-bottom:12px;">Enter your current bodyweight</div>
+    <div class="wt-row">
+      <input type="number" class="wt-in" id="addWeightInput" placeholder="75" step="0.1" min="20" max="300">
+      <span class="wt-unit">kg</span>
+    </div>
+    <button class="btn btn-acc btn-sm" style="width:100%;margin-top:16px;" onclick="saveWeightEntry()">Save</button>
+    <button class="btn btn-outline btn-sm" style="width:100%;margin-top:6px;" onclick="closeAddWeightModal()">Cancel</button>
   </div>
 </div>
 
