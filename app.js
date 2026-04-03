@@ -53,7 +53,7 @@ let obAnswers={},selectedMuscles=[],selectedRestricts=['none'],selectedTrainDays
 let lastTrainingMove=null;
 let pendingLogMode='normal';
 const APP_STATE={
-  workoutTimer:{running:false,interval:null,seconds:0,lastMinute:-1,startEpoch:null,activeExercise:'',activeSet:1,restSeconds:0,restInterval:null,emomEnabled:false,emomTargetMinutes:0,emomWork:40,emomRest:20,emomExercises:[],cues:['Power breathing and setup check.','Brace hard and own your first rep.','Control tempo and own every eccentric.','Add intent: move the bar faster on the concentric.','Stay technical. Leave ego out of the set.','Hydrate and reset posture before next set.']},
+  workoutTimer:{running:false,interval:null,seconds:0,lastMinute:-1,startEpoch:null,activeExercise:'',activeSet:1,restSeconds:0,restInterval:null,emomEnabled:false,emomTargetMinutes:0,emomWork:40,emomRest:20,emomExercises:[],emomExercisePlan:[],cues:['Power breathing and setup check.','Brace hard and own your first rep.','Control tempo and own every eccentric.','Add intent: move the bar faster on the concentric.','Stay technical. Leave ego out of the set.','Hydrate and reset posture before next set.']},
   gamification:{xp:0,level:1,nextXp:100},
   notifTimers: {checkin: null, emom: null, sauna: null}
 };
@@ -302,6 +302,72 @@ function getEmomTemplates(){
   }catch{return[];}
 }
 function saveEmomTemplates(list){localStorage.setItem('emomTemplates',JSON.stringify(Array.isArray(list)?list:[]));}
+const EMOM_PRESET_KEYS=['pullups_bw','dips_tri','pushup','chinup','bw_squat','burpees'];
+const EMOM_PRESETS={
+  beginner10:{
+    rounds:10,
+    work:35,
+    rest:25,
+    exerciseItems:[
+      {key:'pullups_bw',reps:4},
+      {key:'dips_tri',reps:6},
+      {key:'pushup',reps:10}
+    ]
+  },
+  classic12:{
+    rounds:12,
+    work:40,
+    rest:20,
+    exerciseItems:[
+      {key:'pullups_bw',reps:5},
+      {key:'dips_tri',reps:8},
+      {key:'pushup',reps:12}
+    ]
+  },
+  strength16:{
+    rounds:16,
+    work:45,
+    rest:15,
+    exerciseItems:[
+      {key:'pullups_bw',reps:6},
+      {key:'dips_tri',reps:10},
+      {key:'pushup',reps:14},
+      {key:'chinup',reps:5}
+    ]
+  },
+  advanced20:{
+    rounds:20,
+    work:45,
+    rest:15,
+    exerciseItems:[
+      {key:'pullups_bw',reps:8},
+      {key:'dips_tri',reps:12},
+      {key:'pushup',reps:18},
+      {key:'burpees',reps:10}
+    ]
+  }
+};
+function emomLabelFromKey(key){
+  const lib=getAllExercises();
+  if(lib[key]?.name)return lib[key].name;
+  return cap(String(key||'').replace(/_/g,' '));
+}
+function normalizeEmomExerciseItems(cfg){
+  const lib=getAllExercises();
+  const byName=new Map(Object.entries(lib).map(([key,val])=>[String(val?.name||'').toLowerCase(),key]));
+  const source=Array.isArray(cfg?.exerciseItems)&&cfg.exerciseItems.length
+    ? cfg.exerciseItems
+    : (Array.isArray(cfg?.exercises)?cfg.exercises.map(name=>({name,reps:10})):[]);
+  return source.map(item=>{
+    if(typeof item==='string')item={name:item,reps:10};
+    const keyRaw=String(item?.key||'').trim();
+    const nameRaw=String(item?.name||'').trim();
+    const matchedKey=keyRaw&&lib[keyRaw]?keyRaw:(byName.get(nameRaw.toLowerCase())||'');
+    const name=matchedKey?lib[matchedKey].name:(nameRaw||emomLabelFromKey(keyRaw));
+    const reps=Math.max(1,Math.min(80,parseInt(item?.reps,10)||10));
+    return{name,key:matchedKey||keyRaw||name.toLowerCase().replace(/[^a-z0-9]+/g,'_'),reps};
+  }).filter(item=>item.name);
+}
 function parseEmomExercises(text){
   return String(text||'')
     .split(/[\n,]/)
@@ -309,22 +375,90 @@ function parseEmomExercises(text){
     .filter(Boolean)
     .slice(0,20);
 }
+function toggleEmomExerciseRow(el){
+  const check=el&&el.matches?.('.emom-ex-check')?el:null;
+  if(!check)return;
+  const row=check.closest('.emom-ex-row');
+  const key=check.dataset.key;
+  const reps=row?.querySelector(`.emom-reps[data-key="${key}"]`)||document.querySelector(`.emom-reps[data-key="${key}"]`);
+  if(row)row.classList.toggle('selected',!!check.checked);
+  if(reps){
+    reps.disabled=!check.checked;
+    if(check.checked){
+      if(!parseInt(reps.value,10))reps.value='10';
+    }
+  }
+}
+window.toggleEmomExerciseRow=toggleEmomExerciseRow;
+function setActiveEmomPreset(presetKey){
+  document.querySelectorAll('.emom-preset-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.preset===presetKey));
+}
+function applyEmomPreset(presetKey){
+  const preset=EMOM_PRESETS[presetKey];
+  if(!preset){showToast('Preset missing','Try another EMOM preset.');return;}
+  const cfg={
+    rounds:preset.rounds,
+    minutes:preset.rounds,
+    work:preset.work,
+    rest:preset.rest,
+    exerciseItems:preset.exerciseItems.map(item=>({key:item.key,name:emomLabelFromKey(item.key),reps:item.reps}))
+  };
+  applyEmomBuilderConfig(cfg);
+  setActiveEmomPreset(presetKey);
+  showToast('Preset loaded',`EMOM ${preset.rounds} min ready.`);
+}
+window.applyEmomPreset=applyEmomPreset;
 function readEmomBuilderConfig(){
-  const rounds=Math.max(1,Math.min(40,parseInt(document.getElementById('emomRounds')?.value,10)||12));
+  const minutesInput=document.getElementById('emomMinutes')||document.getElementById('emomRounds');
+  const rounds=Math.max(1,Math.min(40,parseInt(minutesInput?.value,10)||12));
   const work=Math.max(10,Math.min(60,parseInt(document.getElementById('emomWork')?.value,10)||40));
   const rest=Math.max(0,Math.min(50,parseInt(document.getElementById('emomRest')?.value,10)||20));
-  const exercises=parseEmomExercises(document.getElementById('emomExercises')?.value);
+  const checks=[...document.querySelectorAll('#emomExercisePicker .emom-ex-check:checked')];
+  const exerciseItems=checks.map(check=>{
+    const key=check.dataset.key;
+    const repsEl=document.querySelector(`.emom-reps[data-key="${key}"]`);
+    const reps=Math.max(1,Math.min(80,parseInt(repsEl?.value,10)||10));
+    if(repsEl)repsEl.value=String(reps);
+    return{key,name:emomLabelFromKey(key),reps};
+  });
+  if(!exerciseItems.length){
+    const legacy=parseEmomExercises(document.getElementById('emomExercises')?.value);
+    legacy.forEach(name=>exerciseItems.push({name,key:name.toLowerCase().replace(/[^a-z0-9]+/g,'_'),reps:10}));
+  }
+  const exercises=exerciseItems.map(item=>item.name);
+  if(minutesInput)minutesInput.value=String(rounds);
   if(document.getElementById('emomRounds'))document.getElementById('emomRounds').value=String(rounds);
   if(document.getElementById('emomWork'))document.getElementById('emomWork').value=String(work);
   if(document.getElementById('emomRest'))document.getElementById('emomRest').value=String(rest);
-  return{rounds,work,rest,exercises};
+  return{rounds,minutes:rounds,work,rest,exerciseItems,exercises};
 }
 function applyEmomBuilderConfig(cfg){
   if(!cfg)return;
+  const minutesInput=document.getElementById('emomMinutes')||document.getElementById('emomRounds');
+  if(minutesInput)minutesInput.value=String(cfg.rounds||cfg.minutes||12);
   if(document.getElementById('emomRounds'))document.getElementById('emomRounds').value=String(cfg.rounds||12);
   if(document.getElementById('emomWork'))document.getElementById('emomWork').value=String(cfg.work||40);
   if(document.getElementById('emomRest'))document.getElementById('emomRest').value=String(cfg.rest||20);
+  const normalized=normalizeEmomExerciseItems(cfg);
+  document.querySelectorAll('#emomExercisePicker .emom-ex-check').forEach(check=>{
+    check.checked=false;
+    toggleEmomExerciseRow(check);
+  });
+  normalized.forEach(item=>{
+    const check=document.querySelector(`#emomExercisePicker .emom-ex-check[data-key="${item.key}"]`);
+    const reps=document.querySelector(`#emomExercisePicker .emom-reps[data-key="${item.key}"]`);
+    if(check){
+      check.checked=true;
+      if(reps)reps.value=String(item.reps||10);
+      toggleEmomExerciseRow(check);
+    }
+  });
   if(document.getElementById('emomExercises'))document.getElementById('emomExercises').value=(cfg.exercises||[]).join(', ');
+}
+function formatEmomExerciseSummary(t){
+  const items=normalizeEmomExerciseItems(t);
+  if(items.length)return items.map(item=>`${item.name} ${item.reps}r`).join(' · ');
+  return (t.exercises||[]).join(', ')||'None';
 }
 function renderEmomTemplateList(){
   const wrap=document.getElementById('emomTemplateList');
@@ -336,8 +470,8 @@ function renderEmomTemplateList(){
   }
   wrap.innerHTML=templates.map((t,i)=>
     `<div class='emom-tpl-row' style='margin-bottom:8px;'>
-      <b>Rounds:</b> ${t.rounds}, <b>Work:</b> ${t.work}s, <b>Rest:</b> ${t.rest}s<br>
-      <b>Exercises:</b> ${(t.exercises||[]).join(', ')||'None'}<br>
+      <b>Minutes:</b> ${t.rounds||t.minutes||12}, <b>Work:</b> ${t.work}s, <b>Rest:</b> ${t.rest}s<br>
+      <b>Exercises:</b> ${formatEmomExerciseSummary(t)}<br>
       <button class='btn btn-outline btn-sm' onclick='loadEmomTemplate(${i})'>Load</button>
       <button class='btn btn-acc btn-sm' style='margin-left:8px;' onclick='startSavedEmom(${i})'>Start</button>
       <button class='btn btn-outline btn-sm' style='margin-left:8px;' onclick='deleteEmomTemplate(${i})'>Delete</button>
@@ -355,8 +489,8 @@ function renderLogEmomSelect(){
   }
   wrap.innerHTML = templates.map((t,i)=>
     `<div class='emom-tpl-row' style='margin-bottom:8px;'>
-      <b>Rounds:</b> ${t.rounds}, <b>Work:</b> ${t.work}s, <b>Rest:</b> ${t.rest}s<br>
-      <b>Exercises:</b> ${t.exercises.join(', ')}<br>
+      <b>Minutes:</b> ${t.rounds||t.minutes||12}, <b>Work:</b> ${t.work}s, <b>Rest:</b> ${t.rest}s<br>
+      <b>Exercises:</b> ${formatEmomExerciseSummary(t)}<br>
       <button class='btn btn-outline btn-sm' onclick='loadEmomTemplate(${i});goToEmomBuilder();'>Edit</button>
       <button class='btn btn-acc btn-sm' style='margin-left:8px;' onclick='startSavedEmom(${i})'>Log This EMOM</button>
     </div>`
@@ -366,7 +500,7 @@ function goToEmomBuilder(){goTo('emomBuilder');}
 window.goToEmomBuilder=goToEmomBuilder;
 function saveEmomTemplate(){
   const cfg=readEmomBuilderConfig();
-  if(!cfg.exercises.length){showToast('Add exercises','Enter at least one exercise.');return;}
+  if(!cfg.exerciseItems.length){showToast('Add exercises','Choose at least one movement and reps.');return;}
   const templates=getEmomTemplates();
   templates.unshift(cfg);
   saveEmomTemplates(templates.slice(0,20));
@@ -585,10 +719,15 @@ function renderWorkoutTimer(){
         phaseLeft = wt.emomRest - ((wt.seconds - wt.emomWork) % cycle);
       }
       let ex = '';
-      if(Array.isArray(wt.emomExercises) && wt.emomExercises.length>0){
+      let target='';
+      if(Array.isArray(wt.emomExercisePlan) && wt.emomExercisePlan.length>0){
+        const item=wt.emomExercisePlan[(round-1)%wt.emomExercisePlan.length];
+        ex=item?.name||'';
+        target=item?.reps?`${item.reps} reps`:'';
+      }else if(Array.isArray(wt.emomExercises) && wt.emomExercises.length>0){
         ex = wt.emomExercises[(round-1)%wt.emomExercises.length];
       }
-      cue.textContent = `EMOM: Round ${round}/${wt.emomTargetMinutes} — ${phase} ${phaseLeft}s${ex?` — ${ex}`:''}`;
+      cue.textContent = `EMOM: Round ${round}/${wt.emomTargetMinutes} — ${phase} ${phaseLeft}s${ex?` — ${ex}${target?` (${target})`:''}`:''}`;
     }else cue.textContent=wt.seconds===0?'Start your workout timer to trigger a cue every minute.':getMinuteCue(Math.max(0,Math.floor((wt.seconds-1)/60)));
   }
   if(btn)btn.textContent=wt.running?'Pause':'Start';
@@ -616,10 +755,16 @@ function setWorkoutTimerActive(active){
       if(wt.seconds>0 && (wt.seconds % cycle)===0 && round!==wt.lastMinute){
         wt.lastMinute=round;
         let ex = '';
-        if(Array.isArray(wt.emomExercises) && wt.emomExercises.length>0){
+        let target='';
+        if(Array.isArray(wt.emomExercisePlan) && wt.emomExercisePlan.length>0){
+          const item=wt.emomExercisePlan[(round-1)%wt.emomExercisePlan.length];
+          ex=item?.name||'';
+          target=item?.reps?`${item.reps} reps`:'';
+        }else if(Array.isArray(wt.emomExercises) && wt.emomExercises.length>0){
           ex = wt.emomExercises[(round-1)%wt.emomExercises.length];
         }
-        const cue = `Round ${round} starts now.${ex?` — ${ex}`:''}`;
+        wt.activeExercise=ex||wt.activeExercise;
+        const cue = `Round ${round} starts now.${ex?` — ${ex}${target?` (${target})`:''}`:''}`;
         wt.activeSet = round;
         notifyMinuteCue(round, cue);
         updateMediaSession(round, cue);
@@ -650,11 +795,16 @@ function bumpWorkoutSet(){APP_STATE.workoutTimer.activeSet++;renderWorkoutTimer(
 window.bumpWorkoutSet=bumpWorkoutSet;
 function startEmomTimer(minutes=12,workSeconds=40,restSeconds=20,exerciseList=[]){
   const wt=APP_STATE.workoutTimer;
+  const normalized=(Array.isArray(exerciseList)?exerciseList:[]).map(item=>{
+    if(typeof item==='string')return{name:item,reps:10,key:item.toLowerCase().replace(/[^a-z0-9]+/g,'_')};
+    return{name:String(item?.name||'').trim(),reps:Math.max(1,Math.min(80,parseInt(item?.reps,10)||10)),key:String(item?.key||'').trim()};
+  }).filter(item=>item.name);
   wt.emomEnabled=true;
   wt.emomTargetMinutes=Math.max(1,Math.min(40,parseInt(minutes,10)||12));
   wt.emomWork=Math.max(10,Math.min(60,parseInt(workSeconds,10)||40));
   wt.emomRest=Math.max(0,Math.min(50,parseInt(restSeconds,10)||20));
-  wt.emomExercises=Array.isArray(exerciseList)?exerciseList.map(x=>String(x||'').trim()).filter(Boolean):[];
+  wt.emomExercisePlan=normalized;
+  wt.emomExercises=normalized.map(item=>item.name);
   wt.activeExercise=wt.emomExercises[0]||wt.activeExercise||'';
   wt.activeSet=1;
   wt.lastMinute=-1;
@@ -682,6 +832,7 @@ function resetWorkoutTimer(){
   wt.emomWork=40;
   wt.emomRest=20;
   wt.emomExercises=[];
+  wt.emomExercisePlan=[];
   renderWorkoutTimer();
   updateMediaSession(0,null);
   const sub=document.getElementById('wTimerSub');
@@ -2485,24 +2636,25 @@ function renderLogSelect(){const plan=window.currentPlanData,body=document.getEl
 let logDayIndex=null;
 function openCustomEmomLogSession(config){
   const rounds=Math.max(1,Math.min(40,parseInt(config?.rounds,10)||12));
-  const exercises=(Array.isArray(config?.exercises)?config.exercises:[]).map(x=>String(x||'').trim()).filter(Boolean);
-  if(!exercises.length){showToast('Add exercises','Enter at least one exercise.');return false;}
+  const exerciseItems=normalizeEmomExerciseItems(config);
+  if(!exerciseItems.length){showToast('Add exercises','Choose at least one movement and reps.');return false;}
+  const exercises=exerciseItems.map(item=>item.name);
   currentLogDay={
     day:'EMOM',
     name:'Custom EMOM',
     tag:'emom',
-    exercises:exercises.map(name=>({name,muscle:'conditioning',pattern:'conditioning',scheme:`${rounds}×1`,isEmom:true}))
+    exercises:exerciseItems.map(item=>({name:item.name,muscle:'conditioning',pattern:'conditioning',scheme:`${rounds}×${item.reps}`,isEmom:true,emomReps:item.reps,emomKey:item.key}))
   };
   document.getElementById('logTitle').textContent='EMOM - Custom';
-  document.getElementById('logDayInfo').textContent=`${rounds} rounds · Log your best set for each movement`;
+  document.getElementById('logDayInfo').textContent=`${rounds} minutes · Rotation: ${exerciseItems.map(item=>`${item.name} ${item.reps}r`).join(' · ')}`;
   const exSel=document.getElementById('wTimerExerciseSel');
-  if(exSel)exSel.innerHTML='<option value="">Select exercise</option>'+exercises.map(name=>`<option value="${name}">${name}</option>`).join('');
+  if(exSel)exSel.innerHTML='<option value="">Select exercise</option>'+exerciseItems.map(item=>`<option value="${item.name}">${item.name} (${item.reps}r)</option>`).join('');
   APP_STATE.workoutTimer.activeExercise=exercises[0]||'';
   APP_STATE.workoutTimer.activeSet=1;
   stopRestTimer(true);
-  document.getElementById('logExWrap').innerHTML=exercises.map(name=>{
-    const safeName=name.replace(/[^a-zA-Z0-9]/g,'_');
-    return `<div class="log-ex-card"><div class="log-ex-hdr"><div class="log-ex-name">${name}</div><div class="log-ex-info">Best set after EMOM</div></div><div class="log-sets"><div class="log-set-row"><div class="log-set-num">Best</div><input type="number" class="log-in" placeholder="kg" step="0.5" id="w_${safeName}_0"><span class="log-lbl">kg ×</span><input type="number" class="log-in" placeholder="reps" id="r_${safeName}_0"><span class="log-lbl">reps</span></div></div></div>`;
+  document.getElementById('logExWrap').innerHTML=exerciseItems.map(item=>{
+    const safeName=item.name.replace(/[^a-zA-Z0-9]/g,'_');
+    return `<div class="log-ex-card"><div class="log-ex-hdr"><div class="log-ex-name">${item.name}</div><div class="log-ex-info">Target ${item.reps} reps per minute · Best set after EMOM</div></div><div class="log-sets"><div class="log-set-row"><div class="log-set-num">Best</div><input type="number" class="log-in" placeholder="kg" step="0.5" id="w_${safeName}_0"><span class="log-lbl">kg ×</span><input type="number" class="log-in" placeholder="reps" id="r_${safeName}_0"><span class="log-lbl">reps</span></div></div></div>`;
   }).join('');
   wireLogInputHelpers();
   renderWorkoutTimer();
@@ -2514,13 +2666,15 @@ function startSavedEmom(index){
   const template=loadEmomTemplate(index);
   if(!template)return;
   if(!openCustomEmomLogSession(template))return;
-  startEmomTimer(template.rounds,template.work,template.rest,template.exercises);
+  const items=normalizeEmomExerciseItems(template);
+  startEmomTimer(template.rounds||template.minutes,template.work,template.rest,items);
 }
 window.startSavedEmom=startSavedEmom;
 function startCustomEmom(){
   const config=readEmomBuilderConfig();
+  if(!config.exerciseItems.length){showToast('Add exercises','Choose at least one movement and reps.');return;}
   if(!openCustomEmomLogSession(config))return;
-  startEmomTimer(config.rounds,config.work,config.rest,config.exercises);
+  startEmomTimer(config.rounds,config.work,config.rest,config.exerciseItems);
 }
 window.startCustomEmom=startCustomEmom;
 async function openLogDay(idx){
@@ -2583,7 +2737,37 @@ function wireLogInputHelpers(){
     });
   });
 }
-async function submitSessionLog(){if(!currentLogDay){showToast('Error','No session selected.');return;}const exList=currentLogDay.exercises.filter(e=>e.scheme!=='—'&&e.muscle);const exercises=exList.map(ex=>{const setCount=parseInt((ex.scheme||'').match(/\d+/)?.[0])||3;const safeName=ex.name.replace(/[^a-zA-Z0-9]/g,'_');const sets=Array.from({length:setCount},(_,si)=>{const wEl=document.getElementById(`w_${safeName}_${si}`);const rEl=document.getElementById(`r_${safeName}_${si}`);if(!wEl?.value||!rEl?.value)return null;return{weight:parseFloat(wEl.value),reps:parseInt(rEl.value)};}).filter(Boolean);if(!sets.length)return null;const maxWeight=Math.max(...sets.map(s=>s.weight));const maxSet=sets.find(s=>s.weight===maxWeight);return{name:ex.name,muscle:ex.muscle,sets,maxWeight,maxReps:maxSet?.reps||0,targetReps:parseInt((ex.scheme||'').split('–')[1])||10};}).filter(Boolean);if(!exercises.length){showToast('Nothing logged','Enter at least one weight to save.');return;}const prs=exercises.filter(e=>{const last=window.currentPlanData?.sIdx[e.name];return last?.maxWeight&&e.maxWeight>parseFloat(last.maxWeight);});const isoDate=new Date().toISOString().split('T')[0];await window.fbSaveSession({dayName:currentLogDay.name,day:currentLogDay.day,isoDate,date:new Date().toLocaleDateString('en-GB'),exercises,elapsedSeconds:APP_STATE.workoutTimer.seconds});if(prs.length)showToast('New PRs!',prs.map(e=>`${e.name}: ${e.maxWeight}kg`).join(', '),5000);else showToast('Session saved','Great work. Keep it consistent.');resetWorkoutTimer();goTo('home');}
+async function submitSessionLog(){
+  if(!currentLogDay){showToast('Error','No session selected.');return;}
+  const exList=currentLogDay.exercises.filter(e=>e.scheme!=='—'&&e.muscle);
+  const exercises=exList.map(ex=>{
+    const setCount=parseInt((ex.scheme||'').match(/\d+/)?.[0])||3;
+    const safeName=ex.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const sets=Array.from({length:setCount},(_,si)=>{
+      const wEl=document.getElementById(`w_${safeName}_${si}`);
+      const rEl=document.getElementById(`r_${safeName}_${si}`);
+      if(!wEl?.value||!rEl?.value)return null;
+      return{weight:parseFloat(wEl.value),reps:parseInt(rEl.value,10)};
+    }).filter(Boolean);
+    if(!sets.length)return null;
+    const maxWeight=Math.max(...sets.map(s=>s.weight));
+    const maxSet=sets.find(s=>s.weight===maxWeight);
+    const parsedTarget=parseInt((ex.scheme||'').split('–')[1],10)||0;
+    const targetReps=Math.max(1,parseInt(ex.emomReps,10)||parsedTarget||10);
+    return{name:ex.name,muscle:ex.muscle,sets,maxWeight,maxReps:maxSet?.reps||0,targetReps};
+  }).filter(Boolean);
+  if(!exercises.length){showToast('Nothing logged','Enter at least one weight to save.');return;}
+  const prs=exercises.filter(e=>{
+    const last=window.currentPlanData?.sIdx[e.name];
+    return last?.maxWeight&&e.maxWeight>parseFloat(last.maxWeight);
+  });
+  const isoDate=new Date().toISOString().split('T')[0];
+  await window.fbSaveSession({dayName:currentLogDay.name,day:currentLogDay.day,isoDate,date:new Date().toLocaleDateString('en-GB'),exercises,elapsedSeconds:APP_STATE.workoutTimer.seconds});
+  if(prs.length)showToast('New PRs!',prs.map(e=>`${e.name}: ${e.maxWeight}kg`).join(', '),5000);
+  else showToast('Session saved','Great work. Keep it consistent.');
+  resetWorkoutTimer();
+  goTo('home');
+}
 window.submitSessionLog=submitSessionLog;
 
 // ── STRENGTH ──

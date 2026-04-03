@@ -261,8 +261,8 @@
   <div class="sb">
     <div class="emom-form emom-builder-card">
       <div class="form-row">
-        <label for="emomRounds">Rounds</label>
-        <input type="number" id="emomRounds" class="emom-num" min="1" max="40" value="12">
+        <label for="emomMinutes">Minutes</label>
+        <input type="number" id="emomMinutes" class="emom-num" min="1" max="40" value="12">
       </div>
       <div class="form-row">
         <label for="emomWork">Work (sec)</label>
@@ -272,9 +272,26 @@
         <label for="emomRest">Rest (sec)</label>
         <input type="number" id="emomRest" class="emom-num" min="0" max="50" value="20">
       </div>
-      <div class="form-row">
-        <label for="emomExercises">Exercises (comma or line separated)</label>
-        <textarea id="emomExercises" class="emom-text" rows="2" placeholder="e.g. Burpees, Push-ups, Air Squats"></textarea>
+      <div class="form-col">
+        <div class="emom-section-title">Quick Presets</div>
+        <div class="emom-preset-grid">
+          <button type="button" class="btn btn-outline emom-preset-btn" data-preset="beginner10" onclick="applyEmomPreset('beginner10')">Beginner 10m</button>
+          <button type="button" class="btn btn-outline emom-preset-btn" data-preset="classic12" onclick="applyEmomPreset('classic12')">Classic 12m</button>
+          <button type="button" class="btn btn-outline emom-preset-btn" data-preset="strength16" onclick="applyEmomPreset('strength16')">Strength 16m</button>
+          <button type="button" class="btn btn-outline emom-preset-btn" data-preset="advanced20" onclick="applyEmomPreset('advanced20')">Advanced 20m</button>
+        </div>
+      </div>
+      <div class="form-col">
+        <div class="emom-section-title">Pick Exercises</div>
+        <div class="emom-help">Select movements, then set reps per minute for each one. The timer rotates them minute by minute.</div>
+        <div id="emomExercisePicker" class="emom-ex-grid">
+          <label class="emom-ex-row"><input type="checkbox" class="emom-ex-check" data-key="pullups_bw" onchange="toggleEmomExerciseRow(this)"><span class="emom-ex-name">Pull-Ups</span><input type="number" class="emom-reps" data-key="pullups_bw" value="5" min="1" max="60" disabled><span class="emom-ex-suffix">reps/min</span></label>
+          <label class="emom-ex-row"><input type="checkbox" class="emom-ex-check" data-key="dips_tri" onchange="toggleEmomExerciseRow(this)"><span class="emom-ex-name">Dips</span><input type="number" class="emom-reps" data-key="dips_tri" value="8" min="1" max="60" disabled><span class="emom-ex-suffix">reps/min</span></label>
+          <label class="emom-ex-row"><input type="checkbox" class="emom-ex-check" data-key="pushup" onchange="toggleEmomExerciseRow(this)"><span class="emom-ex-name">Push-Ups</span><input type="number" class="emom-reps" data-key="pushup" value="12" min="1" max="60" disabled><span class="emom-ex-suffix">reps/min</span></label>
+          <label class="emom-ex-row"><input type="checkbox" class="emom-ex-check" data-key="chinup" onchange="toggleEmomExerciseRow(this)"><span class="emom-ex-name">Chin-Ups</span><input type="number" class="emom-reps" data-key="chinup" value="5" min="1" max="60" disabled><span class="emom-ex-suffix">reps/min</span></label>
+          <label class="emom-ex-row"><input type="checkbox" class="emom-ex-check" data-key="bw_squat" onchange="toggleEmomExerciseRow(this)"><span class="emom-ex-name">Bodyweight Squats</span><input type="number" class="emom-reps" data-key="bw_squat" value="15" min="1" max="80" disabled><span class="emom-ex-suffix">reps/min</span></label>
+          <label class="emom-ex-row"><input type="checkbox" class="emom-ex-check" data-key="burpees" onchange="toggleEmomExerciseRow(this)"><span class="emom-ex-name">Burpees</span><input type="number" class="emom-reps" data-key="burpees" value="8" min="1" max="40" disabled><span class="emom-ex-suffix">reps/min</span></label>
+        </div>
       </div>
       <div class="form-row">
         <button class="btn btn-acc" onclick="saveEmomTemplate()">Save as Template</button>
