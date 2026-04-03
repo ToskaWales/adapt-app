@@ -91,7 +91,7 @@
     <div id="trainingCardioCard"></div>
     <div class="hub-action-row">
       <button class="btn btn-acc" onclick="goTo('logselect')">Log gym session</button>
-      <button class="btn btn-outline" onclick="goToEmomBuilder()">Open EMOM</button>
+      <button class="btn btn-outline" onclick="goToEmomBuilder()">Build EMOM workout</button>
     </div>
     <button class="btn btn-outline" style="margin-top:10px;" onclick="goTo('logcardio')">🏃 Log Cardio Activity</button>
   </div>
@@ -210,14 +210,14 @@
 
 <!-- LOG SELECT (EMOM) -->
 <div id="logemomselect" class="screen" style="display:none;">
-  <div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Log EMOM</div></div>
+  <div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Log EMOM Session</div></div>
   <div class="sb">
     <div class="log-mode-switch">
       <button class="btn btn-outline" style="width:100%;" onclick="goTo('logselect')">Log Gym Session</button>
-      <button class="btn btn-acc" style="width:100%;" onclick="goTo('logemomselect')">Log EMOM</button>
+      <button class="btn btn-acc" style="width:100%;" onclick="goTo('logemomselect')">Log EMOM Session</button>
     </div>
     <p style="font-size:13px;color:#888;margin-bottom:14px;">Log a custom or saved EMOM session below.</p>
-    <button class="btn btn-acc" style="width:100%;margin-bottom:10px;" onclick="goToEmomBuilder()">Start New EMOM</button>
+    <button class="btn btn-acc" style="width:100%;margin-bottom:10px;" onclick="goToEmomBuilder()">Build EMOM Workout</button>
     <div id="emomLogTemplateList"></div>
   </div>
 </div>
@@ -257,7 +257,7 @@
 
 <!-- EMOM BUILDER -->
 <div id="emomBuilder" class="screen" style="display:none;">
-  <div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Custom EMOM Builder</div></div>
+  <div class="hdr"><button class="back-btn" onclick="goTo('home')">←</button><div class="hdr-title">Build EMOM Workout</div></div>
   <div class="sb">
     <div class="emom-form emom-builder-card">
       <div class="form-row">
