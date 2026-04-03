@@ -1793,13 +1793,71 @@ function renderInsightChart(series,canvasId,emptyId,color,config={}){
   }
   attachCanvasTooltip(canvas,points,config.formatter||((value)=>`${Math.round(value)}`));
 }
-function toggleMealSlotLog(index){
-  const state=getMealLogState();
+let mealModalState={index:null,mealName:'',mealTime:'',mealKcal:0};
+function openMealModal(index,meal){
+  mealModalState.index=index;
+  mealModalState.mealName=meal.name||'';
+  mealModalState.mealTime=meal.time||'';
+  mealModalState.mealKcal=meal.kcal||0;
+  const modal=document.getElementById('mealModal');
+  const ovl=document.getElementById('mealModalOvl');
+  if(!modal||!ovl)return;
+  document.getElementById('mealModalTitle').textContent=`Log ${meal.name}`;
+  document.getElementById('mealModalMeta').textContent=`${meal.time} · ${meal.kcal} kcal · ${meal.items.length} items`;
+  document.getElementById('mealLogItem').value='';
+  document.getElementById('mealLogKcal').value=meal.kcal||'';
+  modal.style.display='block';
+  ovl.style.display='block';
+}
+window.openMealModal=openMealModal;
+function closeMealModal(){
+  const modal=document.getElementById('mealModal');
+  const ovl=document.getElementById('mealModalOvl');
+  if(modal)modal.style.display='none';
+  if(ovl)ovl.style.display='none';
+  mealModalState={index:null,mealName:'',mealTime:'',mealKcal:0};
+}
+window.closeMealModal=closeMealModal;
+async function saveMealLog(){
+  if(mealModalState.index===null)return;
+  const item=document.getElementById('mealLogItem').value.trim();
+  const kcal=parseInt(document.getElementById('mealLogKcal').value,10);
+  if(!item||!Number.isFinite(kcal)||kcal<=0){
+    showToast('Meal log empty','Add a food item or note and calories.');
+    return;
+  }
   const key=new Date().toISOString().split('T')[0];
+  const state=getMealLogState();
   state[key]=state[key]||{};
-  state[key][index]=!state[key][index];
+  state[key][mealModalState.index]={item,kcal,loggedAt:new Date().toISOString()};
   saveMealLogState(state);
+  const u=window.currentUser;
+  if(u&&window.fbSaveSession){
+    try{
+      const logId=key+'_meal_'+mealModalState.index;
+      const payload={
+        isoDate:key,
+        dayName:new Date().toLocaleDateString('en-US',{weekday:'long'}),
+        mealIndex:mealModalState.index,
+        mealName:mealModalState.mealName,
+        mealTime:mealModalState.mealTime,
+        item,kcal,
+        logType:'meal',
+        userId:u.uid
+      };
+      await window.fbSaveSession(payload);
+    }catch(err){console.error(err);}
+  }
+  trackFlowEvent('meal_logged',{mealIndex:mealModalState.index,mealName:mealModalState.mealName,kcal,item});
+  closeMealModal();
   refreshPrimarySurfaces();
+  showToast('Meal logged','Added to today.');
+}
+window.saveMealLog=saveMealLog;
+function toggleMealSlotLog(index){
+  const plan=window.currentPlanData;
+  if(!plan||!plan.meals||!plan.meals[index])return;
+  openMealModal(index,plan.meals[index]);
 }
 window.toggleMealSlotLog=toggleMealSlotLog;
 function drawLineChartIntoSeries(series,canvasId,emptyId,color,height=120){
@@ -1958,7 +2016,11 @@ function renderNutritionHub({checkins,plan}){
   const kcalSeries=checkins.filter(item=>item.planSummary?.kcal).reverse().slice(-8).map(item=>({value:parseFloat(item.planSummary.kcal),label:item.date||''}));
   renderInsightChart(kcalSeries,'nutritionKcalChart','nutritionKcalEmpty','#c8ff00',{height:130,formatter:(value)=>`${Math.round(value)} kcal`,metaLabel:'First target',metaMidLabel:'Current target'});
   const mealState=getMealLogState()[new Date().toISOString().split('T')[0]]||{};
-  mealsWrap.innerHTML=plan.meals.map((meal,index)=>`<div class="meal-slot-card"><div class="meal-slot-head"><div class="meal-num">${meal.num}</div><div class="meal-slot-copy"><div class="meal-slot-name">${meal.name}</div><div class="meal-slot-time">${meal.time} · ${meal.kcal} kcal</div></div><button class="meal-slot-toggle ${mealState[index]?'logged':''}" onclick="toggleMealSlotLog(${index})">${mealState[index]?'✓':'+'}</button></div><ul class="meal-slot-items">${meal.items.map(([food,qty])=>`<li><span>${food}</span><span>${qty}</span></li>`).join('')}</ul></div>`).join('');
+  mealsWrap.innerHTML=plan.meals.map((meal,index)=>{
+    const logged=mealState[index];
+    const loggedDetail=logged?`<div class="meal-log-detail" style="font-size:12px;color:#c8ff00;margin-top:4px;"><strong>${logged.item}</strong> · ${logged.kcal} kcal</div>`:'';
+    return`<div class="meal-slot-card"><div class="meal-slot-head"><div class="meal-num">${meal.num}</div><div class="meal-slot-copy"><div class="meal-slot-name">${meal.name}</div><div class="meal-slot-time">${meal.time} · ${meal.kcal} kcal</div></div><button class="meal-slot-toggle ${logged?'logged':''}" onclick="toggleMealSlotLog(${index})">${logged?'✓':'+'}</button></div><ul class="meal-slot-items">${meal.items.map(([food,qty])=>`<li><span>${food}</span><span>${qty}</span></li>`).join('')}</ul>${loggedDetail}</div>`;
+  }).join('');
   const latestWeight=checkins.find(item=>item.weight)?.weight||window.userProfile?.weight||null;
   const weightMeta=document.getElementById('nutritionWeightMeta');
   const weightInput=document.getElementById('nutritionWeightInput');

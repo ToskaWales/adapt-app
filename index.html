@@ -444,6 +444,33 @@
   <button class="app-nav-btn" data-target="statsHub" onclick="goTo('statsHub')"><span class="app-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="5" cy="7" r="1.5" fill="currentColor"/><circle cx="12" cy="3" r="1.5" fill="currentColor"/><circle cx="19" cy="10" r="1.5" fill="currentColor"/></svg></span><span class="app-nav-label">Statistics</span></button>
 </nav>
 
+<!-- MEAL LOG MODAL -->
+<div class="overlay" id="mealModalOvl" onclick="closeMealModal()" style="display:none;"></div>
+<div class="bsheet" id="mealModal" style="display:none;">
+  <div class="sh-handle"></div>
+  <div class="sh-title" id="mealModalTitle">Log Meal</div>
+  <div style="padding:12px 18px;">
+    <div class="info-box" style="margin-bottom:12px;">
+      <div class="info-val" id="mealModalMeta" style="font-size:13px;"></div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Food item or note</label>
+      <input type="text" id="mealLogItem" class="settings-input" placeholder="e.g. Grilled chicken, rice, broccoli" style="margin-bottom:8px;">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Estimated calories</label>
+      <div style="display:flex;gap:8px;">
+        <input type="number" id="mealLogKcal" class="settings-input" placeholder="500" style="flex:1;" min="0" max="5000">
+        <span style="display:flex;align-items:center;color:#888;font-size:13px;">kcal</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeMealModal()">Cancel</button>
+      <button class="btn btn-acc" style="flex:1;" onclick="saveMealLog()">Log Meal</button>
+    </div>
+  </div>
+</div>
+
 <!-- SWAP SHEET -->
 <div class="overlay" id="swapOvl" onclick="closeSwap()"></div>
 <div class="bsheet" id="swapSheet"><div class="sh-handle"></div><div class="sh-title" id="swapTitle"></div><div class="sh-sub" id="swapSub"></div><div id="swapOpts"></div></div>
