@@ -106,7 +106,8 @@ let pendingLogMode='normal';
 const APP_STATE={
   workoutTimer:{running:false,interval:null,seconds:0,lastMinute:-1,startEpoch:null,activeExercise:'',activeSet:1,restSeconds:0,restInterval:null,emomEnabled:false,emomTargetMinutes:0,emomWork:40,emomRest:20,emomExercises:[],emomExercisePlan:[],cues:['Power breathing and setup check.','Brace hard and own your first rep.','Control tempo and own every eccentric.','Add intent: move the bar faster on the concentric.','Stay technical. Leave ego out of the set.','Hydrate and reset posture before next set.']},
   gamification:{xp:0,level:1,nextXp:100},
-  notifTimers: {checkin: null, emom: null, sauna: null}
+  notifTimers: {checkin: null, emom: null, sauna: null},
+  premium:{enabled:false,tier:'free'}
 };
 const FLOW_EVENT_STORAGE_KEY='addapt_flow_events_v1';
 let lastTrackedScreen='';
