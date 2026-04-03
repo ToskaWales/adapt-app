@@ -5,18 +5,6 @@
 	font-size: 13px;
 	border-radius: 8px;
 }
-/* Progress photo gallery */
-#progressPhotoGallery {
-	margin-top: 6px;
-}
-#progressPhotoGallery div img {
-	box-shadow: 0 2px 8px #0004;
-	transition: transform 0.2s;
-}
-#progressPhotoGallery div img:hover {
-	transform: scale(1.08);
-	z-index: 2;
-}
 
 :root{--bg:#080808;--s1:#111;--s2:#181818;--s3:#222;--s4:#2a2a2a;--acc:#c8ff00;--acc2:#ff4d00;--acc3:#00d4ff;--acc4:#ff69b4;--gold:#ffd700;--text:#f2f2f2;--muted:#888;--border:#2a2a2a;--r:12px;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -596,9 +584,6 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 /* Highlight sections */
 .highlight-section{border-color:#c8ff00 !important;background:rgba(200,255,0,0.04) !important;box-shadow:0 0 12px rgba(200,255,0,0.15) !important;}
 
-/* Stats nav button highlights */
-.app-nav-btn.highlight-nav{border-top:3px solid #c8ff00;}
-
 .settings-card{background:#181818;border:1px solid #2a2a2a;border-radius:18px;padding:16px;margin-bottom:14px;}
 .settings-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
 .settings-title{font-family:'Syne',-apple-system,sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
@@ -642,9 +627,6 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 }
 
 @keyframes shellRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-/* Highlight statistics nav button */
-.app-nav-btn[data-target="statsHub"]{border-top:3px solid #c8ff00;margin-top:-3px;}
-
 @media (max-width:760px){
 	.glass-grid-double{grid-template-columns:1fr;}
 	.week-chip-row{grid-template-columns:repeat(4,minmax(0,1fr));}
