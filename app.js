@@ -367,8 +367,6 @@ function goTo(id){
     if(id==='history')loadHistory();
     if(id==='settings')renderSettings();
     if(id==='logselect')renderLogSelect();
-    if(id==='logemomselect')renderLogEmomSelect();
-    if(id==='emomBuilder')renderEmomTemplateList();
     if(id==='strength')loadStrength();
     if(id==='checkin')populateCheckinMeta();
     if(id==='logcardio')renderLogCardio();
@@ -585,11 +583,7 @@ function renderLogEmomSelect(){
     </div>`
   ).join('');
 }
-function goToEmomBuilder(){
-  trackFlowEvent('emom_builder_opened',{source:document.querySelector('.screen.active')?.id||'unknown'});
-  goTo('emomBuilder');
-}
-window.goToEmomBuilder=goToEmomBuilder;
+
 function saveEmomTemplate(){
   const cfg=readEmomBuilderConfig();
   if(!cfg.exerciseItems.length){showToast('Add exercises','Choose at least one movement and reps.');return;}
@@ -2044,11 +2038,17 @@ function renderTrainingHub({plan,activities=[]}){
   const primary=getPrimarySession(plan).session;
   if(weekLabel)weekLabel.textContent=`Week ${plan.analysis?.block?.week||1}`;
   if(title)title.textContent=primary?.tag==='rest'?'Recovery today':`Today: ${primary?.name||'Training'}`;
-  weekWrap.innerHTML=`<div class="week-chip-row week-chip-row-compact">${plan.splitDays.map(day=>`<div class="week-chip compact ${day.day===today?'today':''} ${day.tag==='rest'||day.tag==='active'?'rest':''}"><div class="week-chip-day">${day.day}</div><div class="week-chip-name">${day.name}</div><div class="week-chip-tag">${day.tag==='rest'?'Recovery':day.tag==='active'?'Active':(day.exercises||[]).filter(ex=>ex.scheme!=='—').length+' lifts'}</div></div>`).join('')}</div>`;
+  weekWrap.innerHTML=`<div class="week-chip-row week-chip-row-compact">${plan.splitDays.map(day=>`<div class="week-chip compact ${day.day===today?'today':''} ${day.tag==='rest'||day.tag==='active'?'rest':''}" style="cursor:pointer;" onclick="showDayPlan('${day.day}',${JSON.stringify(day).replace(/'/g,'&apos;')})"><div class="week-chip-day">${day.day}</div><div class="week-chip-name">${day.name}</div><div class="week-chip-tag">${day.tag==='rest'?'Recovery':day.tag==='active'?'Active':(day.exercises||[]).filter(ex=>ex.scheme!=='—').length+' lifts'}</div></div>`).join('')}</div>`;
   const list=(primary?.exercises||[]).filter(ex=>ex.scheme!=='—').slice(0,8);
   todayWrap.innerHTML=`<div class="session-feature session-feature-link" onclick="openPlanTab('training')"><div class="session-feature-head"><div><div class="section-kicker">Today</div><div class="session-feature-title">${primary?.day||today} · ${primary?.name||'Training day'}</div><div class="session-feature-copy">${primary?.note||'Open the training tab for the full session.'}</div></div><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openPlanTab('training')">Training plan</button></div><div class="session-ex-list">${list.length?list.map(ex=>`<div class="session-ex-item"><div><div class="session-ex-name">${ex.name}</div><div class="session-ex-meta">${ex.muscle?cap(ex.muscle):'Accessory'}${ex.isFocus?' · focus':''}</div></div><div class="session-ex-scheme">${ex.scheme}</div></div>`).join(''):'<div class="chart-empty">Recovery day. Open the training tab if you still need the full plan.</div>'}</div></div>`;
   if(cardioWrap)cardioWrap.innerHTML=renderCardioSummaryHTML(activities,window.userProfile?.weight);
 }
+function showDayPlan(dayName,dayData){
+  const exList=(dayData.exercises||[]).filter(ex=>ex.scheme!=='—');
+  const msg=`<div style="font-size:13px;line-height:1.6;"><strong>${dayName} · ${dayData.name}</strong><div style="margin-top:8px;color:#aaa;">${dayData.note||''}</div><div style="margin-top:12px;"><div style="font-size:11px;color:#666;text-transform:uppercase;margin-bottom:6px;">Exercises</div>${exList.length?exList.map(ex=>`<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>${ex.name}</span><span style="color:#c8ff00;">${ex.scheme}</span></div>`).join(''):'<div style="color:#666;">Rest day or active recovery</div>'}</div></div>`;
+  showToast(dayName,msg,{duration:8000});
+}
+window.showDayPlan=showDayPlan;
 function renderCardioSummaryHTML(activities,weightKg){
   if(!activities||!activities.length)return`<div class="info-box" style="margin-bottom:14px;"><div class="info-lbl">Cardio &amp; Activities</div><div style="font-size:13px;color:#888;">No cardio logged yet. Tap Log Cardio Activity to add runs, swims, cycles and more — calorie burn is factored into your daily target.</div></div>`;
   const cutoff=Date.now()-7*24*60*60*1000;
