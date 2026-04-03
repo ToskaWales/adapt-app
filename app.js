@@ -1959,12 +1959,12 @@ function renderHomeDashboard({p,checkins,sessions,plan,streak,game}){
   const isFreshStart=!checkins.length&&!sessions.length;
   const nextAction=getHomeNextAction({checkins,sessions,todaySession,plan});
   const mlBadge=ml?.enabled
-    ?`<div class="tiny-stat">ML ${(ml.probability*100).toFixed(0)}% readiness${ml.adjusted?` · mode ${ml.baseTier}→${plan.analysis.tier}`:''}</div>`
+    ?`<div class="tiny-stat">ML active · ${(ml.probability*100).toFixed(0)}% readiness${ml.adjusted?` · mode ${ml.baseTier}→${plan.analysis.tier}`:''}</div>`
     :`<div class="tiny-stat">ML warming up · ${ml?.samples||0}/8 samples</div>`;
   if(protocolCard){
     protocolCard.innerHTML=isFreshStart
       ?`<div class="section-kicker">Launch Brief</div><div class="section-title">Ready for ${goalLabel(p.goal)||'your goal'}</div><div class="section-copy">Your split, calories, recovery defaults, and reminders are live. Pick your first move.</div><div class="tiny-stat-row"><div class="tiny-stat">${trainingDays.join(' · ')}</div><div class="tiny-stat">${calorieMode}</div></div><div class="launch-grid"><div class="launch-card"><strong>Training</strong><span>${trainingDays.join(' · ')} · ${p.sessionLen} min</span></div><div class="launch-card"><strong>Focus</strong><span>${(p.focusMuscles||[]).map(m=>trEnum('muscle',m)).join(' · ')||'General balance'}</span></div><div class="launch-card"><strong>Recovery</strong><span>${cap(p.saunaGoal||'recovery')} · ${saunaDays.join(' · ')}</span></div><div class="launch-card"><strong>Reminders</strong><span>${reminderSummary}</span></div></div><div class="protocol-strip"><div class="protocol-row"><div><div class="protocol-label">Starter session</div><div class="protocol-value">${todaySession?.day||trainingDays[0]} · ${todaySession?.name||'Adaptive split ready'}</div></div><button class="btn btn-outline btn-sm" id="wtPlan" onclick="viewCurrentPlan()">Open plan</button></div><div class="protocol-row"><div><div class="protocol-label">Best next step</div><div class="protocol-value">Run your first check-in so recovery, calories, and adaptation go live.</div></div><button class="btn btn-outline btn-sm" id="wtCheckin" onclick="goTo('checkin')">Check-In</button></div></div>`
-        :`<div class="section-kicker">Daily System</div><div class="section-title">${todaySession?.name||'Plan loading'}</div><div class="section-copy">${nextAction.detail}</div><div class="tiny-stat-row">${mlBadge}<div class="tiny-stat">${plan.analysis.autoDeloadReason?'Auto deload active':'Adaptive tier live'}</div></div><div class="protocol-strip"><div class="protocol-row"><div><div class="protocol-label">Next best action</div><div class="protocol-value">${nextAction.label}</div></div><button class="btn btn-outline btn-sm highlight-btn" onclick="${nextAction.ctaAction}">${nextAction.ctaText}</button></div><div class="protocol-row"><div><div class="protocol-label">Training</div><div class="protocol-value">${todaySession?.tag==='rest'?'Rest / active recovery':todaySession?.day+' · '+todaySession?.name}</div></div><button class="btn btn-outline btn-sm highlight-btn" id="wtLog" onclick="goTo('logselect')">Log gym</button></div><div class="protocol-row"><div><div class="protocol-label">Recovery</div><div class="protocol-value">${saunaState.goal==='recovery'?'Recovery sauna block ready':'Sauna '+cap(saunaState.goal)+' protocol ready'}</div></div><button class="btn btn-outline btn-sm highlight-btn" id="wtSauna" onclick="goTo('sauna')">Open</button></div><div class="protocol-row"><div><div class="protocol-label">Nutrition</div><div class="protocol-value">${plan.analysis.kcal} kcal · ${plan.analysis.protein}g protein</div></div><button class="btn btn-outline btn-sm highlight-btn" id="wtNutrition" onclick="goTo('nutritionHub')">Nutrition</button></div></div>`;
+        :`<div class="section-kicker">Daily System</div><div class="section-title">What to do today</div><div class="section-copy">${nextAction.detail}</div><div class="tiny-stat-row">${mlBadge}<div class="tiny-stat">${plan.analysis.autoDeloadReason?'Auto deload active':'Adaptive tier live'}</div></div><div class="protocol-strip"><div class="protocol-row"><div><div class="protocol-label">Next best action</div><div class="protocol-value">${nextAction.label}</div></div><button class="btn btn-outline btn-sm highlight-btn" onclick="${nextAction.ctaAction}">${nextAction.ctaText}</button></div></div>`;
   }
   if(nutritionCard){
     nutritionCard.innerHTML=`<div class="section-kicker">Diet Overview</div><div class="metric-big">${plan.analysis.kcal}</div><div class="metric-sub">${isFreshStart?`${calorieMode} from your profile · `:''}Daily target with ${plan.meals.length} meal slot${plan.meals.length===1?'':'s'} · ${plan.analysis.protein}g protein · ${plan.analysis.carbs}g carbs</div><div class="tiny-stat-row"><div class="tiny-stat">Protein ${plan.analysis.protein}g</div><div class="tiny-stat">Carbs ${plan.analysis.carbs}g</div><div class="tiny-stat">Fats ${plan.analysis.fat}g</div></div>`;
@@ -2011,7 +2011,7 @@ function showDayPlanByIndex(index){
   const days=Array.isArray(window.currentTrainingSplitDays)?window.currentTrainingSplitDays:[];
   const dayData=days[index];
   if(!dayData)return;
-  showDayPlan(dayData.day||'Day',dayData);
+  openPlanTab('training',dayData.day||'');
 }
 window.showDayPlanByIndex=showDayPlanByIndex;
 function renderCardioSummaryHTML(activities,weightKg){
@@ -2117,12 +2117,12 @@ function finishSteps(){if(stepInterval){clearInterval(stepInterval);stepInterval
 function swTab(n,el){document.querySelectorAll('.tab-body').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+n).classList.add('active');el.classList.add('active');}
 window.swTab=swTab;
 
-function openPlanTab(activeTab='overview'){
+function openPlanTab(activeTab='overview',focusDay=''){
   const ci=window.currentCheckin||getDefaultDashboardCheckin();
   window.currentCheckin=ci;
   Promise.all([window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([]),window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([]),window.fbLoadActivities?window.fbLoadActivities():Promise.resolve([])]).then(([sessions,checkins,activities])=>{
     const plan=buildLivePlan(checkins,sessions,ci,activities);
-    renderPlan(plan,activeTab);
+    renderPlan(plan,activeTab,focusDay);
     goTo('result');
   });
 }
@@ -2831,7 +2831,7 @@ function buildMeals(kcal,protein,carbs,fat,count,restrictions,dietGoal){
 // ════════════════════════════════════
 // RENDER PLAN
 // ════════════════════════════════════
-function renderPlan(plan,activeTab='overview'){
+function renderPlan(plan,activeTab='overview',focusDay=''){
   const{analysis,splitDays,meals,tier,focusMuscles,experience,splitMeta}=plan;
   const{energy,kcal,protein,carbs,fat,dietGoal,tdee,trendMsg,trendAdj,cardioAdj,block,isStr,calOverride,autoDeloadReason,ml}=analysis;
   const p=window.userProfile||{};
@@ -2877,6 +2877,19 @@ function renderPlan(plan,activeTab='overview'){
   const nextBtn=[...document.querySelectorAll('.ptab')].find(btn=>btn.textContent.trim().toLowerCase()===activeTab)||document.querySelector('.ptab');
   if(nextTab)nextTab.classList.add('active');
   if(nextBtn)nextBtn.classList.add('active');
+  if(activeTab==='training'&&focusDay){
+    const cards=[...document.querySelectorAll('#tab-training .day-card')];
+    const match=cards.find(card=>card.querySelector('.day-title')?.textContent?.trim()===focusDay);
+    if(match){
+      const body=match.querySelector('.day-body');
+      const chev=match.querySelector('.day-hdr div:last-child');
+      if(body&&!body.classList.contains('open')){
+        body.classList.add('open');
+        if(chev)chev.style.transform='rotate(180deg)';
+      }
+      setTimeout(()=>match.scrollIntoView({behavior:'smooth',block:'start'}),80);
+    }
+  }
 }
 
 // ── TOGGLES ──
