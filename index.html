@@ -89,10 +89,12 @@
     </div>
     <div id="trainingWeekOverview"></div>
     <div id="trainingTodayCard"></div>
+    <div id="trainingCardioCard"></div>
     <div class="hub-action-row">
-      <button class="btn btn-acc" onclick="goTo('logselect')">+ Add Activity</button>
+      <button class="btn btn-acc" onclick="goTo('logselect')">+ Log Weights</button>
       <button class="btn btn-outline" onclick="goToEmomBuilder()">EMOM Builder</button>
     </div>
+    <button class="btn btn-outline" style="margin-top:10px;" onclick="goTo('logcardio')">🏃 Log Cardio Activity</button>
   </div>
 </div>
 
@@ -210,6 +212,30 @@
     <button class="btn btn-acc" style="width:100%;margin-bottom:10px;" onclick="goToEmomBuilder()">Start New EMOM</button>
     <div id="emomLogTemplateList"></div>
   </div>
+</div>
+
+<!-- LOG CARDIO ACTIVITY -->
+<div id="logcardio" class="screen">
+  <div class="hdr"><button class="back-btn" onclick="goTo('trainingHub')">←</button><div class="hdr-title">Log Cardio Activity</div><div class="sync-dot" id="cardioSD"></div></div>
+  <div class="sb">
+    <div class="ci-section">
+      <div class="ci-label">Sport</div>
+      <div class="ci-q">What did you do?</div>
+      <div class="chip-wrap" id="cardioSportChips"></div>
+    </div>
+    <div class="ci-section">
+      <div class="ci-label">Duration</div>
+      <div class="ci-q">How long did you go? <span id="cardioDurVal" style="color:#c8ff00;font-weight:700;">30 min</span></div>
+      <input type="range" class="range-inp" id="cardioDurSlider" min="5" max="180" step="5" value="30" oninput="updateCardioDur(this.value)">
+      <div class="slider-lbl"><span>5 min</span><span>3 hrs</span></div>
+    </div>
+    <div class="info-box" id="cardioCalPreview" style="display:none;">
+      <div class="info-lbl">Estimated Burn</div>
+      <div class="info-val" id="cardioCalVal" style="font-size:22px;font-weight:700;color:#c8ff00;"></div>
+      <div style="font-size:11px;color:#888;margin-top:4px;">Based on your profile weight and MET value. This will be added to your daily calorie target on your next check-in.</div>
+    </div>
+  </div>
+  <div class="foot"><button class="btn btn-outline btn-sm" onclick="goTo('trainingHub')">Cancel</button><button class="btn btn-acc" id="cardioSaveBtn" onclick="submitActivityLog()" disabled>Save Activity</button></div>
 </div>
 
 <!-- LOG SESSION -->
