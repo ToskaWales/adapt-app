@@ -4,6 +4,20 @@ import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirect
 import{getFirestore,doc,setDoc,getDoc,deleteDoc,collection,addDoc,getDocs,query,orderBy,limit,where,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 const cfg={apiKey:"AIzaSyDQKmSRuK0cpIupdwVOilD8gX88ML-3K8s",authDomain:"adaptive-plan-app.firebaseapp.com",projectId:"adaptive-plan-app",storageBucket:"adaptive-plan-app.firebasestorage.app",messagingSenderId:"214755243355",appId:"1:214755243355:web:4fe3818b936a442477967e"};
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);const prov=new GoogleAuthProvider();prov.setCustomParameters({prompt:'select_account'});
+const PROFILE_CACHE_PREFIX='addapt_profile_cache_';
+function getCachedProfile(uid){
+  if(!uid)return null;
+  try{
+    const raw=localStorage.getItem(PROFILE_CACHE_PREFIX+uid);
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    return parsed&&typeof parsed==='object'?parsed:null;
+  }catch{return null;}
+}
+function setCachedProfile(uid,profile){
+  if(!uid||!profile)return;
+  try{localStorage.setItem(PROFILE_CACHE_PREFIX+uid,JSON.stringify(profile));}catch(err){}
+}
 function resetLoginButton(){
   const b=document.querySelector('.btn-google');
   if(!b)return;
@@ -42,12 +56,37 @@ async function withRetries(task,{retries=2,delayMs=450}={}){
 }
 onAuthStateChanged(auth,async u=>{
   if(u){window.currentUser=u;const av=document.getElementById('userAvatar'),nm=document.getElementById('userName');if(av)av.src=u.photoURL||'';if(nm)nm.textContent=u.displayName?.split(' ')[0]||'';
-    const snap=await getDoc(doc(db,'users',u.uid,'profile','data'));
-    if(snap.exists()){window.userProfile=snap.data();syncProfileDrivenState();updateHomeUI();goTo('home');}else{window.userProfile=null;startOb();goTo('onboarding');}
+    try{
+      const snap=await getDoc(doc(db,'users',u.uid,'profile','data'));
+      if(snap.exists()){
+        window.userProfile=snap.data();
+        setCachedProfile(u.uid,window.userProfile);
+        syncProfileDrivenState();
+        updateHomeUI();
+        goTo('home');
+      }else{
+        window.userProfile=null;
+        startOb();
+        goTo('onboarding');
+      }
+    }catch(e){
+      console.error(e);
+      const cached=getCachedProfile(u.uid);
+      if(cached){
+        window.userProfile=cached;
+        syncProfileDrivenState();
+        updateHomeUI();
+        goTo('home');
+        showToast('Offline mode','Loaded your last saved profile locally.');
+      }else{
+        showToast('Profile load failed','Please refresh in a moment.');
+        goTo('login');
+      }
+    }
     resetLoginButton();
   }else{window.currentUser=null;goTo('login');resetLoginButton();}
 });
-window.fbSaveProfile=async p=>{const u=window.currentUser;if(!u)return;setSD('saving');try{await withRetries(()=>setDoc(doc(db,'users',u.uid,'profile','data'),p));window.userProfile=p;setSD('saved');}catch(e){console.error(e);setSD('error');showToast('Profile sync failed','Your changes are local. Retry from settings.');throw e;}};
+window.fbSaveProfile=async p=>{const u=window.currentUser;if(!u)return;setSD('saving');try{await withRetries(()=>setDoc(doc(db,'users',u.uid,'profile','data'),p));window.userProfile=p;setCachedProfile(u.uid,p);setSD('saved');}catch(e){console.error(e);setCachedProfile(u.uid,p);setSD('error');showToast('Profile sync failed','Your changes are local. Retry from settings.');throw e;}};
 window.fbSaveCheckin=async d=>{const u=window.currentUser;if(!u)return;setSD('saving');try{await withRetries(()=>addDoc(collection(db,'users',u.uid,'checkins'),{...d,createdAt:serverTimestamp()}));setSD('saved');}catch(e){console.error(e);setSD('error');showToast('Check-in sync failed','Network issue. Try submitting again.');throw e;}};
 window.fbLoadCheckins=async()=>{const u=window.currentUser;if(!u)return[];try{const q=query(collection(db,'users',u.uid,'checkins'),orderBy('createdAt','desc'),limit(50));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){console.error(e);return[];}};
 window.fbSaveSession=async sd=>{const u=window.currentUser;if(!u)return;const id=sd.isoDate+'_'+sd.dayName.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);const el=document.getElementById('logSD');if(el)el.className='sync-dot saving';try{await withRetries(()=>setDoc(doc(db,'users',u.uid,'sessions',id),{...sd,createdAt:serverTimestamp()}));if(el)el.className='sync-dot saved';}catch(e){console.error(e);if(el)el.className='sync-dot error';showToast('Session sync failed','Save did not confirm. Retry in a moment.');throw e;}};
@@ -309,24 +348,37 @@ function getAllExercises() {
   return lib;
 }
 function goTo(id){
+  const currentActive=document.querySelector('.screen.active');
+  const target=document.getElementById(id);
+  if(!target){
+    showToast('Navigation issue','That screen is unavailable right now.');
+    return;
+  }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  target.classList.add('active');
   if(id!==lastTrackedScreen){
     trackFlowEvent('screen_view',{screen:id});
     lastTrackedScreen=id;
   }
-  updateAppNavState(id);
-  if(id!=='home'&&walkthroughState.active)closeFeatureWalkthrough(false);
-  if(id==='history')loadHistory();
-  if(id==='settings')renderSettings();
-  if(id==='logselect')renderLogSelect();
-  if(id==='logemomselect')renderLogEmomSelect();
-  if(id==='emomBuilder')renderEmomTemplateList();
-  if(id==='strength')loadStrength();
-  if(id==='checkin')populateCheckinMeta();
-  if(id==='logcardio')renderLogCardio();
-  if(id==='home'&&window.userProfile?.walkthroughSeen===false)setTimeout(()=>startFeatureWalkthrough(),450);
-  window.scrollTo(0,0);
+  try{
+    updateAppNavState(id);
+    if(id!=='home'&&walkthroughState.active)closeFeatureWalkthrough(false);
+    if(id==='history')loadHistory();
+    if(id==='settings')renderSettings();
+    if(id==='logselect')renderLogSelect();
+    if(id==='logemomselect')renderLogEmomSelect();
+    if(id==='emomBuilder')renderEmomTemplateList();
+    if(id==='strength')loadStrength();
+    if(id==='checkin')populateCheckinMeta();
+    if(id==='logcardio')renderLogCardio();
+    if(id==='home'&&window.userProfile?.walkthroughSeen===false)setTimeout(()=>startFeatureWalkthrough(),450);
+    window.scrollTo(0,0);
+  }catch(err){
+    trackFlowEvent('screen_navigation_error',{target:id,message:err?.message||String(err)});
+    target.classList.remove('active');
+    if(currentActive)currentActive.classList.add('active');
+    showToast('Navigation issue','Could not open that page. Please try again.');
+  }
 }
 window.goTo=goTo;
 
@@ -674,10 +726,15 @@ window.renderProgressPhotoGallery = function() {
 // Patch goTo to render gallery on Strength screen
 const origGoTo = window.goTo;
 window.goTo = function(id) {
-  origGoTo(id);
-  if(['home','trainingHub','nutritionHub','statsHub','sauna'].includes(id))refreshPrimarySurfaces();
-  if (id === 'strength') {
-    setTimeout(window.renderProgressPhotoGallery, 100);
+  try{
+    origGoTo(id);
+    if(['home','trainingHub','nutritionHub','statsHub','sauna'].includes(id))refreshPrimarySurfaces();
+    if (id === 'strength') {
+      setTimeout(window.renderProgressPhotoGallery, 100);
+    }
+  }catch(err){
+    trackFlowEvent('go_to_wrapper_error',{target:id,message:err?.message||String(err)});
+    showToast('Navigation issue','Could not open that page. Please try again.');
   }
 }
 
