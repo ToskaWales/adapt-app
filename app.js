@@ -2022,7 +2022,7 @@ function calcWeightTrend(checkins,currentWeight,dietGoal){
 }
 
 // ── LIGHTWEIGHT ML (ON-DEVICE) ──
-const ML_MODEL_VERSION=1;
+const ML_MODEL_VERSION=2;
 const ML_MODEL_STORAGE_KEY='addapt_ml_model_cache';
 
 function mlSigmoid(z){return 1/(1+Math.exp(-z));}
@@ -2031,10 +2031,9 @@ function mlSleepVal(v){return {'<5hrs':0,'5-6hrs':0.35,'7-8hrs':0.75,'8+hrs':1}[
 function mlLiftVal(v){return {regressed:0,same:0.45,slightly_up:0.72,pbs:1}[v]??0.5;}
 function mlDietVal(v){return {way_under:0.15,under:0.4,on_target:0.85,over:0.35}[v]??0.5;}
 function mlDatasetFingerprint(xs,ys){
-  // Cheap deterministic fingerprint for cache invalidation when history changes.
-  const head=xs.slice(0,3).flat().map(v=>Number(v).toFixed(3)).join('|');
-  const tail=xs.slice(-3).flat().map(v=>Number(v).toFixed(3)).join('|');
-  return `${xs.length}:${ys.join('')}:${head}:${tail}`;
+  // Hash every sample so any change to any entry (including intermediate ones) invalidates the cache.
+  const all=xs.flat().map(v=>Number(v).toFixed(3)).join('|');
+  return `${xs.length}:${ys.join('')}:${all}`;
 }
 function mlLoadCachedModel(fingerprint){
   try{
