@@ -24,23 +24,60 @@ function resetLoginButton(){
   b.innerHTML='<svg class="g-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Continue with Google';
   b.disabled=false;
 }
+function shouldPreferGoogleRedirect(){
+  const host=window.location.hostname||'';
+  const ua=window.navigator.userAgent||'';
+  const standalone=window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  const inAppBrowser=/Instagram|FBAN|FBAV|Line|wv/i.test(ua);
+  return host.endsWith('github.io')||standalone||inAppBrowser||/iPad|iPhone|iPod/i.test(ua);
+}
+function getGoogleLoginErrorMessage(err){
+  const host=window.location.hostname||'this site';
+  switch(err?.code){
+    case 'auth/unauthorized-domain':
+      return `Google sign-in is not authorised for ${host} yet. Add it in Firebase Auth → Settings → Authorized domains.`;
+    case 'auth/operation-not-allowed':
+      return 'Google sign-in is not enabled in Firebase Authentication yet.';
+    case 'auth/network-request-failed':
+      return 'Network error while contacting Google. Check your connection and try again.';
+    case 'auth/web-storage-unsupported':
+      return 'This browser is blocking the storage Google sign-in needs. Try a normal browser tab.';
+    default:
+      return 'Please try again.';
+  }
+}
+function handleGoogleLoginError(err){
+  if(!err||err.code==='auth/popup-closed-by-user')return;
+  console.error(err);
+  showToast('Login failed',getGoogleLoginErrorMessage(err));
+}
 window.signInWithGoogle=async()=>{
   const b=document.querySelector('.btn-google');
   if(b){b.textContent='Signing in...';b.disabled=true;}
+  if(window.location.protocol==='file:'){
+    showToast('Open via website','Google sign-in only works on localhost or the deployed site, not from a file opened directly.');
+    resetLoginButton();
+    return;
+  }
   try{
+    if(shouldPreferGoogleRedirect()){
+      await signInWithRedirect(auth,prov);
+      return;
+    }
     await signInWithPopup(auth,prov);
   }catch(e){
-    const fallbackCodes=['auth/popup-blocked','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment'];
+    const fallbackCodes=['auth/popup-blocked','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment','auth/internal-error'];
     if(fallbackCodes.includes(e.code)){
-      try{await signInWithRedirect(auth,prov);return;}catch(redirectErr){console.error(redirectErr);showToast('Login failed','Could not open Google sign-in. Try again.');}
-    }else if(e.code!=='auth/popup-closed-by-user'){
-      console.error(e);
-      showToast('Login failed','Please try again.');
+      try{await signInWithRedirect(auth,prov);return;}catch(redirectErr){handleGoogleLoginError(redirectErr);}
+    }else{
+      handleGoogleLoginError(e);
     }
     resetLoginButton();
   }
 };
-getRedirectResult(auth).catch(e=>{if(e)console.error(e);resetLoginButton();});
+getRedirectResult(auth)
+  .then(()=>resetLoginButton())
+  .catch(e=>{handleGoogleLoginError(e);resetLoginButton();});
 window.signOut=async()=>{await fbSO(auth);window.userProfile=null;goTo('login');};
 async function withRetries(task,{retries=2,delayMs=450}={}){
   let lastErr=null;
@@ -1226,13 +1263,10 @@ function persistOnboardingDraft(){
     selectedRestricts,
     selectedTrainDays,
     selectedNotifPrefs,
-<<<<<<< HEAD:app.js
-=======
     selectedAvoidMuscles,
     selectedCompoundBias,
     selectedStructurePreset,
     selectedVolumePreference,
->>>>>>> caff44e (Deeper training personalization: onboarding and plan engine now support muscle de-emphasis, compound/isolation, split style, and volume tolerance):Code/ADDAPT/app.js
     savedAt:new Date().toISOString()
   };
   localStorage.setItem(ONBOARDING_DRAFT_KEY,JSON.stringify(draft));
