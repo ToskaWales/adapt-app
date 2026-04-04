@@ -103,6 +103,11 @@ window.currentUser=null;window.userProfile=null;window.currentPlanData=null;wind
 let obAnswers={},selectedMuscles=[],selectedRestricts=['none'],selectedTrainDays=[],selectedNotifPrefs={checkin:true,emom:false,sauna:false},stepInterval=null,currentLogDay=null,swapTargetEx=null,calOverrideActive=false;
 let lastTrainingMove=null;
 let pendingLogMode='normal';
+// New onboarding state
+let selectedAvoidMuscles = [];
+let selectedCompoundBias = '';
+let selectedStructurePreset = '';
+let selectedVolumePreference = '';
 const APP_STATE={
   workoutTimer:{running:false,interval:null,seconds:0,lastMinute:-1,startEpoch:null,activeExercise:'',activeSet:1,restSeconds:0,restInterval:null,emomEnabled:false,emomTargetMinutes:0,emomWork:40,emomRest:20,emomExercises:[],emomExercisePlan:[],cues:['Power breathing and setup check.','Brace hard and own your first rep.','Control tempo and own every eccentric.','Add intent: move the bar faster on the concentric.','Stay technical. Leave ego out of the set.','Hydrate and reset posture before next set.']},
   gamification:{xp:0,level:1,nextXp:100},
@@ -1221,6 +1226,13 @@ function persistOnboardingDraft(){
     selectedRestricts,
     selectedTrainDays,
     selectedNotifPrefs,
+<<<<<<< HEAD:app.js
+=======
+    selectedAvoidMuscles,
+    selectedCompoundBias,
+    selectedStructurePreset,
+    selectedVolumePreference,
+>>>>>>> caff44e (Deeper training personalization: onboarding and plan engine now support muscle de-emphasis, compound/isolation, split style, and volume tolerance):Code/ADDAPT/app.js
     savedAt:new Date().toISOString()
   };
   localStorage.setItem(ONBOARDING_DRAFT_KEY,JSON.stringify(draft));
@@ -2521,17 +2533,25 @@ function getEx(ids,eq){return ids.map(id=>EX_LIB[id]).filter(e=>e&&e.eq.includes
 //       → distributeVolume → buildOneSession → assembleSplitDays
 
 // ── 1. GOAL PROFILE ──────────────────────────────────────────────
-function getGoalProfile(goal,focusMuscles=[]){
+// Patch: Use avoidMuscles, compoundBias, structurePreset, volumePreference in split logic
+function getGoalProfile(goal,focusMuscles=[],avoidMuscles=[],volumePreference='moderate'){
   const base={
     vtaper:   {priority:['back','shoulders'],          secondary:['chest','triceps','biceps','core'],   maintenance:['quads','hamstrings','glutes','calves']},
     hourglass:{priority:['glutes','shoulders'],         secondary:['hamstrings','quads','back','core'],  maintenance:['chest','biceps','triceps','calves']},
     strength: {priority:['quads','hamstrings','chest','back','shoulders'],secondary:['glutes','triceps','biceps','core'],maintenance:['calves']},
     general:  {priority:['back','quads'],              secondary:['chest','shoulders','glutes','hamstrings','core'],maintenance:['biceps','triceps','calves']},
   }[goal]||{priority:['back','quads'],secondary:['chest','shoulders','glutes','hamstrings','core'],maintenance:['biceps','triceps','calves']};
-  const promoted=[...new Set([...focusMuscles,...base.priority])];
-  const secondary=base.secondary.filter(m=>!promoted.includes(m));
-  const maintenance=base.maintenance.filter(m=>!promoted.includes(m)&&!secondary.includes(m));
-  return{priority:promoted,secondary,maintenance};
+  let promoted=[...new Set([...focusMuscles,...base.priority])];
+  let secondary=base.secondary.filter(m=>!promoted.includes(m));
+  let maintenance=base.maintenance.filter(m=>!promoted.includes(m)&&!secondary.includes(m));
+  // Remove avoidMuscles from priority/secondary, push to maintenance
+  if (avoidMuscles && avoidMuscles.length) {
+    promoted = promoted.filter(m=>!avoidMuscles.includes(m));
+    secondary = secondary.filter(m=>!avoidMuscles.includes(m));
+    maintenance = [...maintenance, ...avoidMuscles.filter(m=>!maintenance.includes(m))];
+  }
+  // Volume preference: lower = drop 1 from all, high = add 2 to priority
+  return{priority:promoted,secondary,maintenance,volumePreference};
 }
 
 // ── 2. WEEKLY SET TARGETS ─────────────────────────────────────────
@@ -2566,7 +2586,15 @@ function getWeeklySetTargets(gp,goal,days,sessionLen,tier){
 // No named splits required — just muscle order per session.
 // V-taper includes legs 2×/week. All goals can include any muscle
 // wherever it makes sense for frequency targets.
-function getSessionTemplates(goal,days){
+function getSessionTemplates(goal,days,structurePreset='adaptive'){
+  // If user picked a split style, override goal
+  if(structurePreset==='upperlower')goal='strength';
+  if(structurePreset==='pushpulllegs')goal='general';
+  if(structurePreset==='fullbody')goal='hourglass';
+  // Otherwise, use goal as normal
+  return getSessionTemplates.__orig(goal,days);
+}
+getSessionTemplates.__orig = function(goal,days){
   const d=Math.min(days===7?6:days,6);
   const T={
     vtaper:{
@@ -2663,7 +2691,7 @@ function getSessionTemplates(goal,days){
     },
   };
   return(T[goal]||T.general)[d]||T.general[4];
-}
+};
 
 // ── 4. DISTRIBUTE VOLUME ──────────────────────────────────────────
 // Split each muscle's weekly set target evenly across the sessions

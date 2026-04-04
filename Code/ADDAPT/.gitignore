@@ -1,0 +1,12 @@
+# Windows desktop noise
+*.lnk
+*.url
+desktop.ini
+Thumbs.db
+
+# Common local artifacts
+$RECYCLE.BIN/
+node_modules/
+dist/
+.vite/
+*.log
