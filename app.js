@@ -1,3 +1,8 @@
+// Attach Google login event listener for ES module compatibility
+document.addEventListener('DOMContentLoaded',()=>{
+  const btn=document.querySelector('.btn-google');
+  if(btn)btn.addEventListener('click',()=>window.signInWithGoogle());
+});
 
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut as fbSO,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
