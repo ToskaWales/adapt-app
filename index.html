@@ -700,14 +700,24 @@
   <button class="app-nav-btn" data-target="sauna" onclick="goTo('sauna')"><span class="app-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 20v-6a4 4 0 0 1 8 0v6M6 20h12M8 7c0-1.7 1-2.5 2.2-3.5M12 7c0-1.7 1-2.5 2.2-3.5M16 7c0-1.7 1-2.5 2.2-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="app-nav-label">Recovery</span></button>
   <button class="app-nav-btn" data-target="statsHub" onclick="goTo('statsHub')"><span class="app-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="5" cy="7" r="1.5" fill="currentColor"/><circle cx="12" cy="3" r="1.5" fill="currentColor"/><circle cx="19" cy="10" r="1.5" fill="currentColor"/></svg></span><span class="app-nav-label">Statistics</span></button>
 </nav>
+
+<!-- MEAL LOG MODAL -->
+<div class="overlay" id="mealModalOvl" onclick="closeMealModal()"></div>
+<div class="bsheet" id="mealModal">
+  <div class="sh-handle"></div>
   <div class="sh-title" id="mealModalTitle">Log Meal</div>
-  <div style="padding:12px 18px;">
+  <div style="padding:0 0 12px;">
     <div class="info-box" style="margin-bottom:12px;">
       <div class="info-val" id="mealModalMeta" style="font-size:13px;"></div>
     </div>
     <div style="margin-bottom:14px;">
+      <label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Search food</label>
+      <input type="text" id="mealFoodSearch" class="settings-input" placeholder="e.g. chicken breast, oats…" style="margin-bottom:8px;" oninput="debouncedFoodSearch(this.value)">
+      <div id="mealFoodResults"></div>
+    </div>
+    <div style="margin-bottom:14px;">
       <label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Food item or note</label>
-      <input type="text" id="mealLogItem" class="settings-input" placeholder="e.g. Grilled chicken, rice, broccoli" style="margin-bottom:8px;">
+      <input type="text" id="mealLogItem" class="settings-input" placeholder="e.g. Grilled chicken, rice, broccoli">
     </div>
     <div style="margin-bottom:14px;">
       <label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Estimated calories</label>
