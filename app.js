@@ -2306,6 +2306,7 @@ function renderInsightChart(series,canvasId,emptyId,color,config={}){
   attachCanvasTooltip(canvas,points,config.formatter||((value)=>`${Math.round(value)}`));
 }
 let mealModalState={index:null,mealName:'',mealTime:'',mealKcal:0};
+let _nutritionCtx=null;
 function openMealModal(index,meal){
   mealModalState.index=index;
   mealModalState.mealName=meal.name||'';
@@ -2318,15 +2319,17 @@ function openMealModal(index,meal){
   document.getElementById('mealModalMeta').textContent=`${meal.time} · ${meal.kcal} kcal · ${meal.items.length} items`;
   document.getElementById('mealLogItem').value='';
   document.getElementById('mealLogKcal').value=meal.kcal||'';
-  modal.style.display='block';
-  ovl.style.display='block';
+  document.getElementById('mealFoodSearch').value='';
+  document.getElementById('mealFoodResults').innerHTML='';
+  modal.classList.add('open');
+  ovl.classList.add('open');
 }
 window.openMealModal=openMealModal;
 function closeMealModal(){
   const modal=document.getElementById('mealModal');
   const ovl=document.getElementById('mealModalOvl');
-  if(modal)modal.style.display='none';
-  if(ovl)ovl.style.display='none';
+  if(modal)modal.classList.remove('open');
+  if(ovl)ovl.classList.remove('open');
   mealModalState={index:null,mealName:'',mealTime:'',mealKcal:0};
 }
 window.closeMealModal=closeMealModal;
@@ -2346,7 +2349,6 @@ async function saveMealLog(){
   const u=window.currentUser;
   if(u&&window.fbSaveSession){
     try{
-      const logId=key+'_meal_'+mealModalState.index;
       const payload={
         isoDate:key,
         dayName:new Date().toLocaleDateString('en-US',{weekday:'long'}),
@@ -2372,6 +2374,81 @@ function toggleMealSlotLog(index){
   openMealModal(index,plan.meals[index]);
 }
 window.toggleMealSlotLog=toggleMealSlotLog;
+function openCustomFoodModal(){
+  mealModalState.index='custom_'+Date.now();
+  mealModalState.mealName='Custom';
+  mealModalState.mealTime='';
+  mealModalState.mealKcal=0;
+  const modal=document.getElementById('mealModal');
+  const ovl=document.getElementById('mealModalOvl');
+  if(!modal||!ovl)return;
+  document.getElementById('mealModalTitle').textContent='Log Food';
+  document.getElementById('mealModalMeta').textContent='Search for a food or enter details manually';
+  document.getElementById('mealLogItem').value='';
+  document.getElementById('mealLogKcal').value='';
+  document.getElementById('mealFoodSearch').value='';
+  document.getElementById('mealFoodResults').innerHTML='';
+  modal.classList.add('open');
+  ovl.classList.add('open');
+}
+window.openCustomFoodModal=openCustomFoodModal;
+function toggleNutritionExamples(){
+  window._nutritionExamplesExpanded=!window._nutritionExamplesExpanded;
+  if(_nutritionCtx)renderNutritionHub(_nutritionCtx);
+}
+window.toggleNutritionExamples=toggleNutritionExamples;
+let _foodSearchTimer=null;
+function debouncedFoodSearch(query){
+  clearTimeout(_foodSearchTimer);
+  const resultsEl=document.getElementById('mealFoodResults');
+  if(!query||query.length<2){if(resultsEl)resultsEl.innerHTML='';return;}
+  _foodSearchTimer=setTimeout(()=>searchFood(query),500);
+}
+window.debouncedFoodSearch=debouncedFoodSearch;
+function escapeHtml(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+async function searchFood(query){
+  const resultsEl=document.getElementById('mealFoodResults');
+  if(!resultsEl)return;
+  resultsEl.innerHTML='<div class="food-search-status">Searching\u2026</div>';
+  try{
+    const resp=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&json=1&page_size=10&fields=product_name,nutriments`,{signal:AbortSignal.timeout(6000)});
+    if(!resp.ok)throw new Error('network');
+    const data=await resp.json();
+    const items=(data.products||[]).filter(p=>p.product_name&&(p.nutriments?.['energy-kcal_100g']>0||p.nutriments?.['energy-kcal_serving']>0));
+    if(!items.length){resultsEl.innerHTML='<div class="food-search-status">No results with nutrition data</div>';return;}
+    const list=document.createElement('div');
+    list.className='food-results-list';
+    items.slice(0,6).forEach(p=>{
+      const name=p.product_name.trim();
+      const kcal100=Math.round(p.nutriments['energy-kcal_100g']||0);
+      const kcalServing=Math.round(p.nutriments['energy-kcal_serving']||0);
+      const kcalFill=kcalServing||kcal100;
+      const label=kcalServing?`${kcalServing} kcal/serving`:`${kcal100} kcal/100g`;
+      const btn=document.createElement('button');
+      btn.className='food-result-item';
+      btn.dataset.name=name;
+      btn.dataset.kcal=String(kcalFill);
+      btn.innerHTML=`<span class="food-result-name">${escapeHtml(name)}</span><span class="food-result-kcal">${escapeHtml(label)}</span>`;
+      list.appendChild(btn);
+    });
+    list.addEventListener('click',e=>{
+      const btn=e.target.closest('.food-result-item');
+      if(btn)selectFoodResult(btn.dataset.name,btn.dataset.kcal);
+    });
+    resultsEl.innerHTML='';
+    resultsEl.appendChild(list);
+  }catch{
+    resultsEl.innerHTML='<div class="food-search-status">Food search unavailable</div>';
+  }
+}
+window.searchFood=searchFood;
+function selectFoodResult(name,kcal){
+  document.getElementById('mealLogItem').value=name;
+  document.getElementById('mealLogKcal').value=kcal;
+  document.getElementById('mealFoodResults').innerHTML='';
+  document.getElementById('mealFoodSearch').value=name;
+}
+window.selectFoodResult=selectFoodResult;
 function drawLineChartIntoSeries(series,canvasId,emptyId,color,height=120){
   renderInsightChart(series,canvasId,emptyId,color,{height,formatter:(value)=>`${Math.round(value*10)/10}`});
 }
@@ -2596,15 +2673,21 @@ function renderNutritionHub({checkins,plan}){
   const macroWrap=document.getElementById('nutritionMacroStrip');
   const mealsWrap=document.getElementById('nutritionMeals');
   if(!macroWrap||!mealsWrap||!plan)return;
+  _nutritionCtx={checkins,plan};
   macroWrap.innerHTML=`<div class="macro-strip"><div class="macro-pill"><strong>${plan.analysis.kcal}</strong><span>kcal</span></div><div class="macro-pill"><strong>${plan.analysis.protein}g</strong><span>protein</span></div><div class="macro-pill"><strong>${plan.analysis.carbs}g</strong><span>carbs</span></div><div class="macro-pill"><strong>${plan.analysis.fat}g</strong><span>fat</span></div></div>`;
   const kcalSeries=checkins.filter(item=>item.planSummary?.kcal).reverse().slice(-8).map(item=>({value:parseFloat(item.planSummary.kcal),label:item.date||''}));
   renderInsightChart(kcalSeries,'nutritionKcalChart','nutritionKcalEmpty','#c8ff00',{height:130,formatter:(value)=>`${Math.round(value)} kcal`,metaLabel:'First target',metaMidLabel:'Current target'});
-  const mealState=getMealLogState()[new Date().toISOString().split('T')[0]]||{};
-  mealsWrap.innerHTML=plan.meals.map((meal,index)=>{
+  const today=new Date().toISOString().split('T')[0];
+  const mealState=getMealLogState()[today]||{};
+  const customEntries=Object.entries(mealState).filter(([k])=>String(k).startsWith('custom_')).map(([,v])=>v);
+  const customHtml=customEntries.length?customEntries.map(e=>`<div class="meal-log-entry"><span class="meal-log-entry-name">${escapeHtml(e.item)}</span><span class="meal-log-entry-kcal">${escapeHtml(String(e.kcal))} kcal</span></div>`).join(''):`<div class="meal-log-empty">Tap + to log a food or meal</div>`;
+  const examplesExpanded=window._nutritionExamplesExpanded||false;
+  const examplesHtml=examplesExpanded?plan.meals.map((meal,index)=>{
     const logged=mealState[index];
-    const loggedDetail=logged?`<div class="meal-log-detail" style="font-size:12px;color:#c8ff00;margin-top:4px;"><strong>${logged.item}</strong> · ${logged.kcal} kcal</div>`:'';
-    return`<div class="meal-slot-card"><div class="meal-slot-head"><div class="meal-num">${meal.num}</div><div class="meal-slot-copy"><div class="meal-slot-name">${meal.name}</div><div class="meal-slot-time">${meal.time} · ${meal.kcal} kcal</div></div><button class="meal-slot-toggle ${logged?'logged':''}" onclick="toggleMealSlotLog(${index})">${logged?'✓':'+'}</button></div><ul class="meal-slot-items">${meal.items.map(([food,qty])=>`<li><span>${food}</span><span>${qty}</span></li>`).join('')}</ul>${loggedDetail}</div>`;
-  }).join('');
+    const loggedDetail=logged?`<div class="meal-log-detail"><strong>${escapeHtml(logged.item)}</strong> \u00b7 ${escapeHtml(String(logged.kcal))} kcal</div>`:'';
+    return`<div class="meal-slot-card"><div class="meal-slot-head"><div class="meal-num">${meal.num}</div><div class="meal-slot-copy"><div class="meal-slot-name">${meal.name}</div><div class="meal-slot-time">${meal.time} \u00b7 ${meal.kcal} kcal</div></div><button class="meal-slot-toggle ${logged?'logged':''}" onclick="toggleMealSlotLog(${index})">${logged?'\u2713':'+'}</button></div><ul class="meal-slot-items">${meal.items.map(([food,qty])=>`<li><span>${food}</span><span>${qty}</span></li>`).join('')}</ul>${loggedDetail}</div>`;
+  }).join(''):'';
+  mealsWrap.innerHTML=`<div class="meal-log-section"><div class="meal-log-header"><span class="meal-log-header-title">Today's Log</span><button class="meal-slot-toggle" onclick="openCustomFoodModal()">+</button></div>${customHtml}</div><div class="meal-examples-section"><button class="meal-examples-toggle" onclick="toggleNutritionExamples()"><span><span class="meal-example-badge">Example</span> Meal Plan</span><span class="meal-examples-chevron">${examplesExpanded?'\u25b2':'\u25bc'}</span></button>${examplesExpanded?`<div class="meal-examples-body">${examplesHtml}</div>`:''}</div>`;
   const latestWeight=checkins.find(item=>item.weight)?.weight||window.userProfile?.weight||null;
   const weightMeta=document.getElementById('nutritionWeightMeta');
   const weightInput=document.getElementById('nutritionWeightInput');
