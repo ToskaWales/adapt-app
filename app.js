@@ -4,12 +4,13 @@ import{doc,setDoc,getDoc,deleteDoc,collection,addDoc,getDocs,query,orderBy,limit
 import{shouldPreferGoogleRedirect,getGoogleLoginErrorMessage}from'./src/modules/auth.js';
 import{createFirebaseServices}from'./src/modules/firestore.js';
 import{getGoalAdherenceInsights,getWeeklyProgressSummary}from'./src/modules/insights.js';
-import{buildFirstRunEmptyState}from'./src/modules/onboarding.js';
+import{buildFirstRunEmptyState,getRecommendedFocusMuscles,getRecommendedTrainingSetup}from'./src/modules/onboarding.js';
 import{formatLastSyncedLabel,registerServiceWorker}from'./src/modules/ui.js';
 const cfg={apiKey:"AIzaSyDQKmSRuK0cpIupdwVOilD8gX88ML-3K8s",authDomain:"adaptive-plan-app.firebaseapp.com",projectId:"adaptive-plan-app",storageBucket:"adaptive-plan-app.firebasestorage.app",messagingSenderId:"214755243355",appId:"1:214755243355:web:4fe3818b936a442477967e"};
 const {auth,db,prov}=createFirebaseServices(cfg);
 registerServiceWorker();
 const PROFILE_CACHE_PREFIX='addapt_profile_cache_';
+const PLAN_CACHE_PREFIX='addapt_plan_cache_';
 function getCachedProfile(uid){
   if(!uid)return null;
   try{
@@ -22,6 +23,10 @@ function getCachedProfile(uid){
 function setCachedProfile(uid,profile){
   if(!uid||!profile)return;
   try{localStorage.setItem(PROFILE_CACHE_PREFIX+uid,JSON.stringify(profile));}catch(err){}
+}
+function setCachedPlan(uid,plan){
+  if(!uid||!plan)return;
+  try{localStorage.setItem(PLAN_CACHE_PREFIX+uid,JSON.stringify({cachedAt:new Date().toISOString(),plan}));}catch(err){}
 }
 const LAST_SYNC_STORAGE_KEY='addapt_last_sync_meta_v1';
 function getLastSyncMeta(){
@@ -1251,7 +1256,6 @@ window.selC=selC;
 let obStep=1;
 const ONBOARDING_DRAFT_KEY='addapt_onboarding_draft_v2';
 const BODY_GOAL_TO_DIET={build:'bulk',maintain:'maintain',recomp:'maintain',lose:'cut'};
-const DEFAULT_FOCUS_BY_GOAL={vtaper:['back','shoulders'],hourglass:['glutes','shoulders'],strength:['quads','back'],general:['back','core']};
 const PAIN_TO_AVOID_MUSCLES={
   shoulders:['shoulders','chest','triceps'],
   lower_back:['back','hamstrings'],
@@ -1270,7 +1274,19 @@ function getOnboardingDraft(){
 function clearOnboardingDraft(){
   localStorage.removeItem(ONBOARDING_DRAFT_KEY);
 }
+function syncOnboardingDerivedState(){
+  obAnswers.focusMuscles=[...selectedMuscles];
+  obAnswers.trainingDays=[...selectedTrainDays];
+  obAnswers.restrictions=[...selectedRestricts];
+  obAnswers.notifications={...selectedNotifPrefs};
+  obAnswers.painAreas=[...selectedPainAreas];
+  obAnswers.avoidMuscles=[...selectedAvoidMuscles];
+  obAnswers.structurePreset=selectedStructurePreset||obAnswers.structurePreset||'adaptive';
+  obAnswers.volumePreference=selectedVolumePreference||obAnswers.volumePreference||'moderate';
+  obAnswers.compoundBias=selectedCompoundBias||obAnswers.compoundBias||'balanced';
+}
 function persistOnboardingDraft(){
+  syncOnboardingDerivedState();
   const draft={
     obStep,
     obAnswers,
@@ -1301,6 +1317,74 @@ function setObInputValue(id,val){
   const el=document.getElementById(id);
   if(el&&val!==undefined&&val!==null&&val!=='')el.value=val;
 }
+function getCurrentOnboardingRecommendations(){
+  return getRecommendedTrainingSetup({
+    ...obAnswers,
+    days:parseInt(obAnswers.days,10)||undefined,
+    sex:obAnswers.sex||'male',
+    focusMuscles:selectedMuscles,
+    workStyle:obAnswers.workStyle||'mixed',
+    activityLevel:obAnswers.activityLevel||'moderate'
+  });
+}
+function clearRecommendationClasses(){
+  document.querySelectorAll('.opt-card.rec,.chip.rec,.day-btn.rec').forEach(el=>{
+    el.classList.remove('rec');
+    el.removeAttribute('title');
+  });
+}
+function applyRecommendationHighlights(recs){
+  if(!recs)return;
+  clearRecommendationClasses();
+  document.querySelectorAll('#daysSel .day-btn').forEach(btn=>{
+    if(Number(btn.textContent.trim())===Number(recs.days)){
+      btn.classList.add('rec');
+      btn.title=`Recommended: ${recs.dayReason}`;
+    }
+  });
+  document.querySelectorAll('#splitPresetGrid .opt-card').forEach(card=>{
+    if(card.dataset.value===recs.splitPreset){
+      card.classList.add('rec');
+      card.title=`Recommended: ${recs.splitReason}`;
+    }
+  });
+  document.querySelectorAll('#ob17 .opt-card[data-key="sessionLen"]').forEach(card=>{
+    if(Number(card.dataset.value)===Number(recs.sessionLen)){
+      card.classList.add('rec');
+      card.title='Recommended session length based on your recovery and consistency.';
+    }
+  });
+  document.querySelectorAll('#muscleChips .chip').forEach(chip=>{
+    if(recs.focusMuscles.includes(chip.dataset.val||'')){
+      chip.classList.add('rec');
+      chip.title=`Recommended focus: ${recs.focusReason}`;
+    }
+  });
+  const splitPresetNote=document.getElementById('splitPresetNote');
+  if(splitPresetNote){
+    splitPresetNote.innerHTML=`<div class="info-lbl">Recommended split</div><div class="info-val">${cap(recs.splitPreset)} — ${recs.splitReason}</div>`;
+  }
+  const weeklyPlanReco=document.getElementById('weeklyPlanReco');
+  if(weeklyPlanReco){
+    weeklyPlanReco.innerHTML=`<div class="info-lbl">Suggested week</div><div class="info-val">${recs.trainingDays.join(' · ')} · ${recs.sessionLen} min sessions</div><div style="font-size:12px;color:#888;margin-top:6px;">${recs.dayReason} Focus bias: ${recs.focusMuscles.map(cap).join(' + ')}.</div>`;
+  }
+  const equipmentNote=document.getElementById('equipmentNote');
+  if(equipmentNote){
+    equipmentNote.innerHTML=`<div class="info-lbl">Equipment guidance</div><div class="info-val">${recs.equipmentHint}</div>`;
+  }
+}
+function seedRecommendedWeeklyPlan(force=false){
+  const targetCount=parseInt(obAnswers.days,10)||0;
+  if(!targetCount)return;
+  const recs=getCurrentOnboardingRecommendations();
+  if((!selectedTrainDays.length||force)&&Array.isArray(recs.trainingDays))selectedTrainDays=recs.trainingDays.slice(0,targetCount);
+  if((!obAnswers.sessionLen||force)&&recs.sessionLen)obAnswers.sessionLen=recs.sessionLen;
+  if((!selectedStructurePreset||force)&&recs.splitPreset){
+    selectedStructurePreset=recs.splitPreset;
+    obAnswers.structurePreset=recs.splitPreset;
+  }
+  syncOnboardingDerivedState();
+}
 function updateBodyGoalAvailability(){
   const bf=parseFloat(obAnswers.bodyFat||0);
   const hint=document.getElementById('bodyGoalHint');
@@ -1327,28 +1411,36 @@ function updateSplitOptions(){
     const disabled=(value==='pushpulllegs'&&days<3)||(value==='upperlower'&&days<2);
     card.classList.toggle('disabled',disabled);
     if(disabled&&obAnswers.structurePreset===value){
-      delete obAnswers.structurePreset;
+      const recs=getCurrentOnboardingRecommendations();
+      selectedStructurePreset=recs.splitPreset;
+      obAnswers.structurePreset=recs.splitPreset;
       card.classList.remove('sel','sel-p');
-      const btn=document.getElementById('ob16n');
-      if(btn)btn.disabled=true;
     }
   });
+  const btn=document.getElementById('ob16n');
+  if(btn)btn.disabled=!Boolean(obAnswers.structurePreset||selectedStructurePreset);
 }
 function refreshOnboardingSummary(){
   const wrap=document.getElementById('onboardingSummary');
   if(!wrap)return;
+  const recs=getCurrentOnboardingRecommendations();
   const outcomeLabel={build:'Build muscle',maintain:'Maintain',recomp:'Recomp',lose:'Lose weight'}[obAnswers.bodyGoal||'maintain']||'Maintain';
   const lifestyle=`${cap(String(obAnswers.activityLevel||'moderate').replace(/_/g,' '))} activity · ${cap(String(obAnswers.workStyle||'mixed').replace(/_/g,' '))}`;
+  const focusSummary=selectedMuscles.length===2?selectedMuscles.map(cap).join(' · '):recs.focusMuscles.map(cap).join(' · ');
   const summary=[
     ['Training focus',goalLabel(obAnswers.goal||'general')],
     ['Outcome',outcomeLabel],
-    ['Frequency',`${obAnswers.days||4} days · ${obAnswers.sessionLen||45} min`],
-    ['Focus muscles',selectedMuscles.length?selectedMuscles.map(cap).join(' · '):'Balanced full body'],
+    ['Frequency',`${obAnswers.days||recs.days} days · ${obAnswers.sessionLen||recs.sessionLen} min`],
+    ['Focus muscles',focusSummary],
+    ['Starting split',cap(selectedStructurePreset||obAnswers.structurePreset||recs.splitPreset)],
     ['Lifestyle',lifestyle],
+    ['AI hooks', 'Rule-based today · ready for ML upgrades after more check-ins'],
   ];
   wrap.innerHTML=summary.map(([label,value])=>`<div class="ob-summary-item"><div class="ob-summary-label">${label}</div><div class="ob-summary-value">${value}</div></div>`).join('');
 }
 function syncOnboardingSelections(){
+  syncOnboardingDerivedState();
+  const recs=getCurrentOnboardingRecommendations();
   document.querySelectorAll('.opt-card[data-key][data-value]').forEach(card=>{
     const key=card.dataset.key;
     const value=card.dataset.value;
@@ -1364,14 +1456,25 @@ function syncOnboardingSelections(){
     if(idx===0)chip.classList.add('sel');
     if(idx===1)chip.classList.add('sel2');
   });
-  document.querySelectorAll('#restrictChips .chip').forEach(chip=>chip.classList.toggle('sel',selectedRestricts.includes(chip.dataset.val||'')));
+  document.querySelectorAll('#restrictChips .chip').forEach(chip=>{
+    const value=chip.dataset.val||'';
+    chip.classList.toggle('sel',selectedRestricts.includes(value));
+    const redundant=selectedRestricts.includes('vegan')&&value==='vegetarian';
+    chip.classList.toggle('disabled',redundant);
+    chip.title=redundant?'Already covered by vegan selection.':'';
+  });
   document.querySelectorAll('#painChips .chip').forEach(chip=>chip.classList.toggle('sel',selectedPainAreas.includes(chip.dataset.val||'')));
   document.querySelectorAll('#notifChips .chip').forEach(chip=>{
     const key=chip.dataset.key;
     chip.classList.toggle('sel',Boolean(selectedNotifPrefs[key]));
   });
   const muscleNote=document.getElementById('muscleNote');
-  if(muscleNote)muscleNote.textContent=selectedMuscles.length>=2?selectedMuscles.map(cap).join(' and ')+' get extra weekly volume.':selectedMuscles.length===1?'Add one more muscle or continue with one.':'Pick 1 or 2 muscles.';
+  const muscleContinueBtn=document.getElementById('ob13n');
+  if(muscleContinueBtn)muscleContinueBtn.disabled=selectedMuscles.length!==2;
+  if(muscleNote){
+    const recommendedFocus=getRecommendedFocusMuscles({goal:obAnswers.goal||'general',sex:obAnswers.sex||'male'}).map(cap).join(' + ');
+    muscleNote.textContent=selectedMuscles.length===2?`${selectedMuscles.map(cap).join(' and ')} get extra weekly volume.`:selectedMuscles.length===1?`Add one more muscle. Recommended pair: ${recommendedFocus}.`:`Recommended focus: ${recommendedFocus}. Pick 2 muscles.`;
+  }
   const painNote=document.getElementById('painNote');
   if(painNote)painNote.textContent=selectedPainAreas.filter(v=>v!=='none').length?`Pain-aware swaps ready for ${selectedPainAreas.filter(v=>v!=='none').map(v=>cap(v.replace(/_/g,' '))).join(', ')}.`:'No pain flags selected.';
   const note=document.getElementById('trainDayNote');
@@ -1379,14 +1482,15 @@ function syncOnboardingSelections(){
   const targetCount=parseInt(obAnswers.days,10)||0;
   if(note&&text&&targetCount){
     note.style.display='block';
-    text.textContent=selectedTrainDays.length===targetCount?selectedTrainDays.join(' · '):`${selectedTrainDays.length}/${targetCount} days selected`;
+    text.textContent=selectedTrainDays.length===targetCount?selectedTrainDays.join(' · '):`${selectedTrainDays.length}/${targetCount} days selected · Suggested: ${recs.trainingDays.join(' · ')}`;
   }else if(note){
     note.style.display='none';
   }
   const target=document.getElementById('obTrainDayTarget');
-  if(target)target.textContent=String(targetCount||0);
+  if(target)target.textContent=String(targetCount||recs.days||0);
   updateSplitOptions();
   updateBodyGoalAvailability();
+  applyRecommendationHighlights(recs);
   refreshOnboardingSummary();
 }
 function resumeOnboardingDraft(){
@@ -1462,11 +1566,12 @@ function syncOnboardingPrefills(){
 function syncSplitSuggestion(){
   const days=parseInt(obAnswers.days,10);
   const g=obAnswers.goal||'general';
+  const recs=getCurrentOnboardingRecommendations();
   const splitText=document.getElementById('splitText');
   const splitDaysText=document.getElementById('splitDaysText');
   const splitSug=document.getElementById('splitSug');
-  if(splitText)splitText.textContent=days?((SPLITS[g]||SPLITS.general)[days]||'Adaptive split'):'Choose your training frequency first';
-  if(splitDaysText)splitDaysText.textContent=days?`Suggested rhythm: ${SCHED[days]||'Flexible week'}`:'The split recommendation unlocks after you choose your available days.';
+  if(splitText)splitText.textContent=days?((SPLITS[g]||SPLITS.general)[days]||cap(recs.splitPreset)):`Recommended: ${recs.days} days · ${cap(recs.splitPreset)}`;
+  if(splitDaysText)splitDaysText.textContent=days?`Suggested rhythm: ${recs.trainingDays.join(' · ')} · ${recs.dayReason}`:`Start with ${recs.days} days — ${recs.dayReason}`;
   if(splitSug)splitSug.style.display='block';
   updateSplitOptions();
 }
@@ -1481,6 +1586,7 @@ function obSel(el,key,val){
   if(key==='structurePreset')selectedStructurePreset=val;
   const nb=document.getElementById('ob'+obStep+'n');
   if(nb)nb.disabled=false;
+  syncOnboardingSelections();
   persistOnboardingDraft();
 }
 window.obSel=obSel;
@@ -1494,8 +1600,10 @@ function selDay(el,n){
   obAnswers.days=n;
   selectedTrainDays=[];
   syncOnboardingPrefills();
+  seedRecommendedWeeklyPlan(true);
   document.getElementById('ob15n').disabled=false;
   syncSplitSuggestion();
+  syncOnboardingSelections();
   persistOnboardingDraft();
 }
 window.selDay=selDay;
@@ -1537,6 +1645,7 @@ function selectSelfRating(el,val){
   selectedCompoundBias=preset.compound;
   obAnswers.volumePreference=selectedVolumePreference;
   obAnswers.compoundBias=selectedCompoundBias;
+  syncOnboardingSelections();
   persistOnboardingDraft();
 }
 window.selectSelfRating=selectSelfRating;
@@ -1562,14 +1671,15 @@ function selMuscle(el,val){
     selectedMuscles=selectedMuscles.filter(m=>m!==val);
   }else{
     if(selectedMuscles.length>=2){
-      document.getElementById('muscleNote').textContent='Pick a maximum of 2 muscles.';
+      document.getElementById('muscleNote').textContent='Pick exactly 2 muscles.';
       return;
     }
     selectedMuscles.push(val);
     el.classList.add(selectedMuscles.length===1?'sel':'sel2');
   }
-  document.getElementById('muscleNote').textContent=selectedMuscles.length>=2?selectedMuscles.map(cap).join(' and ')+' get extra weekly volume.':selectedMuscles.length===1?'Optional: add one more muscle.':'Pick 1 or 2 muscles.';
-  document.getElementById('ob13n').disabled=selectedMuscles.length<1;
+  document.getElementById('muscleNote').textContent=selectedMuscles.length===2?selectedMuscles.map(cap).join(' and ')+' get extra weekly volume.':selectedMuscles.length===1?'Choose one more muscle to finish your focus pair.':'Recommended focus pair shown in blue — pick 2 muscles.';
+  document.getElementById('ob13n').disabled=selectedMuscles.length!==2;
+  syncOnboardingSelections();
   persistOnboardingDraft();
 }
 window.selMuscle=selMuscle;
@@ -1588,11 +1698,16 @@ function selRestrict(el,val){
       selectedRestricts=selectedRestricts.filter(r=>r!==val);
     }
     selectedRestricts=selectedRestricts.filter(r=>r!=='none');
+    if(selectedRestricts.includes('vegan')){
+      selectedRestricts=selectedRestricts.filter(r=>r!=='vegetarian');
+      if(!selectedRestricts.includes('dairy_free'))selectedRestricts.push('dairy_free');
+    }
     if(!selectedRestricts.length){
       selectedRestricts=['none'];
       if(noneChip)noneChip.classList.add('sel');
     }
   }
+  syncOnboardingSelections();
   persistOnboardingDraft();
 }
 window.selRestrict=selRestrict;
@@ -1654,13 +1769,19 @@ window.checkOb9=checkOb9;
 function checkOb17(){
   const targetCount=parseInt(obAnswers.days,10)||0;
   const ready=targetCount>0&&selectedTrainDays.length===targetCount&&[30,45,60,90].includes(parseInt(obAnswers.sessionLen,10));
+  if(ready){
+    obAnswers.trainingDays=[...selectedTrainDays];
+    obAnswers.trainingDayMap=Object.fromEntries(selectedTrainDays.map((day,index)=>[day,index]));
+  }
   document.getElementById('ob17n').disabled=!ready;
+  syncOnboardingSelections();
   persistOnboardingDraft();
 }
 window.checkOb17=checkOb17;
 function toggleNotifPref(el,key){
   el.classList.toggle('sel');
   selectedNotifPrefs[key]=el.classList.contains('sel');
+  syncOnboardingSelections();
   persistOnboardingDraft();
 }
 window.toggleNotifPref=toggleNotifPref;
@@ -1715,12 +1836,21 @@ function sanitizeOnboardingProfile(raw){
   const bodyFat=Math.round(parseNum(raw.bodyFat,18,5,60));
   let bodyGoal=raw.bodyGoal||'maintain';
   if(bodyFat<10&&['recomp','lose'].includes(bodyGoal))bodyGoal='maintain';
-  const focus=[...new Set([...(selectedMuscles||[]),...(DEFAULT_FOCUS_BY_GOAL[raw.goal||'general']||['back','core'])])].slice(0,2);
+  const recommendedFocus=getRecommendedFocusMuscles({goal:raw.goal||'general',sex:raw.sex||'male'});
+  const focus=[...new Set([...(selectedMuscles||[]),...recommendedFocus])].slice(0,2);
   const targetDays=Math.min(7,Math.max(1,parseInt(raw.days,10)||4));
   const trainingDays=(selectedTrainDays||[]).slice(0,targetDays);
-  const defaultTrainingDays=targetDays===7?WEEKDAYS.slice():(_TRAIN_SCHED_DEFAULTS[Math.min(targetDays,6)]||WEEKDAYS.slice(0,targetDays)).slice();
   const activityLevel=raw.activityLevel||'moderate';
   const workStyle=raw.workStyle||'mixed';
+  const recs=getRecommendedTrainingSetup({
+    ...raw,
+    days:targetDays,
+    sex:raw.sex||'male',
+    focusMuscles:focus,
+    activityLevel,
+    workStyle
+  });
+  const defaultTrainingDays=(Array.isArray(recs.trainingDays)&&recs.trainingDays.length?recs.trainingDays:(targetDays===7?WEEKDAYS.slice():(_TRAIN_SCHED_DEFAULTS[Math.min(targetDays,6)]||WEEKDAYS.slice(0,targetDays)).slice())).slice(0,targetDays);
   const saunaGoal=raw.saunaGoal||((activityLevel==='high'||workStyle==='physical')?'recovery':'stress');
   const saunaDefaults={cardio:['Tue','Thu','Sat','Sun'],recovery:['Tue','Fri'],stress:['Wed','Sat','Sun'],longevity:['Mon','Thu','Sat']};
   const saunaSchedule=(saunaDefaults[saunaGoal]||saunaDefaults.recovery).slice(0,saunaGoal==='cardio'?4:saunaGoal==='recovery'?2:3);
@@ -1738,7 +1868,7 @@ function sanitizeOnboardingProfile(raw){
     consistency:raw.consistency||'building',
     selfRating:raw.selfRating||'balanced',
     days:targetDays,
-    sessionLen:[30,45,60,90].includes(parseInt(raw.sessionLen,10))?parseInt(raw.sessionLen,10):45,
+    sessionLen:[30,45,60,90].includes(parseInt(raw.sessionLen,10))?parseInt(raw.sessionLen,10):recs.sessionLen,
     equipment:raw.equipment||'full',
     activityLevel,
     workStyle,
@@ -1748,14 +1878,14 @@ function sanitizeOnboardingProfile(raw){
     age:Math.round(parseNum(ageFromBirthday??raw.age,25,14,90)),
     bodyFat,
     goalWeight:parseNum(raw.goalWeight,goalWeightFallback,35,300),
-    focusMuscles:focus.length?focus:['back','core'],
+    focusMuscles:focus.length?focus:recommendedFocus,
     restrictions:(selectedRestricts&&selectedRestricts.length)?selectedRestricts:['none'],
     painAreas:painAreas.length?painAreas:['none'],
     avoidMuscles:Array.isArray(selectedAvoidMuscles)?selectedAvoidMuscles:[],
     trainingDays:trainingDays.length?trainingDays:defaultTrainingDays,
     trainingDayMap:trainingDays.length?Object.fromEntries(trainingDays.map((day,index)=>[day,index])):undefined,
     customCalories:Number.isFinite(customCaloriesValue)&&customCaloriesValue>0?customCaloriesValue:null,
-    structurePreset:selectedStructurePreset||raw.structurePreset||'adaptive',
+    structurePreset:selectedStructurePreset||raw.structurePreset||recs.splitPreset||'adaptive',
     volumePreference:selectedVolumePreference||raw.volumePreference||'moderate',
     compoundBias:selectedCompoundBias||raw.compoundBias||'balanced',
     saunaGoal,
@@ -1763,6 +1893,11 @@ function sanitizeOnboardingProfile(raw){
     notifCheckin:selectedNotifPrefs.checkin!==false,
     notifEmom:!!selectedNotifPrefs.emom,
     notifSauna:!!selectedNotifPrefs.sauna,
+    recommendationHooks:{
+      engine:'rule-based-v2',
+      mlReadyAfterCheckins:8,
+      futureTargets:['readiness','split_type','calorie_target']
+    },
   };
 }
 function syncProfileDrivenState(){
@@ -1772,16 +1907,38 @@ function syncProfileDrivenState(){
 }
 async function finishOnboarding(){
   const profile=sanitizeOnboardingProfile(obAnswers);
-  const payload={...profile,setupComplete:true,walkthroughSeen:false,createdAt:new Date().toISOString()};
+  const generatedAt=new Date().toISOString();
+  const seedCheckin={...getDefaultDashboardCheckin(),notes:'Initial onboarding plan seed'};
+  const plan=buildPlan(profile,seedCheckin,[],[],[]);
+  const payload={
+    ...profile,
+    setupComplete:true,
+    walkthroughSeen:false,
+    createdAt:generatedAt,
+    latestPlanGeneratedAt:generatedAt,
+    latestPlanSummary:plan.summary,
+  };
   if((payload.notifCheckin||payload.notifEmom||payload.notifSauna)&&'Notification' in window)Notification.requestPermission();
-  if(window.fbSaveProfile)await window.fbSaveProfile(payload);
   window.userProfile=payload;
+  window.currentCheckin=seedCheckin;
+  window.currentPlanData=plan;
+  if(window.currentUser?.uid)setCachedPlan(window.currentUser.uid,plan);
   syncProfileDrivenState();
+  trackFlowEvent('onboarding_plan_started',{days:payload.days,goal:payload.goal,bodyGoal:payload.bodyGoal,split:payload.structurePreset});
+  goTo('generating');
+  runSteps('onboarding');
+  let profileSaved=true;
+  if(window.fbSaveProfile){
+    try{await window.fbSaveProfile(payload);}catch(err){profileSaved=false;console.error(err);}
+  }
+  await new Promise(resolve=>setTimeout(resolve,2200));
+  finishSteps();
   updateHomeUI();
   clearOnboardingDraft();
-  showToast(t('toast.welcome.title'),t('toast.welcome.body'));
+  renderPlan(plan,'overview');
+  showToast(t('toast.welcome.title'),profileSaved?t('toast.welcome.body'):'Plan ready locally — profile sync can retry from settings.');
   trackFlowEvent('onboarding_completed',{days:payload.days,goal:payload.goal,dietGoal:payload.dietGoal,bodyGoal:payload.bodyGoal});
-  goTo('home');
+  goTo('result');
 }
 window.finishOnboarding=finishOnboarding;
 async function resetMyData(){
@@ -2510,23 +2667,47 @@ function renderGWCard(checkins,p){const gw=p.goalWeight,cw=checkins.find(c=>c.we
 // ════════════════════════════════════
 // CHECK-IN SUBMIT
 // ════════════════════════════════════
+function setGeneratingContext(mode='checkin'){
+  const title=document.getElementById('genTitle');
+  const sub=document.getElementById('genSub');
+  const configs={
+    checkin:{
+      title:'Building your plan',
+      sub:'Personalised for your profile<br>and this check-in',
+      steps:['Reading check-in','Calculating recovery tier','Setting periodisation block','Building training split','Loading last sessions','Calculating calories','Writing meal plan','Saving to account']
+    },
+    onboarding:{
+      title:'Creating your starting plan',
+      sub:'Calibrating training, nutrition<br>and recovery from your onboarding',
+      steps:['Reading onboarding profile','Setting calorie baseline','Choosing your split style','Tailoring exercise selection','Balancing recovery load','Generating your first-week plan','Saving to your account','Opening your overview']
+    }
+  };
+  const config=configs[mode]||configs.checkin;
+  if(title)title.textContent=config.title;
+  if(sub)sub.innerHTML=config.sub;
+  config.steps.forEach((label,index)=>{
+    const step=document.getElementById(`gs${index+1}`);
+    if(step)step.innerHTML=`<span class="gstep-icon">○</span> ${label}`;
+  });
+}
 function submitCheckin(){
   const energy=parseInt(document.getElementById('eS').value),stress=parseInt(document.getElementById('sS').value),weight=document.getElementById('ciW').value?parseFloat(document.getElementById('ciW').value):null,notes=document.getElementById('ciNotes').value||'',sleep=document.querySelector('#sleepC .chip.sel')?.dataset.val||'7-8hrs',lifts=document.querySelector('#liftC .chip.sel')?.dataset.val||'same',diet=document.querySelector('#dietC .chip.sel')?.dataset.val||'under',calOverride=getCalOverride();
   window.currentCheckin={energy,stress,weight,notes,sleep,lifts,diet,calOverride,isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB')};
   trackFlowEvent('checkin_submitted',{hasWeight:Boolean(weight),energy,stress,lifts,diet});
-  goTo('generating');runSteps();
+  goTo('generating');runSteps('checkin');
   setTimeout(async()=>{
     finishSteps();
     const[lastSessions,pastCheckins,recentActivities]=await Promise.all([window.fbLoadSessions?window.fbLoadSessions():Promise.resolve([]),window.fbLoadCheckins?window.fbLoadCheckins():Promise.resolve([]),window.fbLoadActivities?window.fbLoadActivities():Promise.resolve([])]);
     const plan=buildPlan(window.userProfile,window.currentCheckin,lastSessions,pastCheckins,recentActivities);
     window.currentPlanData=plan;
+    if(window.currentUser?.uid)setCachedPlan(window.currentUser.uid,plan);
     if(window.fbSaveCheckin)await window.fbSaveCheckin({...window.currentCheckin,planSummary:plan.summary});
     trackFlowEvent('checkin_saved',{kcal:plan.summary?.kcal||plan.analysis?.kcal||null,tier:plan.analysis?.tier||null});
     renderPlan(plan);checkMilestones(getHabitCheckins(pastCheckins).length+1);goTo('result');
   },5400);
 }
 window.submitCheckin=submitCheckin;
-function runSteps(){if(stepInterval){clearInterval(stepInterval);stepInterval=null;}for(let i=1;i<=8;i++){const s=document.getElementById('gs'+i);if(s){s.className='gstep';s.querySelector('.gstep-icon').textContent='○';}}document.getElementById('gs1').classList.add('cur');let i=1;stepInterval=setInterval(()=>{const p=document.getElementById('gs'+i);if(p){p.className='gstep done';p.querySelector('.gstep-icon').textContent='✓';}i++;const c=document.getElementById('gs'+i);if(c)c.classList.add('cur');if(i>8){clearInterval(stepInterval);stepInterval=null;}},630);}
+function runSteps(mode='checkin'){setGeneratingContext(mode);if(stepInterval){clearInterval(stepInterval);stepInterval=null;}for(let i=1;i<=8;i++){const s=document.getElementById('gs'+i);if(s){s.className='gstep';s.querySelector('.gstep-icon').textContent='○';}}document.getElementById('gs1').classList.add('cur');let i=1;stepInterval=setInterval(()=>{const p=document.getElementById('gs'+i);if(p){p.className='gstep done';p.querySelector('.gstep-icon').textContent='✓';}i++;const c=document.getElementById('gs'+i);if(c)c.classList.add('cur');if(i>8){clearInterval(stepInterval);stepInterval=null;}},630);}
 function finishSteps(){if(stepInterval){clearInterval(stepInterval);stepInterval=null;}for(let i=1;i<=8;i++){const s=document.getElementById('gs'+i);if(s){s.className='gstep done';s.querySelector('.gstep-icon').textContent='✓';}}}
 function swTab(n,el){document.querySelectorAll('.tab-body').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+n).classList.add('active');el.classList.add('active');}
 window.swTab=swTab;
@@ -3294,7 +3475,7 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivit
   const splitDays=adaptSplitForPain(adaptiveSplit.splitDays,equipment,painAreas);
   const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
   const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,effectiveDietGoal);
-  return{summary:{tier,kcal,protein,carbs,fat,days,goal,bodyGoal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal:effectiveDietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,cardioAdj,block,isStr,calOverride,autoDeloadReason,activityLevel,workStyle,bodyGoal,bodyFat,painAreas,consistency,selfRating,recoveryFocus:saunaGoal,activityMultiplier,ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
+  return{summary:{tier,kcal,protein,carbs,fat,days,goal,bodyGoal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal:effectiveDietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,cardioAdj,block,isStr,calOverride,autoDeloadReason,activityLevel,workStyle,bodyGoal,bodyFat,painAreas,consistency,selfRating,recoveryFocus:saunaGoal,activityMultiplier,recommendationHooks:{readinessModel:'ml-ready-v1',splitSelector:profile?.recommendationHooks?.engine||'rule-based-v2',calorieTargetModel:'rule-based-calorie-v2'},ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
 }
 
 // ── MEAL BUILDER ──

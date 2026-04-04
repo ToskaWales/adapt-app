@@ -267,6 +267,7 @@
         <div class="opt-card" data-key="structurePreset" data-value="pushpulllegs" onclick="selectStructurePreset(this,'pushpulllegs')"><div class="opt-label">Push / Pull / Legs</div><div class="opt-desc">Great when you can train 3+ days consistently.</div></div>
         <div class="opt-card" data-key="structurePreset" data-value="fullbody" onclick="selectStructurePreset(this,'fullbody')"><div class="opt-label">Full Body</div><div class="opt-desc">Every session hits the whole system.</div></div>
       </div>
+      <div class="info-box ob-reco-box" id="splitPresetNote"></div>
     </div>
     <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(16)">Back</button><button class="btn btn-acc" onclick="obNext(16)" id="ob16n" disabled>Continue</button></div>
   </div>
@@ -285,6 +286,7 @@
         <div class="opt-card" data-key="sessionLen" data-value="60" onclick="selectSessionLen(this,60)"><div class="opt-label">60 min</div><div class="opt-desc">Enough room for compounds and accessories.</div></div>
         <div class="opt-card" data-key="sessionLen" data-value="90" onclick="selectSessionLen(this,90)"><div class="opt-label">90 min</div><div class="opt-desc">Higher-volume sessions if recovery is strong.</div></div>
       </div>
+      <div class="info-box ob-reco-box" id="weeklyPlanReco"></div>
     </div>
     <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(17)">Back</button><button class="btn btn-acc" onclick="obNext(17)" id="ob17n" disabled>Continue</button></div>
   </div>
@@ -300,6 +302,7 @@
         <div class="opt-card" data-key="equipment" data-value="bands" onclick="obSel(this,'equipment','bands')"><div class="opt-label">Bands + bodyweight</div><div class="opt-desc">Minimal kit, still enough to make progress.</div></div>
         <div class="opt-card" data-key="equipment" data-value="none" onclick="obSel(this,'equipment','none')"><div class="opt-label">Bodyweight only</div><div class="opt-desc">No equipment. Keep the plan clean and repeatable.</div></div>
       </div>
+      <div class="info-box ob-reco-box" id="equipmentNote"></div>
     </div>
     <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(18)">Back</button><button class="btn btn-acc" onclick="obNext(18)" id="ob18n" disabled>Continue</button></div>
   </div>
@@ -497,8 +500,8 @@
 <!-- GENERATING -->
 <div id="generating" class="screen">
   <div class="spin"></div>
-  <div class="gen-title">Building your plan</div>
-  <div class="gen-sub">Personalised for your profile<br>and this check-in</div>
+  <div class="gen-title" id="genTitle">Building your plan</div>
+  <div class="gen-sub" id="genSub">Personalised for your profile<br>and this check-in</div>
   <div class="gen-steps">
     <div class="gstep cur" id="gs1"><span class="gstep-icon">○</span> Reading check-in</div>
     <div class="gstep" id="gs2"><span class="gstep-icon">○</span> Calculating recovery tier</div>

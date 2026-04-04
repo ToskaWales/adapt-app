@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { getGoogleLoginErrorMessage, shouldPreferGoogleRedirect } from '../src/modules/auth.js';
 import { getGoalAdherenceInsights, getWeeklyProgressSummary } from '../src/modules/insights.js';
-import { buildFirstRunChecklist, buildFirstRunEmptyState } from '../src/modules/onboarding.js';
+import {
+  buildFirstRunChecklist,
+  buildFirstRunEmptyState,
+  getRecommendedFocusMuscles,
+  getRecommendedTrainingSetup,
+} from '../src/modules/onboarding.js';
 import { formatLastSyncedLabel } from '../src/modules/ui.js';
 
 describe('login helpers', () => {
@@ -37,6 +42,13 @@ describe('onboarding and home smoke coverage', () => {
     expect(buildFirstRunEmptyState({ goal: 'strength', trainingDays: ['Mon', 'Wed', 'Fri'] })).toContain(
       'First Week Game Plan'
     );
+
+    const focus = getRecommendedFocusMuscles({ goal: 'vtaper' });
+    const setup = getRecommendedTrainingSetup({ goal: 'strength', experience: 'advanced', consistency: 'locked_in' });
+
+    expect(focus).toEqual(['back', 'shoulders']);
+    expect(setup.splitPreset).toBe('upperlower');
+    expect(setup.trainingDays.length).toBeGreaterThanOrEqual(4);
   });
 
   it('summarises weekly progress and adherence from trend data', () => {
