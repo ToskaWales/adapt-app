@@ -35,31 +35,342 @@
 
 <!-- ONBOARDING -->
 <div id="onboarding" class="screen">
-  <div class="ob-prog"><div class="ob-bar" id="obBar" style="width:8%"></div></div>
-  <div class="ob-step active" id="ob1"><div class="ob-sb"><div class="ob-num">1 of 12</div><div class="ob-q">What is your main goal?</div><div class="ob-sub">This shapes your training split, exercise selection and the way ADDAPT rebuilds your plan after every check-in.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'goal','vtaper')"><div class="opt-label">V-Taper / Athletic</div><div class="opt-desc">Wide back, broad shoulders, defined chest.</div></div><div class="opt-card" onclick="obSel(this,'goal','hourglass')"><div class="opt-label">Hourglass / Curves</div><div class="opt-desc">Glutes, hips, shoulder width for contrast, waist definition.</div></div><div class="opt-card" onclick="obSel(this,'goal','strength')"><div class="opt-label">Strength and Power</div><div class="opt-desc">Squat, bench, deadlift. Raw strength and performance.</div></div><div class="opt-card" onclick="obSel(this,'goal','general')"><div class="opt-label">General Fitness</div><div class="opt-desc">Balanced full-body health and conditioning.</div></div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.hero.kicker">Why ADDAPT Hits Different</div><div class="intro-title" data-i18n="intro.hero.title">One app for your plan, progress, food and recovery</div><div class="intro-copy" data-i18n="intro.hero.copy">Instead of giving you one fixed routine, ADDAPT keeps updating your training and diet from your real check-ins, saved lifts, bodyweight trend and recovery score.</div><div class="intro-pill-row"><div class="intro-pill" data-i18n="intro.hero.pill1">Addaptive training split</div><div class="intro-pill" data-i18n="intro.hero.pill2">Auto calorie shifts</div><div class="intro-pill" data-i18n="intro.hero.pill3">Weight analytics</div><div class="intro-pill" data-i18n="intro.hero.pill4">Goal-based sauna guide</div></div></div></div><div class="foot"><button class="btn btn-acc" onclick="obNext(1)" id="ob1n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob2"><div class="ob-sb"><div class="ob-num">2 of 12</div><div class="ob-q">Biological sex?</div><div class="ob-sub">Used only for accurate calorie calculation.</div><div class="opt-grid c3"><div class="opt-card" onclick="obSel(this,'sex','male')"><div class="opt-label">Male</div></div><div class="opt-card" onclick="obSel(this,'sex','female')"><div class="opt-label">Female</div></div><div class="opt-card" onclick="obSel(this,'sex','other')"><div class="opt-label">Other</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(2)">Back</button><button class="btn btn-acc" onclick="obNext(2)" id="ob2n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob3"><div class="ob-sb"><div class="ob-num">3 of 12</div><div class="ob-q">Training experience?</div><div class="ob-sub">Sets your rep ranges and exercise complexity.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'experience','beginner')"><div class="opt-label">Beginner</div><div class="opt-desc">Under 1 year. Still learning the movements.</div></div><div class="opt-card" onclick="obSel(this,'experience','intermediate')"><div class="opt-label">Intermediate</div><div class="opt-desc">1–3 years. Comfortable with main compounds.</div></div><div class="opt-card" onclick="obSel(this,'experience','advanced')"><div class="opt-label">Advanced</div><div class="opt-desc">3+ years. Strong technique and movement patterns.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(3)">Back</button><button class="btn btn-acc" onclick="obNext(3)" id="ob3n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob4"><div class="ob-sb"><div class="ob-num">4 of 12</div><div class="ob-q">Days per week?</div><div class="ob-sub">How many days can you realistically commit to each week?</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="daysSel"><div class="day-btn" onclick="selDay(this,1)">1</div><div class="day-btn" onclick="selDay(this,2)">2</div><div class="day-btn" onclick="selDay(this,3)">3</div><div class="day-btn" onclick="selDay(this,4)">4</div><div class="day-btn" onclick="selDay(this,5)">5</div><div class="day-btn" onclick="selDay(this,6)">6</div><div class="day-btn" onclick="selDay(this,7)">7</div></div><div id="splitSug" class="info-box" style="display:none;"><div class="info-lbl">Recommended split</div><div class="info-val" id="splitText"></div><div style="font-size:12px;color:#888;margin-top:3px;" id="splitDaysText"></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(4)">Back</button><button class="btn btn-acc" onclick="obNext(4)" id="ob4n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob5"><div class="ob-sb"><div class="ob-num">5 of 12</div><div class="ob-q">Which days do you actually train?</div><div class="ob-sub">Pick exactly <span id="obTrainDayTarget">0</span> days. This becomes your starting weekly layout before the app begins adapting it.</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="trainDaySel"><div class="day-btn" onclick="toggleTrainDay(this,'Mon')">Mon</div><div class="day-btn" onclick="toggleTrainDay(this,'Tue')">Tue</div><div class="day-btn" onclick="toggleTrainDay(this,'Wed')">Wed</div><div class="day-btn" onclick="toggleTrainDay(this,'Thu')">Thu</div><div class="day-btn" onclick="toggleTrainDay(this,'Fri')">Fri</div><div class="day-btn" onclick="toggleTrainDay(this,'Sat')">Sat</div><div class="day-btn" onclick="toggleTrainDay(this,'Sun')">Sun</div></div><div id="trainDayNote" class="info-box" style="display:none;"><div class="info-lbl">Starting schedule</div><div class="info-val" id="trainDayText"></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(5)">Back</button><button class="btn btn-acc" onclick="obNext(5)" id="ob5n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob6"><div class="ob-sb"><div class="ob-num">6 of 12</div><div class="ob-q">Session length?</div><div class="ob-sub">This sets exercise count, set budget, and how aggressive the daily plan can be.</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'sessionLen',30)"><div class="opt-label">30 min</div><div class="opt-desc">Fast sessions. High signal, low fluff.</div></div><div class="opt-card" onclick="obSel(this,'sessionLen',45)"><div class="opt-label">45 min</div><div class="opt-desc">Balanced workload most people can recover from well.</div></div><div class="opt-card" onclick="obSel(this,'sessionLen',60)"><div class="opt-label">60 min</div><div class="opt-desc">Full training days with compounds and accessories.</div></div><div class="opt-card" onclick="obSel(this,'sessionLen',90)"><div class="opt-label">90 min</div><div class="opt-desc">High-volume blocks with more room for specialization.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(6)">Back</button><button class="btn btn-acc" onclick="obNext(6)" id="ob6n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob7"><div class="ob-sb"><div class="ob-num">7 of 12</div><div class="ob-q">Pick 2 focus muscles</div><div class="ob-sub">These muscles get extra weekly sets and appear earlier in the session order.</div><div class="chip-wrap" id="muscleChips"><div class="chip" onclick="selMuscle(this,'chest')">Chest</div><div class="chip" onclick="selMuscle(this,'back')">Back</div><div class="chip" onclick="selMuscle(this,'shoulders')">Shoulders</div><div class="chip" onclick="selMuscle(this,'biceps')">Biceps</div><div class="chip" onclick="selMuscle(this,'triceps')">Triceps</div><div class="chip" onclick="selMuscle(this,'glutes')">Glutes</div><div class="chip" onclick="selMuscle(this,'quads')">Quads</div><div class="chip" onclick="selMuscle(this,'hamstrings')">Hamstrings</div><div class="chip" onclick="selMuscle(this,'core')">Core</div><div class="chip" onclick="selMuscle(this,'calves')">Calves</div></div><div id="muscleNote" style="margin-top:12px;font-size:12px;color:#888;"></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(7)">Back</button><button class="btn btn-acc" onclick="obNext(7)" id="ob7n" disabled>Continue</button></div></div>
+  <div class="ob-prog"><div class="ob-bar" id="obBar" style="width:4.8%"></div></div>
 
-  <!-- NEW: Muscle de-emphasis step -->
-  <div class="ob-step" id="ob7b"><div class="ob-sb"><div class="ob-num">8 of 16</div><div class="ob-q">Any muscles to de-emphasize?</div><div class="ob-sub">These will get less direct isolation work. Compounds still included if needed for balance.</div><div class="chip-wrap" id="avoidMuscleChips"><div class="chip" onclick="selAvoidMuscle(this,'chest')">Chest</div><div class="chip" onclick="selAvoidMuscle(this,'back')">Back</div><div class="chip" onclick="selAvoidMuscle(this,'shoulders')">Shoulders</div><div class="chip" onclick="selAvoidMuscle(this,'biceps')">Biceps</div><div class="chip" onclick="selAvoidMuscle(this,'triceps')">Triceps</div><div class="chip" onclick="selAvoidMuscle(this,'glutes')">Glutes</div><div class="chip" onclick="selAvoidMuscle(this,'quads')">Quads</div><div class="chip" onclick="selAvoidMuscle(this,'hamstrings')">Hamstrings</div><div class="chip" onclick="selAvoidMuscle(this,'core')">Core</div><div class="chip" onclick="selAvoidMuscle(this,'calves')">Calves</div></div><div id="avoidMuscleNote" style="margin-top:12px;font-size:12px;color:#888;"></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack('7b')">Back</button><button class="btn btn-acc" onclick="obNext('7b')" id="ob7bn" disabled>Continue</button></div></div>
+  <div class="ob-step active" id="ob1">
+    <div class="ob-sb">
+      <div class="ob-num">1 of 21</div>
+      <div class="ob-q">Why are you here?</div>
+      <div class="ob-sub">Pick the result that would make the biggest difference in the next 12 weeks.</div>
+      <div class="opt-grid">
+        <div class="opt-card" data-key="goal" data-value="vtaper" onclick="obSel(this,'goal','vtaper')"><div class="opt-label">Build an athletic V-taper</div><div class="opt-desc">Wider back, broader shoulders, leaner upper body shape.</div></div>
+        <div class="opt-card" data-key="goal" data-value="hourglass" onclick="obSel(this,'goal','hourglass')"><div class="opt-label">Grow glutes and curves</div><div class="opt-desc">Glutes, hamstrings and shoulders for contrast and shape.</div></div>
+        <div class="opt-card" data-key="goal" data-value="strength" onclick="obSel(this,'goal','strength')"><div class="opt-label">Get noticeably stronger</div><div class="opt-desc">More performance on the big lifts and more confidence in training.</div></div>
+        <div class="opt-card" data-key="goal" data-value="general" onclick="obSel(this,'goal','general')"><div class="opt-label">Feel leaner, fitter, sharper</div><div class="opt-desc">Balanced full-body training, better energy and better habits.</div></div>
+      </div>
+      <div class="premium-note">ADDAPT uses this as your training archetype before it starts adapting week by week.</div>
+    </div>
+    <div class="foot"><button class="btn btn-acc" onclick="obNext(1)" id="ob1n" disabled>Continue</button></div>
+  </div>
 
-  <!-- NEW: Compound vs Isolation preference -->
-  <div class="ob-step" id="ob7c"><div class="ob-sb"><div class="ob-num">9 of 16</div><div class="ob-q">Compound vs Isolation?</div><div class="ob-sub">How much do you want to focus on big lifts vs. isolation work?</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'compoundBias','compound')"><div class="opt-label">Mostly Compounds</div><div class="opt-desc">Big lifts, less isolation.</div></div><div class="opt-card" onclick="obSel(this,'compoundBias','balanced')"><div class="opt-label">Balanced</div><div class="opt-desc">Mix of compounds and isolation.</div></div><div class="opt-card" onclick="obSel(this,'compoundBias','isolation')"><div class="opt-label">More Isolation</div><div class="opt-desc">Extra isolation for detail work.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack('7c')">Back</button><button class="btn btn-acc" onclick="obNext('7c')" id="ob7cn" disabled>Continue</button></div></div>
+  <div class="ob-step" id="ob2">
+    <div class="ob-sb">
+      <div class="ob-num">2 of 21</div>
+      <div class="ob-q">You’ll reach your goal faster with a plan that adapts.</div>
+      <div class="ob-sub">Most people don’t need more information — they need a system that adjusts when life, recovery and performance change.</div>
+      <div class="ob-stat-grid">
+        <div class="ob-stat"><div class="ob-stat-val">2×</div><div class="ob-stat-copy">faster progress when training, food and recovery stay aligned</div></div>
+        <div class="ob-stat"><div class="ob-stat-val">Weekly</div><div class="ob-stat-copy">adjustments from your real check-ins, not guesswork</div></div>
+        <div class="ob-stat"><div class="ob-stat-val">1 app</div><div class="ob-stat-copy">for plan, food, logging, recovery and progress</div></div>
+      </div>
+      <div class="intro-hero"><div class="intro-kicker">Premium adaptive coaching</div><div class="intro-title">Your plan will keep changing as your body changes</div><div class="intro-copy">The answers you give now become the starting blueprint. After that, ADDAPT keeps tuning training volume, recovery pressure and calories around your actual check-ins.</div></div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(2)">Back</button><button class="btn btn-acc" onclick="obNext(2)">Continue</button></div>
+  </div>
 
-  <!-- NEW: Preferred split style -->
-  <div class="ob-step" id="ob7d"><div class="ob-sb"><div class="ob-num">10 of 16</div><div class="ob-q">Preferred split style?</div><div class="ob-sub">How do you want your week structured?</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'structurePreset','upperlower')"><div class="opt-label">Upper / Lower</div><div class="opt-desc">Classic strength split.</div></div><div class="opt-card" onclick="obSel(this,'structurePreset','pushpulllegs')"><div class="opt-label">Push / Pull / Legs</div><div class="opt-desc">Bodybuilding favorite.</div></div><div class="opt-card" onclick="obSel(this,'structurePreset','fullbody')"><div class="opt-label">Full Body</div><div class="opt-desc">Every muscle, every session.</div></div><div class="opt-card" onclick="obSel(this,'structurePreset','adaptive')"><div class="opt-label">Balanced Adaptive</div><div class="opt-desc">Let ADDAPT decide and adjust.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack('7d')">Back</button><button class="btn btn-acc" onclick="obNext('7d')" id="ob7dn" disabled>Continue</button></div></div>
+  <div class="ob-step" id="ob3">
+    <div class="ob-sb">
+      <div class="ob-num">3 of 21</div>
+      <div class="ob-q">Biological sex?</div>
+      <div class="ob-sub">Used only to anchor calorie estimates and some recovery guidance.</div>
+      <div class="opt-grid c3">
+        <div class="opt-card" data-key="sex" data-value="male" onclick="obSel(this,'sex','male')"><div class="opt-label">Male</div></div>
+        <div class="opt-card" data-key="sex" data-value="female" onclick="obSel(this,'sex','female')"><div class="opt-label">Female</div></div>
+        <div class="opt-card" data-key="sex" data-value="other" onclick="obSel(this,'sex','other')"><div class="opt-label">Other</div></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(3)">Back</button><button class="btn btn-acc" onclick="obNext(3)" id="ob3n" disabled>Continue</button></div>
+  </div>
 
-  <!-- NEW: Volume tolerance / recovery style -->
-  <div class="ob-step" id="ob7e"><div class="ob-sb"><div class="ob-num">11 of 16</div><div class="ob-q">Volume tolerance?</div><div class="ob-sub">How much weekly training volume do you usually recover from?</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'volumePreference','low')"><div class="opt-label">Low</div><div class="opt-desc">Minimal effective dose.</div></div><div class="opt-card" onclick="obSel(this,'volumePreference','moderate')"><div class="opt-label">Moderate</div><div class="opt-desc">Standard workload.</div></div><div class="opt-card" onclick="obSel(this,'volumePreference','high')"><div class="opt-label">High</div><div class="opt-desc">Aggressive, high volume.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack('7e')">Back</button><button class="btn btn-acc" onclick="obNext('7e')" id="ob7en" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob8"><div class="ob-sb"><div class="ob-num">8 of 12</div><div class="ob-q">Equipment available?</div><div class="ob-sub">The starter plan should be honest about what you can actually use.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'equipment','full')"><div class="opt-label">Full Gym</div><div class="opt-desc">Barbells, cables, machines. The full menu.</div></div><div class="opt-card" onclick="obSel(this,'equipment','dumbbells')"><div class="opt-label">Dumbbells Only</div><div class="opt-desc">Home setup or simple gym access.</div></div><div class="opt-card" onclick="obSel(this,'equipment','bands')"><div class="opt-label">Resistance Bands</div><div class="opt-desc">Bands and bodyweight as the base.</div></div><div class="opt-card" onclick="obSel(this,'equipment','none')"><div class="opt-label">Bodyweight Only</div><div class="opt-desc">No equipment. Keep it minimal and repeatable.</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(8)">Back</button><button class="btn btn-acc" onclick="obNext(8)" id="ob8n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob9"><div class="ob-sb"><div class="ob-num">9 of 12</div><div class="ob-q">Height, weight and age</div><div class="ob-sub">This anchors calorie targets, macro estimates, and recovery guidance.</div><div style="margin-bottom:12px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Height</div><div class="wt-row"><input type="number" class="wt-in" id="obH" placeholder="175" oninput="checkOb9()"><span class="wt-unit">cm</span></div></div><div style="margin-bottom:12px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Weight</div><div class="wt-row"><input type="number" class="wt-in" id="obW" placeholder="75" oninput="checkOb9()"><span class="wt-unit">kg</span></div></div><div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Age</div><div class="wt-row"><input type="number" class="wt-in" id="obA" placeholder="25" oninput="checkOb9()"><span class="wt-unit">yrs</span></div></div><div id="tdeePreview" class="info-box" style="display:none;"><div class="info-lbl">Estimated daily calories</div><div class="info-val" id="tdeeText"></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(9)">Back</button><button class="btn btn-acc" onclick="obNext(9)" id="ob9n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob10"><div class="ob-sb"><div class="ob-num">10 of 12</div><div class="ob-q">How should nutrition start?</div><div class="ob-sub">Pick your outcome first. If you already know your calories, lock them in and let ADDAPT adjust around that later.</div><div class="opt-grid"><div class="opt-card" onclick="obSel(this,'dietGoal','bulk');checkOb10()"><div class="opt-label">Bulk</div><div class="opt-desc">Start in a surplus and push growth harder.</div></div><div class="opt-card" onclick="obSel(this,'dietGoal','maintain');checkOb10()"><div class="opt-label">Maintain</div><div class="opt-desc">Tighter body recomposition and stable recovery.</div></div><div class="opt-card" onclick="obSel(this,'dietGoal','cut');checkOb10()"><div class="opt-label">Cut</div><div class="opt-desc">Reduce calories while holding performance where possible.</div></div></div><div class="info-box" style="margin-top:14px;"><div class="info-lbl">Optional calorie lock</div><div class="info-val" style="margin-bottom:8px;">Leave blank for adaptive calories, or enter a fixed daily target.</div><div class="wt-row"><input type="number" class="wt-in" id="obCustomCalories" placeholder="2500" oninput="checkOb10()"><span class="wt-unit">kcal / day</span></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(10)">Back</button><button class="btn btn-acc" onclick="obNext(10)" id="ob10n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob11"><div class="ob-sb"><div class="ob-num">11 of 12</div><div class="ob-q">Goal weight and food setup</div><div class="ob-sub">The goal weight powers progress tracking. Food restrictions shape the meal slots immediately.</div><div class="wt-row" style="margin-bottom:14px;"><input type="number" class="wt-in" id="obGW" placeholder="80" oninput="checkOb11()"><span class="wt-unit">kg</span></div><div id="gwPreview" class="info-box" style="display:none;"><div class="info-lbl">Estimated timeline</div><div class="info-val" id="gwText"></div><canvas id="gwChart" style="width:100%;height:90px;margin-top:12px;display:block;"></canvas></div><div style="margin-top:18px;"><div class="ob-sub" style="margin-bottom:10px;">Food restrictions</div><div class="chip-wrap" id="restrictChips"><div class="chip sel" data-val="none" onclick="selRestrict(this,'none')">None</div><div class="chip" data-val="vegetarian" onclick="selRestrict(this,'vegetarian')">Vegetarian</div><div class="chip" data-val="vegan" onclick="selRestrict(this,'vegan')">Vegan</div><div class="chip" data-val="dairy_free" onclick="selRestrict(this,'dairy_free')">Dairy-free</div><div class="chip" data-val="gluten_free" onclick="selRestrict(this,'gluten_free')">Gluten-free</div><div class="chip" data-val="halal" onclick="selRestrict(this,'halal')">Halal</div></div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(11)">Back</button><button class="btn btn-acc" onclick="obNext(11)" id="ob11n" disabled>Continue</button></div></div>
-  <div class="ob-step" id="ob12"><div class="ob-sb"><div class="ob-num">12 of 12</div><div class="ob-q">Recovery and reminders</div><div class="ob-sub">Set your default sauna focus and which reminders you actually want from day one.</div><div class="opt-grid c2"><div class="opt-card" onclick="obSel(this,'saunaGoal','cardio');checkOb12()"><div class="opt-label">Cardio</div><div class="opt-desc">Conditioning and circulation first.</div></div><div class="opt-card" onclick="obSel(this,'saunaGoal','recovery');checkOb12()"><div class="opt-label">Recovery</div><div class="opt-desc">Post-training reset and lower fatigue.</div></div><div class="opt-card" onclick="obSel(this,'saunaGoal','stress');checkOb12()"><div class="opt-label">Stress Relief</div><div class="opt-desc">Gentler heat and calmer recovery.</div></div><div class="opt-card" onclick="obSel(this,'saunaGoal','longevity');checkOb12()"><div class="opt-label">Longevity</div><div class="opt-desc">Sustainable weekly heat exposure.</div></div></div><div class="info-box" style="margin-top:14px;"><div class="info-lbl">Reminders</div><div class="chip-wrap" id="notifChips"><div class="chip sel" onclick="toggleNotifPref(this,'checkin')">Check-In</div><div class="chip" onclick="toggleNotifPref(this,'emom')">EMOM</div><div class="chip" onclick="toggleNotifPref(this,'sauna')">Sauna</div></div><div style="font-size:12px;color:#888;margin-top:8px;">You can change these later in settings.</div></div><div class="intro-hero"><div class="intro-kicker" data-i18n="intro.tour.kicker">How To Use ADDAPT</div><div class="intro-title" data-i18n="intro.tour.title">Check in, train, log, improve</div><div class="intro-copy" data-i18n="intro.tour.copy">The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADDAPT adjust the next block around what actually happened.</div></div><div class="intro-feature-list"><div class="intro-feature"><div class="intro-num">1</div><div><div class="intro-feature-title" data-i18n="intro.tour.f1.title">Check-In drives the plan</div><div class="intro-feature-copy" data-i18n="intro.tour.f1.copy">Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.</div></div></div><div class="intro-feature"><div class="intro-num">2</div><div><div class="intro-feature-title" data-i18n="intro.tour.f2.title">Training and analytics stay connected</div><div class="intro-feature-copy" data-i18n="intro.tour.f2.copy">Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.</div></div></div><div class="intro-feature"><div class="intro-num">3</div><div><div class="intro-feature-title" data-i18n="intro.tour.f3.title">Recovery gets its own system</div><div class="intro-feature-copy" data-i18n="intro.tour.f3.copy">Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.</div></div></div></div><div class="info-box" style="margin-top:14px;"><div style="font-size:13px;color:#888;line-height:1.6;" data-i18n="intro.tour.safari">In Safari: tap Share then Add to Home Screen for the full native app experience.</div><div class="quiet-note" data-i18n="intro.tour.legal">Built for general fitness and recovery planning. If you are dealing with injury, symptoms, or treatment decisions, use a qualified clinician for that part.</div></div></div><div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(12)">Back</button><button class="btn btn-acc" onclick="finishOnboarding(); setTimeout(startFeatureWalkthrough, 600);">Build My Plan</button></div></div>
+  <div class="ob-step" id="ob4">
+    <div class="ob-sb">
+      <div class="ob-num">4 of 21</div>
+      <div class="ob-q">What’s your birthday?</div>
+      <div class="ob-sub">Age helps set your calorie estimate, recovery expectations and starting progression pace.</div>
+      <input type="date" id="obDob" class="settings-input ob-date-input" oninput="checkOb4()">
+      <div class="info-box"><div class="info-lbl">Age preview</div><div class="info-val" id="dobAgeHint">Used for calorie and recovery targets.</div></div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(4)">Back</button><button class="btn btn-acc" onclick="obNext(4)" id="ob4n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob5">
+    <div class="ob-sb">
+      <div class="ob-num">5 of 21</div>
+      <div class="ob-q">How tall are you?</div>
+      <div class="ob-sub">This tightens up your nutrition starting point and body-composition estimate.</div>
+      <div class="wt-row"><input type="number" class="wt-in" id="obHeight" placeholder="175" oninput="checkOb5()"><span class="wt-unit">cm</span></div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(5)">Back</button><button class="btn btn-acc" onclick="obNext(5)" id="ob5n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob6">
+    <div class="ob-sb">
+      <div class="ob-num">6 of 21</div>
+      <div class="ob-q">Current bodyweight?</div>
+      <div class="ob-sub">This gives the plan a real starting point for calories, recovery and progress tracking.</div>
+      <div class="wt-row"><input type="number" class="wt-in" id="obWeight" placeholder="75" step="0.1" oninput="checkOb6()"><span class="wt-unit">kg</span></div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(6)">Back</button><button class="btn btn-acc" onclick="obNext(6)" id="ob6n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob7">
+    <div class="ob-sb">
+      <div class="ob-num">7 of 21</div>
+      <div class="ob-q">Estimated body-fat %?</div>
+      <div class="ob-sub">Choose the closest look — this helps guide your starting phase and how aggressive the calorie plan should be.</div>
+      <div class="opt-grid c2 bf-grid">
+        <div class="opt-card" data-key="bodyFat" data-value="8" onclick="selectBodyFat(this,8)"><div class="opt-label">8–10%</div><div class="opt-desc">Very lean / highly defined</div></div>
+        <div class="opt-card" data-key="bodyFat" data-value="12" onclick="selectBodyFat(this,12)"><div class="opt-label">11–14%</div><div class="opt-desc">Athletic / visible shape</div></div>
+        <div class="opt-card" data-key="bodyFat" data-value="16" onclick="selectBodyFat(this,16)"><div class="opt-label">15–18%</div><div class="opt-desc">Lean average / solid base</div></div>
+        <div class="opt-card" data-key="bodyFat" data-value="22" onclick="selectBodyFat(this,22)"><div class="opt-label">19–24%</div><div class="opt-desc">Softer look / room to recomp</div></div>
+        <div class="opt-card" data-key="bodyFat" data-value="28" onclick="selectBodyFat(this,28)"><div class="opt-label">25%+</div><div class="opt-desc">Higher body-fat starting point</div></div>
+      </div>
+      <div class="premium-note">Don’t overthink this — the app refines the plan from your check-ins after onboarding.</div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(7)">Back</button><button class="btn btn-acc" onclick="obNext(7)" id="ob7n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob8">
+    <div class="ob-sb">
+      <div class="ob-num">8 of 21</div>
+      <div class="ob-q">Your individual starting profile is being built.</div>
+      <div class="ob-sub">We’re now combining your body data with your goal so the plan starts in the right phase.</div>
+      <div class="ob-loading-card">
+        <div class="ob-loading-dot"></div>
+        <div class="intro-title">Smart calibration in progress</div>
+        <div class="intro-copy">Setting your calorie baseline, recovery assumptions and the safest first progression curve.</div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(8)">Back</button><button class="btn btn-acc" onclick="obNext(8)">Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob9">
+    <div class="ob-sb">
+      <div class="ob-num">9 of 21</div>
+      <div class="ob-q">How much training history do you have?</div>
+      <div class="ob-sub">Experience sets exercise complexity. Recent consistency decides how aggressive the first block should be.</div>
+      <div class="ob-sub" style="margin-bottom:10px;">Training experience</div>
+      <div class="opt-grid">
+        <div class="opt-card" data-key="experience" data-value="beginner" onclick="obSel(this,'experience','beginner');checkOb9()"><div class="opt-label">Beginner</div><div class="opt-desc">Under 1 year or still learning the basics.</div></div>
+        <div class="opt-card" data-key="experience" data-value="intermediate" onclick="obSel(this,'experience','intermediate');checkOb9()"><div class="opt-label">Intermediate</div><div class="opt-desc">Comfortable with main lifts and normal gym flow.</div></div>
+        <div class="opt-card" data-key="experience" data-value="advanced" onclick="obSel(this,'experience','advanced');checkOb9()"><div class="opt-label">Advanced</div><div class="opt-desc">Strong technique and plenty of training history.</div></div>
+      </div>
+      <div class="ob-sub" style="margin:18px 0 10px;">Last 3 months</div>
+      <div class="opt-grid c3">
+        <div class="opt-card" data-key="consistency" data-value="off_track" onclick="obSel(this,'consistency','off_track');checkOb9()"><div class="opt-label">Off track</div><div class="opt-desc">Very inconsistent</div></div>
+        <div class="opt-card" data-key="consistency" data-value="building" onclick="obSel(this,'consistency','building');checkOb9()"><div class="opt-label">Building back up</div><div class="opt-desc">Some consistency</div></div>
+        <div class="opt-card" data-key="consistency" data-value="locked_in" onclick="obSel(this,'consistency','locked_in');checkOb9()"><div class="opt-label">Locked in</div><div class="opt-desc">You’ve been steady</div></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(9)">Back</button><button class="btn btn-acc" onclick="obNext(9)" id="ob9n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob10">
+    <div class="ob-sb">
+      <div class="ob-num">10 of 21</div>
+      <div class="ob-q">How would you rate yourself right now?</div>
+      <div class="ob-sub">This changes starting volume, recovery pressure and how fast the app tries to progress you.</div>
+      <div class="opt-grid">
+        <div class="opt-card" data-key="selfRating" data-value="need_support" onclick="selectSelfRating(this,'need_support')"><div class="opt-label">I need structure and momentum</div><div class="opt-desc">Lower starting volume. Easy wins first.</div></div>
+        <div class="opt-card" data-key="selfRating" data-value="balanced" onclick="selectSelfRating(this,'balanced')"><div class="opt-label">I’m solid but not maxed</div><div class="opt-desc">Balanced weekly volume and recovery.</div></div>
+        <div class="opt-card" data-key="selfRating" data-value="ready_to_push" onclick="selectSelfRating(this,'ready_to_push')"><div class="opt-label">I’m ready to push hard</div><div class="opt-desc">Higher ceiling if recovery and consistency support it.</div></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(10)">Back</button><button class="btn btn-acc" onclick="obNext(10)" id="ob10n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob11">
+    <div class="ob-sb">
+      <div class="ob-num">11 of 21</div>
+      <div class="ob-q">What should the next phase prioritise?</div>
+      <div class="ob-sub">This sets the starting nutrition direction while training keeps supporting your main physique goal.</div>
+      <div class="opt-grid c2" id="bodyGoalGrid">
+        <div class="opt-card" data-key="bodyGoal" data-value="build" onclick="selectBodyGoal(this,'build')"><div class="opt-label">Build muscle</div><div class="opt-desc">Small surplus and performance-led recovery.</div></div>
+        <div class="opt-card" data-key="bodyGoal" data-value="maintain" onclick="selectBodyGoal(this,'maintain')"><div class="opt-label">Maintain</div><div class="opt-desc">Hold weight and improve quality.</div></div>
+        <div class="opt-card" data-key="bodyGoal" data-value="recomp" onclick="selectBodyGoal(this,'recomp')"><div class="opt-label">Recomp</div><div class="opt-desc">Build muscle while tightening up.</div></div>
+        <div class="opt-card" data-key="bodyGoal" data-value="lose" onclick="selectBodyGoal(this,'lose')"><div class="opt-label">Lose weight</div><div class="opt-desc">Fat-loss phase with muscle retention.</div></div>
+      </div>
+      <div class="info-box"><div class="info-lbl">Smart guardrail</div><div class="info-val" id="bodyGoalHint">Choose the phase you want the nutrition engine to prioritise first.</div></div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(11)">Back</button><button class="btn btn-acc" onclick="obNext(11)" id="ob11n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob12">
+    <div class="ob-sb">
+      <div class="ob-num">12 of 21</div>
+      <div class="ob-q">You’re not getting a generic plan.</div>
+      <div class="ob-sub">Two people with the same goal can need very different training volume, calories and recovery timing.</div>
+      <div class="intro-feature-list">
+        <div class="intro-feature"><div class="intro-num">1</div><div><div class="intro-feature-title">Goal + body data</div><div class="intro-feature-copy">Your plan starts from your physique target, body-fat estimate and nutrition phase.</div></div></div>
+        <div class="intro-feature"><div class="intro-num">2</div><div><div class="intro-feature-title">Recovery + lifestyle</div><div class="intro-feature-copy">Activity outside the gym, work stress and recovery signals change the pressure of the week.</div></div></div>
+        <div class="intro-feature"><div class="intro-num">3</div><div><div class="intro-feature-title">Pain-aware adjustments</div><div class="intro-feature-copy">If something feels off, the split and exercise stressors get smarter from day one.</div></div></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(12)">Back</button><button class="btn btn-acc" onclick="obNext(12)">Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob13">
+    <div class="ob-sb">
+      <div class="ob-num">13 of 21</div>
+      <div class="ob-q">Which muscle groups matter most right now?</div>
+      <div class="ob-sub">Pick 1 or 2. They’ll get extra weekly volume and appear earlier in your session order.</div>
+      <div class="chip-wrap" id="muscleChips">
+        <div class="chip" data-val="chest" onclick="selMuscle(this,'chest')">Chest</div>
+        <div class="chip" data-val="back" onclick="selMuscle(this,'back')">Back</div>
+        <div class="chip" data-val="shoulders" onclick="selMuscle(this,'shoulders')">Shoulders</div>
+        <div class="chip" data-val="biceps" onclick="selMuscle(this,'biceps')">Biceps</div>
+        <div class="chip" data-val="triceps" onclick="selMuscle(this,'triceps')">Triceps</div>
+        <div class="chip" data-val="glutes" onclick="selMuscle(this,'glutes')">Glutes</div>
+        <div class="chip" data-val="quads" onclick="selMuscle(this,'quads')">Quads</div>
+        <div class="chip" data-val="hamstrings" onclick="selMuscle(this,'hamstrings')">Hamstrings</div>
+        <div class="chip" data-val="core" onclick="selMuscle(this,'core')">Core</div>
+        <div class="chip" data-val="calves" onclick="selMuscle(this,'calves')">Calves</div>
+      </div>
+      <div id="muscleNote" style="margin-top:12px;font-size:12px;color:#888;">Pick 1 or 2 muscles.</div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(13)">Back</button><button class="btn btn-acc" onclick="obNext(13)" id="ob13n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob14">
+    <div class="ob-sb">
+      <div class="ob-num">14 of 21</div>
+      <div class="ob-q">Training is being tailored around your goal.</div>
+      <div class="ob-sub">Now we’ll dial in frequency, split style and weekly layout so the plan actually fits your life.</div>
+      <div class="ob-loading-card alt">
+        <div class="ob-loading-dot"></div>
+        <div class="intro-title">Prioritising your best growth signals</div>
+        <div class="intro-copy">Your focus muscles, experience level and consistency score are shaping the first training block.</div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(14)">Back</button><button class="btn btn-acc" onclick="obNext(14)">Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob15">
+    <div class="ob-sb">
+      <div class="ob-num">15 of 21</div>
+      <div class="ob-q">How many days per week can you realistically train?</div>
+      <div class="ob-sub">Choose the number you can hit consistently — not the number that only works on perfect weeks.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="daysSel"><div class="day-btn" onclick="selDay(this,1)">1</div><div class="day-btn" onclick="selDay(this,2)">2</div><div class="day-btn" onclick="selDay(this,3)">3</div><div class="day-btn" onclick="selDay(this,4)">4</div><div class="day-btn" onclick="selDay(this,5)">5</div><div class="day-btn" onclick="selDay(this,6)">6</div><div class="day-btn" onclick="selDay(this,7)">7</div></div>
+      <div id="splitSug" class="info-box"><div class="info-lbl">Recommended split</div><div class="info-val" id="splitText">Choose your training frequency first</div><div style="font-size:12px;color:#888;margin-top:3px;" id="splitDaysText">The split recommendation unlocks after you choose your available days.</div></div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(15)">Back</button><button class="btn btn-acc" onclick="obNext(15)" id="ob15n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob16">
+    <div class="ob-sb">
+      <div class="ob-num">16 of 21</div>
+      <div class="ob-q">Which split style feels right?</div>
+      <div class="ob-sub">We’ll still adapt the exact sessions, but this sets the overall structure of your week.</div>
+      <div class="opt-grid c2" id="splitPresetGrid">
+        <div class="opt-card" data-key="structurePreset" data-value="adaptive" onclick="selectStructurePreset(this,'adaptive')"><div class="opt-label">Balanced adaptive</div><div class="opt-desc">Recommended. Lets ADDAPT steer the week.</div></div>
+        <div class="opt-card" data-key="structurePreset" data-value="upperlower" onclick="selectStructurePreset(this,'upperlower')"><div class="opt-label">Upper / Lower</div><div class="opt-desc">Simple, balanced and easy to recover from.</div></div>
+        <div class="opt-card" data-key="structurePreset" data-value="pushpulllegs" onclick="selectStructurePreset(this,'pushpulllegs')"><div class="opt-label">Push / Pull / Legs</div><div class="opt-desc">Great when you can train 3+ days consistently.</div></div>
+        <div class="opt-card" data-key="structurePreset" data-value="fullbody" onclick="selectStructurePreset(this,'fullbody')"><div class="opt-label">Full Body</div><div class="opt-desc">Every session hits the whole system.</div></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(16)">Back</button><button class="btn btn-acc" onclick="obNext(16)" id="ob16n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob17">
+    <div class="ob-sb">
+      <div class="ob-num">17 of 21</div>
+      <div class="ob-q">Build your weekly rhythm</div>
+      <div class="ob-sub">Pick exactly <span id="obTrainDayTarget">0</span> training days and the session length you can recover from best.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="trainDaySel"><div class="day-btn" onclick="toggleTrainDay(this,'Mon')">Mon</div><div class="day-btn" onclick="toggleTrainDay(this,'Tue')">Tue</div><div class="day-btn" onclick="toggleTrainDay(this,'Wed')">Wed</div><div class="day-btn" onclick="toggleTrainDay(this,'Thu')">Thu</div><div class="day-btn" onclick="toggleTrainDay(this,'Fri')">Fri</div><div class="day-btn" onclick="toggleTrainDay(this,'Sat')">Sat</div><div class="day-btn" onclick="toggleTrainDay(this,'Sun')">Sun</div></div>
+      <div id="trainDayNote" class="info-box" style="display:none;"><div class="info-lbl">Starting schedule</div><div class="info-val" id="trainDayText"></div></div>
+      <div class="ob-sub" style="margin:18px 0 10px;">Session length</div>
+      <div class="opt-grid c2">
+        <div class="opt-card" data-key="sessionLen" data-value="30" onclick="selectSessionLen(this,30)"><div class="opt-label">30 min</div><div class="opt-desc">Fast, sharp, high-signal sessions.</div></div>
+        <div class="opt-card" data-key="sessionLen" data-value="45" onclick="selectSessionLen(this,45)"><div class="opt-label">45 min</div><div class="opt-desc">Best fit for most people.</div></div>
+        <div class="opt-card" data-key="sessionLen" data-value="60" onclick="selectSessionLen(this,60)"><div class="opt-label">60 min</div><div class="opt-desc">Enough room for compounds and accessories.</div></div>
+        <div class="opt-card" data-key="sessionLen" data-value="90" onclick="selectSessionLen(this,90)"><div class="opt-label">90 min</div><div class="opt-desc">Higher-volume sessions if recovery is strong.</div></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(17)">Back</button><button class="btn btn-acc" onclick="obNext(17)" id="ob17n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob18">
+    <div class="ob-sb">
+      <div class="ob-num">18 of 21</div>
+      <div class="ob-q">Where will you train most of the time?</div>
+      <div class="ob-sub">The plan should match your real environment, not an imaginary perfect setup.</div>
+      <div class="opt-grid">
+        <div class="opt-card" data-key="equipment" data-value="full" onclick="obSel(this,'equipment','full')"><div class="opt-label">Full gym</div><div class="opt-desc">Barbells, cables, machines and full options.</div></div>
+        <div class="opt-card" data-key="equipment" data-value="dumbbells" onclick="obSel(this,'equipment','dumbbells')"><div class="opt-label">Dumbbells only</div><div class="opt-desc">Home gym or simple commercial gym setup.</div></div>
+        <div class="opt-card" data-key="equipment" data-value="bands" onclick="obSel(this,'equipment','bands')"><div class="opt-label">Bands + bodyweight</div><div class="opt-desc">Minimal kit, still enough to make progress.</div></div>
+        <div class="opt-card" data-key="equipment" data-value="none" onclick="obSel(this,'equipment','none')"><div class="opt-label">Bodyweight only</div><div class="opt-desc">No equipment. Keep the plan clean and repeatable.</div></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(18)">Back</button><button class="btn btn-acc" onclick="obNext(18)" id="ob18n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob19">
+    <div class="ob-sb">
+      <div class="ob-num">19 of 21</div>
+      <div class="ob-q">Any pain areas or movement flags?</div>
+      <div class="ob-sub">Optional, but worth telling us — the plan can start more joint-friendly right away.</div>
+      <div class="chip-wrap" id="painChips">
+        <div class="chip sel" data-val="none" onclick="selPainArea(this,'none')">None</div>
+        <div class="chip" data-val="shoulders" onclick="selPainArea(this,'shoulders')">Shoulders</div>
+        <div class="chip" data-val="lower_back" onclick="selPainArea(this,'lower_back')">Lower back</div>
+        <div class="chip" data-val="knees" onclick="selPainArea(this,'knees')">Knees</div>
+        <div class="chip" data-val="elbows" onclick="selPainArea(this,'elbows')">Elbows</div>
+        <div class="chip" data-val="wrists" onclick="selPainArea(this,'wrists')">Wrists</div>
+        <div class="chip" data-val="ankles" onclick="selPainArea(this,'ankles')">Ankles</div>
+        <div class="chip" data-val="neck" onclick="selPainArea(this,'neck')">Neck</div>
+      </div>
+      <div id="painNote" style="margin-top:12px;font-size:12px;color:#888;">No pain flags selected.</div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(19)">Back</button><button class="btn btn-acc" onclick="obNext(19)" id="ob19n">Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob20">
+    <div class="ob-sb">
+      <div class="ob-num">20 of 21</div>
+      <div class="ob-q">Tell us about life outside the gym</div>
+      <div class="ob-sub">Daily activity, work style and recovery focus help shape calories, fatigue management and the weekly plan.</div>
+      <div class="ob-sub" style="margin-bottom:10px;">Outside activity level</div>
+      <div class="opt-grid c2">
+        <div class="opt-card" data-key="activityLevel" data-value="low" onclick="obSel(this,'activityLevel','low');checkOb20()"><div class="opt-label">Low</div><div class="opt-desc">Mostly sedentary outside training.</div></div>
+        <div class="opt-card" data-key="activityLevel" data-value="moderate" onclick="obSel(this,'activityLevel','moderate');checkOb20()"><div class="opt-label">Moderate</div><div class="opt-desc">Normal walking and movement most days.</div></div>
+        <div class="opt-card" data-key="activityLevel" data-value="high" onclick="obSel(this,'activityLevel','high');checkOb20()"><div class="opt-label">High</div><div class="opt-desc">A lot of steps, sport or daily movement.</div></div>
+        <div class="opt-card" data-key="activityLevel" data-value="athlete" onclick="obSel(this,'activityLevel','athlete');checkOb20()"><div class="opt-label">Very high</div><div class="opt-desc">Sport-heavy or extremely active lifestyle.</div></div>
+      </div>
+      <div class="ob-sub" style="margin:18px 0 10px;">Work / study position</div>
+      <div class="opt-grid c2">
+        <div class="opt-card" data-key="workStyle" data-value="desk" onclick="obSel(this,'workStyle','desk');checkOb20()"><div class="opt-label">Desk-based</div><div class="opt-desc">Mostly sitting.</div></div>
+        <div class="opt-card" data-key="workStyle" data-value="mixed" onclick="obSel(this,'workStyle','mixed');checkOb20()"><div class="opt-label">Mixed</div><div class="opt-desc">Some sitting, some moving.</div></div>
+        <div class="opt-card" data-key="workStyle" data-value="standing" onclick="obSel(this,'workStyle','standing');checkOb20()"><div class="opt-label">Mostly standing</div><div class="opt-desc">Retail, teaching or similar.</div></div>
+        <div class="opt-card" data-key="workStyle" data-value="physical" onclick="obSel(this,'workStyle','physical');checkOb20()"><div class="opt-label">Physical job</div><div class="opt-desc">Manual work adds daily fatigue.</div></div>
+      </div>
+      <div class="ob-sub" style="margin:18px 0 10px;">Food restrictions</div>
+      <div class="chip-wrap" id="restrictChips"><div class="chip sel" data-val="none" onclick="selRestrict(this,'none')">None</div><div class="chip" data-val="vegetarian" onclick="selRestrict(this,'vegetarian')">Vegetarian</div><div class="chip" data-val="vegan" onclick="selRestrict(this,'vegan')">Vegan</div><div class="chip" data-val="dairy_free" onclick="selRestrict(this,'dairy_free')">Dairy-free</div><div class="chip" data-val="gluten_free" onclick="selRestrict(this,'gluten_free')">Gluten-free</div><div class="chip" data-val="halal" onclick="selRestrict(this,'halal')">Halal</div></div>
+      <div class="ob-sub" style="margin:18px 0 10px;">Recovery focus</div>
+      <div class="opt-grid c2">
+        <div class="opt-card" data-key="saunaGoal" data-value="recovery" onclick="obSel(this,'saunaGoal','recovery');checkOb20()"><div class="opt-label">Recovery</div><div class="opt-desc">Lower fatigue and bounce back faster.</div></div>
+        <div class="opt-card" data-key="saunaGoal" data-value="stress" onclick="obSel(this,'saunaGoal','stress');checkOb20()"><div class="opt-label">Stress relief</div><div class="opt-desc">Nervous-system reset and calmer recovery.</div></div>
+        <div class="opt-card" data-key="saunaGoal" data-value="cardio" onclick="obSel(this,'saunaGoal','cardio');checkOb20()"><div class="opt-label">Cardio support</div><div class="opt-desc">Conditioning and circulation focus.</div></div>
+        <div class="opt-card" data-key="saunaGoal" data-value="longevity" onclick="obSel(this,'saunaGoal','longevity');checkOb20()"><div class="opt-label">Longevity</div><div class="opt-desc">Sustainable weekly heat dose.</div></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(20)">Back</button><button class="btn btn-acc" onclick="obNext(20)" id="ob20n" disabled>Continue</button></div>
+  </div>
+
+  <div class="ob-step" id="ob21">
+    <div class="ob-sb">
+      <div class="ob-num">21 of 21</div>
+      <div class="ob-q">Your personalised starting system is ready.</div>
+      <div class="ob-sub">This is your premium setup preview. Once you start checking in, ADDAPT will keep refining the plan around your real data.</div>
+      <div class="ob-loading-card final">
+        <div class="ob-loading-dot"></div>
+        <div class="intro-title">Plan profile locked in</div>
+        <div class="intro-copy">Training, nutrition and recovery now have a tailored starting direction.</div>
+      </div>
+      <div class="ob-summary-list" id="onboardingSummary"></div>
+      <div class="info-box" style="margin-top:14px;"><div class="info-lbl">Reminders</div><div class="chip-wrap" id="notifChips"><div class="chip sel" data-key="checkin" onclick="toggleNotifPref(this,'checkin')">Check-In</div><div class="chip" data-key="emom" onclick="toggleNotifPref(this,'emom')">EMOM</div><div class="chip" data-key="sauna" onclick="toggleNotifPref(this,'sauna')">Sauna</div></div><div style="font-size:12px;color:#888;margin-top:8px;">You can change these later in settings.</div></div>
+    </div>
+    <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(21)">Back</button><button class="btn btn-acc" onclick="finishOnboarding(); setTimeout(startFeatureWalkthrough, 600);">Build My Plan</button></div>
+  </div>
 </div>
 
 <!-- HOME -->
