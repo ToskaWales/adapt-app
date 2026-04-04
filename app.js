@@ -1,9 +1,14 @@
 
-import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut as fbSO,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import{getFirestore,doc,setDoc,getDoc,deleteDoc,collection,addDoc,getDocs,query,orderBy,limit,where,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{signInWithPopup,signInWithRedirect,getRedirectResult,signOut as fbSO,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{doc,setDoc,getDoc,deleteDoc,collection,addDoc,getDocs,query,orderBy,limit,where,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{shouldPreferGoogleRedirect,getGoogleLoginErrorMessage}from'./src/modules/auth.js';
+import{createFirebaseServices}from'./src/modules/firestore.js';
+import{getGoalAdherenceInsights,getWeeklyProgressSummary}from'./src/modules/insights.js';
+import{buildFirstRunEmptyState}from'./src/modules/onboarding.js';
+import{formatLastSyncedLabel,registerServiceWorker}from'./src/modules/ui.js';
 const cfg={apiKey:"AIzaSyDQKmSRuK0cpIupdwVOilD8gX88ML-3K8s",authDomain:"adaptive-plan-app.firebaseapp.com",projectId:"adaptive-plan-app",storageBucket:"adaptive-plan-app.firebasestorage.app",messagingSenderId:"214755243355",appId:"1:214755243355:web:4fe3818b936a442477967e"};
-const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);const prov=new GoogleAuthProvider();prov.setCustomParameters({prompt:'select_account'});
+const {auth,db,prov}=createFirebaseServices(cfg);
+registerServiceWorker();
 const PROFILE_CACHE_PREFIX='addapt_profile_cache_';
 function getCachedProfile(uid){
   if(!uid)return null;
@@ -18,33 +23,27 @@ function setCachedProfile(uid,profile){
   if(!uid||!profile)return;
   try{localStorage.setItem(PROFILE_CACHE_PREFIX+uid,JSON.stringify(profile));}catch(err){}
 }
+const LAST_SYNC_STORAGE_KEY='addapt_last_sync_meta_v1';
+function getLastSyncMeta(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(LAST_SYNC_STORAGE_KEY)||'null');
+    return raw&&typeof raw==='object'?raw:null;
+  }catch{return null;}
+}
+function updateLastSyncMeta(status='saved'){
+  const meta={status,ts:Date.now()};
+  try{localStorage.setItem(LAST_SYNC_STORAGE_KEY,JSON.stringify(meta));}catch(err){}
+  return meta;
+}
+function refreshLastSyncBadge(){
+  const el=document.getElementById('settingsLastSync');
+  if(el)el.textContent=formatLastSyncedLabel(getLastSyncMeta());
+}
 function resetLoginButton(){
   const b=document.querySelector('.btn-google');
   if(!b)return;
   b.innerHTML='<svg class="g-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Continue with Google';
   b.disabled=false;
-}
-function shouldPreferGoogleRedirect(){
-  const host=window.location.hostname||'';
-  const ua=window.navigator.userAgent||'';
-  const standalone=window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true;
-  const inAppBrowser=/Instagram|FBAN|FBAV|Line|wv/i.test(ua);
-  return host.endsWith('github.io')||standalone||inAppBrowser||/iPad|iPhone|iPod/i.test(ua);
-}
-function getGoogleLoginErrorMessage(err){
-  const host=window.location.hostname||'this site';
-  switch(err?.code){
-    case 'auth/unauthorized-domain':
-      return `Google sign-in is not authorised for ${host} yet. Add it in Firebase Auth → Settings → Authorized domains.`;
-    case 'auth/operation-not-allowed':
-      return 'Google sign-in is not enabled in Firebase Authentication yet.';
-    case 'auth/network-request-failed':
-      return 'Network error while contacting Google. Check your connection and try again.';
-    case 'auth/web-storage-unsupported':
-      return 'This browser is blocking the storage Google sign-in needs. Try a normal browser tab.';
-    default:
-      return 'Please try again.';
-  }
 }
 function handleGoogleLoginError(err){
   if(!err||err.code==='auth/popup-closed-by-user')return;
@@ -657,7 +656,13 @@ function deleteEmomTemplate(index){
   showToast('Template deleted','Removed from your EMOM list.');
 }
 window.deleteEmomTemplate=deleteEmomTemplate;
-function setSD(s){['syncDot','ciSD','logSD'].forEach(id=>{const e=document.getElementById(id);if(e)e.className='sync-dot'+(s?' '+s:'');});}
+function setSD(s){
+  ['syncDot','ciSD','logSD'].forEach(id=>{const e=document.getElementById(id);if(e)e.className='sync-dot'+(s?' '+s:'');});
+  if(['saving','saved','error'].includes(s)){
+    updateLastSyncMeta(s);
+    refreshLastSyncBadge();
+  }
+}
 
 // ── TOAST ──
 let toastTimer=null;
@@ -1982,13 +1987,14 @@ function getHomeNextAction({checkins,sessions,todaySession,plan}){
   }
   return{label:'Review performance',detail:'Core tasks are current. Open performance analytics to detect the next progression target.',ctaText:'Statistics',ctaAction:"goTo('statsHub')"};
 }
-function renderHomeDashboard({p,checkins,sessions,plan,streak,game}){
+function renderHomeDashboard({p,checkins,sessions,activities=[],plan,streak,game}){
   const heroBadges=document.getElementById('heroBadges');
   const streakMini=document.getElementById('homeStreakMini');
   const protocolCard=document.getElementById('homeProtocolCard');
   const nutritionCard=document.getElementById('homeNutritionCard');
   const trendCard=document.getElementById('homeTrendCard');
   const actionStrip=document.getElementById('homeActionStrip');
+  const habitCheckins=getHabitCheckins(checkins);
   if(heroBadges){
     const level=getLevel(checkins.length);
     heroBadges.innerHTML=`<div class="badge g">${p.days}x/week</div><div class="badge b">${p.sessionLen}min</div><div class="badge">${trEnum('experience',p.experience)}</div>${(p.focusMuscles||[]).map(m=>`<div class="badge p">${trEnum('muscle',m)}</div>`).join('')}<div class="level-badge" style="color:${level.color};border-color:${level.color}50;background:${level.color}10;">${level.name}</div>`;
@@ -2004,6 +2010,8 @@ function renderHomeDashboard({p,checkins,sessions,plan,streak,game}){
   const reminderSummary=buildProfileReminderSummary(p);
   const isFreshStart=!checkins.length&&!sessions.length;
   const nextAction=getHomeNextAction({checkins,sessions,todaySession,plan});
+  const weeklySummary=getWeeklyProgressSummary({checkins:habitCheckins,sessions,activities});
+  const adherence=getGoalAdherenceInsights(habitCheckins,p);
   const mlBadge=ml?.enabled
     ?`<div class="tiny-stat">ML active · ${(ml.probability*100).toFixed(0)}% readiness${ml.adjusted?` · mode ${ml.baseTier}→${plan.analysis.tier}`:''}</div>`
     :`<div class="tiny-stat">ML warming up · ${ml?.samples||0}/8 samples</div>`;
@@ -2016,9 +2024,13 @@ function renderHomeDashboard({p,checkins,sessions,plan,streak,game}){
     nutritionCard.innerHTML=`<div class="section-kicker">Diet Overview</div><div class="metric-big">${plan.analysis.kcal}</div><div class="metric-sub">${isFreshStart?`${calorieMode} from your profile · `:''}Daily target with ${plan.meals.length} meal slot${plan.meals.length===1?'':'s'} · ${plan.analysis.protein}g protein · ${plan.analysis.carbs}g carbs</div><div class="tiny-stat-row"><div class="tiny-stat">Protein ${plan.analysis.protein}g</div><div class="tiny-stat">Carbs ${plan.analysis.carbs}g</div><div class="tiny-stat">Fats ${plan.analysis.fat}g</div></div>`;
   }
   if(trendCard){
-    trendCard.innerHTML=`<div class="section-kicker">Logged Trend</div><div class="chart-shell compact"><div class="chart-shell-head"><span>Bodyweight / readiness</span><span>Tap chart</span></div><canvas id="homeCheckinChart" style="width:100%;height:110px;"></canvas><div id="homeCheckinChartMeta" class="chart-meta"></div><div id="homeCheckinEmpty" class="chart-empty" style="display:none;">Add check-ins to unlock your trend line.</div></div><div class="tiny-stat-row"><div class="tiny-stat">Gym ${sessions.filter(s=>s.dayName!=='Custom EMOM').length}</div><div class="tiny-stat">EMOM ${sessions.filter(s=>String(s.dayName||'').includes('EMOM')).length}</div><div class="tiny-stat">Sauna ${saunaState.sessions}</div></div>`;
-    const series=(checkins.filter(c=>c.weight).reverse().slice(-8).map(item=>({value:parseFloat(item.weight),label:item.date||''})));
-    if(series.length>=2)renderInsightChart(series,'homeCheckinChart','homeCheckinEmpty','#00d4ff',{height:110,formatter:(value)=>`${value.toFixed(1)} kg`,metaLabel:'Start',metaMidLabel:'Latest'});else renderInsightChart(checkins.slice(-8).map(item=>({value:parseFloat(item.energy)||0,label:item.date||''})),'homeCheckinChart','homeCheckinEmpty','#00d4ff',{height:110,formatter:(value)=>`Energy ${Math.round(value)}/10`,metaLabel:'First',metaMidLabel:'Latest'});
+    if(isFreshStart){
+      trendCard.innerHTML=buildFirstRunEmptyState({goal:p.goal,trainingDays,sessionLen:p.sessionLen,focusMuscles:p.focusMuscles||[],saunaGoal:p.saunaGoal,saunaDays,reminderSummary});
+    }else{
+      trendCard.innerHTML=`<div class="section-kicker">Weekly Pulse</div><div class="metric-big">${weeklySummary.score}%</div><div class="metric-sub">${weeklySummary.summary}</div><div class="tiny-stat-row"><div class="tiny-stat">Gym ${weeklySummary.gymSessions}</div><div class="tiny-stat">Check-ins ${weeklySummary.checkins}</div><div class="tiny-stat">Cardio ${weeklySummary.cardioMinutes} min</div></div><div class="chart-shell compact"><div class="chart-shell-head"><span>Bodyweight / readiness</span><span>Tap chart</span></div><canvas id="homeCheckinChart" style="width:100%;height:110px;"></canvas><div id="homeCheckinChartMeta" class="chart-meta"></div><div id="homeCheckinEmpty" class="chart-empty" style="display:none;">Add check-ins to unlock your trend line.</div></div><div class="adherence-card"><div class="adherence-head"><strong>Goal adherence · ${adherence.level}</strong><span>${adherence.score}%</span></div><p>${adherence.copy}</p><div class="tiny-stat-row">${adherence.signals.map(signal=>`<div class="tiny-stat">${signal}</div>`).join('')}</div></div>`;
+      const series=(checkins.filter(c=>c.weight).reverse().slice(-8).map(item=>({value:parseFloat(item.weight),label:item.date||''})));
+      if(series.length>=2)renderInsightChart(series,'homeCheckinChart','homeCheckinEmpty','#00d4ff',{height:110,formatter:(value)=>`${value.toFixed(1)} kg`,metaLabel:'Start',metaMidLabel:'Latest'});else renderInsightChart(checkins.slice(-8).map(item=>({value:parseFloat(item.energy)||0,label:item.date||''})),'homeCheckinChart','homeCheckinEmpty','#00d4ff',{height:110,formatter:(value)=>`Energy ${Math.round(value)}/10`,metaLabel:'First',metaMidLabel:'Latest'});
+    }
   }
   if(actionStrip){
     actionStrip.innerHTML=isFreshStart
@@ -3482,12 +3494,14 @@ function renderSettings() {
   const restrictions=(p.restrictions&&p.restrictions.length?p.restrictions:['none']);
   const calorieMode=p.customCalories?`${p.customCalories} kcal fixed`:`${trEnum('dietGoal',p.dietGoal)} adaptive`;
   const reminderSummary=buildProfileReminderSummary(p);
+  const lastSyncLabel=formatLastSyncedLabel(getLastSyncMeta());
   document.getElementById('settingsBody').innerHTML = `
     <div class="settings-card">
       <div class="settings-card-head">
         <div>
           <div class="settings-title">Profile Editor</div>
           <div class="settings-copy">Edit the fields onboarding now feeds into your starter plan, home screen, reminders, and recovery defaults.</div>
+          <div class="settings-status-row"><span class="settings-sync-badge"><span class="sync-dot ${(getLastSyncMeta()?.status)||''}"></span><span id="settingsLastSync">${lastSyncLabel}</span></span><span class="pwa-note">PWA install + offline support ready.</span></div>
         </div>
         <button class="btn btn-outline btn-sm" onclick="testNotification()">Test Notification</button>
       </div>

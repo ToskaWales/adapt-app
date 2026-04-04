@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ADDAPT icon">
+  <rect width="512" height="512" rx="112" fill="#080808"/>
+  <rect x="48" y="48" width="416" height="416" rx="88" fill="#111111" stroke="#c8ff00" stroke-width="10"/>
+  <path d="M128 334l74-156 52 106 48-72 82 122" fill="none" stroke="#00d4ff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="202" cy="178" r="24" fill="#c8ff00"/>
+  <text x="256" y="426" text-anchor="middle" font-size="62" font-family="Arial, sans-serif" font-weight="700" fill="#f2f2f2">ADDAPT</text>
+</svg>
