@@ -247,6 +247,7 @@ let obAnswers={},selectedMuscles=[],selectedRestricts=['none'],selectedTrainDays
 let lastTrainingMove=null;
 let pendingLogMode='normal';
 let selectedAvoidMuscles=[];
+let selectedReduceMuscles=[];
 let selectedCompoundBias='balanced';
 let selectedStructurePreset='adaptive';
 let selectedVolumePreference='moderate';
@@ -1216,7 +1217,7 @@ function syncOnboardingDerivedState(){
   obAnswers.restrictions=[...selectedRestricts];
   obAnswers.notifications={...selectedNotifPrefs};
   obAnswers.painAreas=[...selectedPainAreas];
-  obAnswers.avoidMuscles=[...selectedAvoidMuscles];
+  obAnswers.avoidMuscles=[...new Set([...selectedAvoidMuscles,...selectedReduceMuscles])];
   obAnswers.structurePreset=selectedStructurePreset||obAnswers.structurePreset||'adaptive';
   obAnswers.volumePreference=selectedVolumePreference||obAnswers.volumePreference||'moderate';
   obAnswers.compoundBias=selectedCompoundBias||obAnswers.compoundBias||'balanced';
@@ -1232,6 +1233,7 @@ function persistOnboardingDraft(){
     selectedNotifPrefs,
     selectedPainAreas,
     selectedAvoidMuscles,
+    selectedReduceMuscles,
     selectedCompoundBias,
     selectedStructurePreset,
     selectedVolumePreference,
@@ -1392,6 +1394,10 @@ function syncOnboardingSelections(){
     if(idx===0)chip.classList.add('sel');
     if(idx===1)chip.classList.add('sel2');
   });
+  document.querySelectorAll('#reduceMuscleChips .chip').forEach(chip=>{
+    const val=chip.dataset.val||'';
+    chip.classList.toggle('sel-r',selectedReduceMuscles.includes(val));
+  });
   document.querySelectorAll('#restrictChips .chip').forEach(chip=>{
     const value=chip.dataset.val||'';
     chip.classList.toggle('sel',selectedRestricts.includes(value));
@@ -1411,6 +1417,8 @@ function syncOnboardingSelections(){
     const recommendedFocus=getRecommendedFocusMuscles({goal:obAnswers.goal||'general',sex:obAnswers.sex||'male'}).map(cap).join(' + ');
     muscleNote.textContent=selectedMuscles.length===2?`${selectedMuscles.map(cap).join(' and ')} get extra weekly volume.`:selectedMuscles.length===1?`Add one more muscle. Recommended pair: ${recommendedFocus}.`:`Recommended focus: ${recommendedFocus}. Pick 2 muscles.`;
   }
+  const reduceNote=document.getElementById('reduceNote');
+  if(reduceNote)reduceNote.textContent=selectedReduceMuscles.length?selectedReduceMuscles.map(cap).join(', ')+' will get minimum volume only.':'Optional — select muscles to de-emphasise.';
   const painNote=document.getElementById('painNote');
   if(painNote)painNote.textContent=selectedPainAreas.filter(v=>v!=='none').length?`Pain-aware swaps ready for ${selectedPainAreas.filter(v=>v!=='none').map(v=>cap(v.replace(/_/g,' '))).join(', ')}.`:'No pain flags selected.';
   const note=document.getElementById('trainDayNote');
@@ -1439,6 +1447,7 @@ function resumeOnboardingDraft(){
   selectedNotifPrefs={checkin:true,emom:false,sauna:false,...(draft.selectedNotifPrefs||{})};
   selectedPainAreas=Array.isArray(draft.selectedPainAreas)&&draft.selectedPainAreas.length?draft.selectedPainAreas:['none'];
   selectedAvoidMuscles=Array.isArray(draft.selectedAvoidMuscles)?draft.selectedAvoidMuscles:[];
+  selectedReduceMuscles=Array.isArray(draft.selectedReduceMuscles)?draft.selectedReduceMuscles:[];
   selectedCompoundBias=draft.selectedCompoundBias||obAnswers.compoundBias||'balanced';
   selectedStructurePreset=draft.selectedStructurePreset||obAnswers.structurePreset||'adaptive';
   selectedVolumePreference=draft.selectedVolumePreference||obAnswers.volumePreference||'moderate';
@@ -1464,6 +1473,7 @@ function resetOnboardingState(){
   selectedNotifPrefs={checkin:true,emom:false,sauna:false};
   selectedPainAreas=['none'];
   selectedAvoidMuscles=[];
+  selectedReduceMuscles=[];
   selectedCompoundBias='balanced';
   selectedStructurePreset='adaptive';
   selectedVolumePreference='moderate';
@@ -1606,6 +1616,11 @@ function selMuscle(el,val){
     el.classList.remove('sel','sel2');
     selectedMuscles=selectedMuscles.filter(m=>m!==val);
   }else{
+    if(selectedReduceMuscles.includes(val)){
+      document.getElementById('muscleNote').textContent='That muscle is set to reduce — deselect it below first.';
+      document.getElementById('reduceNote').textContent='↑ Deselect '+cap(val)+' here before adding it as a focus muscle.';
+      return;
+    }
     if(selectedMuscles.length>=2){
       document.getElementById('muscleNote').textContent='Pick exactly 2 muscles.';
       return;
@@ -1619,6 +1634,24 @@ function selMuscle(el,val){
   persistOnboardingDraft();
 }
 window.selMuscle=selMuscle;
+function selReduceMuscle(el,val){
+  if(selectedMuscles.includes(val)){
+    document.getElementById('reduceNote').textContent='That muscle is already a focus — remove it from focus first.';
+    return;
+  }
+  if(selectedReduceMuscles.includes(val)){
+    selectedReduceMuscles=selectedReduceMuscles.filter(m=>m!==val);
+    el.classList.remove('sel-r');
+  }else{
+    selectedReduceMuscles.push(val);
+    el.classList.add('sel-r');
+  }
+  const reduceNote=document.getElementById('reduceNote');
+  if(reduceNote)reduceNote.textContent=selectedReduceMuscles.length?selectedReduceMuscles.map(cap).join(', ')+' will get minimum volume only.':'Optional — select muscles to de-emphasise.';
+  syncOnboardingSelections();
+  persistOnboardingDraft();
+}
+window.selReduceMuscle=selReduceMuscle;
 function selRestrict(el,val){
   const noneChip=document.querySelector('#restrictChips [data-val="none"]');
   if(val==='none'){
@@ -1817,7 +1850,7 @@ function sanitizeOnboardingProfile(raw){
     focusMuscles:focus.length?focus:recommendedFocus,
     restrictions:(selectedRestricts&&selectedRestricts.length)?selectedRestricts:['none'],
     painAreas:painAreas.length?painAreas:['none'],
-    avoidMuscles:Array.isArray(selectedAvoidMuscles)?selectedAvoidMuscles:[],
+    avoidMuscles:[...new Set([...(Array.isArray(selectedAvoidMuscles)?selectedAvoidMuscles:[]),...(Array.isArray(selectedReduceMuscles)?selectedReduceMuscles:[])])],
     trainingDays:trainingDays.length?trainingDays:defaultTrainingDays,
     trainingDayMap:trainingDays.length?Object.fromEntries(trainingDays.map((day,index)=>[day,index])):undefined,
     customCalories:Number.isFinite(customCaloriesValue)&&customCaloriesValue>0?customCaloriesValue:null,
@@ -3408,7 +3441,13 @@ function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,
   const trainDays=Math.min(days===7?6:days,6);
   const goalProfile=getGoalProfile(goal,focusMuscles,profile.avoidMuscles||[],profile.volumePreference||'moderate');
   const weeklyTargets=getWeeklySetTargets(goalProfile,goal,days,sessionLen,tier);
-  const templates=getSessionTemplates(goal,days,profile.structurePreset||'adaptive');
+  const rawTemplates=getSessionTemplates(goal,days,profile.structurePreset||'adaptive');
+  // Cap calves to at most 1 session per week — they recover fast but benefit little from extra frequency
+  const templates=rawTemplates.reduce((acc,t)=>{
+    const calvesDone=acc.some(s=>s.muscles.includes('calves'));
+    acc.push(calvesDone&&t.muscles.includes('calves')?{...t,muscles:t.muscles.filter(m=>m!=='calves')}:t);
+    return acc;
+  },[]);
   const perSession=distributeVolume(templates,weeklyTargets);
   const builtSessions=templates.map((t,i)=>buildOneSession(t,perSession[i],goalProfile,equipment,sessionLen,isStr,tier,suggestFn,recoveryMap,sorenessAreas,lastSessions));
 
