@@ -491,7 +491,7 @@
     <div class="ci-section"><div class="ci-label">Gym Performance</div><div class="ci-q">How have your lifts been going?</div><div class="chip-wrap" id="liftC"><div class="chip" style="border-color:rgba(255,77,0,0.4);color:#ff4d00;" onclick="selC(this,'liftC')" data-val="regressed">Went backwards</div><div class="chip sel" onclick="selC(this,'liftC')" data-val="same">Same as before</div><div class="chip" onclick="selC(this,'liftC')" data-val="slightly_up">Slightly up</div><div class="chip" onclick="selC(this,'liftC')" data-val="pbs">Hit PRs</div></div></div>
     <div class="ci-section"><div class="ci-label">Body Weight</div><div class="ci-q">Current weight (optional)</div><div class="wt-row"><input type="number" class="wt-in" id="ciW" placeholder="75" step="0.1"><span class="wt-unit">kg</span></div></div>
     <div class="ci-section"><div class="ci-label">Diet</div><div class="ci-q">How has eating been?</div><div class="chip-wrap" id="dietC"><div class="chip" onclick="selC(this,'dietC')" data-val="way_under">Way under</div><div class="chip sel" onclick="selC(this,'dietC')" data-val="under">Slightly under</div><div class="chip" onclick="selC(this,'dietC')" data-val="on_target">On target</div><div class="chip" onclick="selC(this,'dietC')" data-val="over">Over target</div></div></div>
-    <div class="ci-section"><div class="ci-label">Muscle Soreness</div><div class="ci-q">Any muscles still sore from your last session? (optional)</div><div class="chip-wrap" id="sorenessC"><div class="chip" onclick="toggleSorenessChip(this)" data-val="chest">Chest</div><div class="chip" onclick="toggleSorenessChip(this)" data-val="back">Back</div><div class="chip" onclick="toggleSorenessChip(this)" data-val="shoulders">Shoulders</div><div class="chip" onclick="toggleSorenessChip(this)" data-val="biceps">Biceps</div><div class="chip" onclick="toggleSorenessChip(this)" data-val="triceps">Triceps</div><div class="chip" onclick="toggleSorenessChip(this)" data-val="quads">Quads</div><div class="chip" onclick="toggleSorenessChip(this)" data-val="hamstrings">Hamstrings</div><div class="chip" onclick="toggleSorenessChip(this)" data-val="glutes">Glutes</div><div class="chip" onclick="toggleSorenessChip(this)" data-val="calves">Calves</div><div class="chip" onclick="toggleSorenessChip(this)" data-val="core">Core</div></div></div>
+
     <div class="ci-section"><div class="ci-label">Notes (optional)</div><div class="ci-q">Pain, highlights or anything to flag?</div><textarea class="textarea" id="ciNotes" placeholder="e.g. Left knee sore, hit a bench PR, skipped a few sessions"></textarea></div>
     <div class="ci-section"><div class="ci-label">Stress</div><div class="ci-q">Overall stress level?</div><input type="range" class="range-inp" id="sS" min="1" max="10" value="4" oninput="updS('sS','sV',this.value)"><div class="slider-lbl"><span>Relaxed</span><span>Maxed out</span></div><div class="slider-val" id="sV">4</div></div>
   </div>
@@ -731,6 +731,30 @@
       <button class="btn btn-outline" style="flex:1;" onclick="closeMealModal()">Cancel</button>
       <button class="btn btn-acc" style="flex:1;" onclick="saveMealLog()">Log Meal</button>
     </div>
+  </div>
+</div>
+
+<!-- PRE-WORKOUT SORENESS SHEET -->
+<div class="overlay" id="preWorkoutSorenessOvl" onclick="skipPreWorkoutSoreness()"></div>
+<div class="bsheet" id="preWorkoutSorenessSheet">
+  <div class="sh-handle"></div>
+  <div class="sh-title">Any soreness today?</div>
+  <div style="font-size:13px;color:#888;margin-bottom:14px;">Sore muscles will get 1 fewer set this session.</div>
+  <div class="chip-wrap" id="preWorkoutSorenessC">
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="chest">Chest</div>
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="back">Back</div>
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="shoulders">Shoulders</div>
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="biceps">Biceps</div>
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="triceps">Triceps</div>
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="quads">Quads</div>
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="hamstrings">Hamstrings</div>
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="glutes">Glutes</div>
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="calves">Calves</div>
+    <div class="chip" onclick="togglePreworkoutChip(this)" data-val="core">Core</div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:18px;">
+    <button class="btn btn-outline" style="flex:1;" onclick="skipPreWorkoutSoreness()">No soreness</button>
+    <button class="btn btn-acc" style="flex:1;" onclick="confirmPreWorkoutSoreness()">Start Workout</button>
   </div>
 </div>
 

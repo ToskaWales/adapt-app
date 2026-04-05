@@ -1185,6 +1185,8 @@ function selC(el,gid){document.querySelectorAll('#'+gid+' .chip').forEach(c=>{c.
 window.selC=selC;
 function toggleSorenessChip(el){el.classList.toggle('sel');}
 window.toggleSorenessChip=toggleSorenessChip;
+function togglePreworkoutChip(el){el.classList.toggle('sel');}
+window.togglePreworkoutChip=togglePreworkoutChip;
 
 // ── ONBOARDING ──
 let obStep=1;
@@ -2715,7 +2717,7 @@ function setGeneratingContext(mode='checkin'){
 }
 function submitCheckin(){
   const energy=parseInt(document.getElementById('eS').value),stress=parseInt(document.getElementById('sS').value),weight=document.getElementById('ciW').value?parseFloat(document.getElementById('ciW').value):null,notes=document.getElementById('ciNotes').value||'',sleep=document.querySelector('#sleepC .chip.sel')?.dataset.val||'7-8hrs',lifts=document.querySelector('#liftC .chip.sel')?.dataset.val||'same',diet=document.querySelector('#dietC .chip.sel')?.dataset.val||'under',calOverride=getCalOverride();
-  const sorenessAreas=[...document.querySelectorAll('#sorenessC .chip.sel')].map(el=>el.dataset.val);
+  const sorenessAreas=[];
   window.currentCheckin={energy,stress,weight,notes,sleep,lifts,diet,calOverride,sorenessAreas,isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB')};
   trackFlowEvent('checkin_submitted',{hasWeight:Boolean(weight),energy,stress,lifts,diet});
   goTo('generating');runSteps('checkin');
@@ -3680,14 +3682,55 @@ async function openLogDay(idx){
   const day=trainDays[idx];
   logDayIndex=idx;
   currentLogDay=day;
+  // Reset pre-workout soreness chips and store index for deferred launch
+  document.querySelectorAll('#preWorkoutSorenessC .chip').forEach(c=>c.classList.remove('sel'));
+  window.pendingLogDayIdx=idx;
+  document.getElementById('preWorkoutSorenessOvl').classList.add('open');
+  document.getElementById('preWorkoutSorenessSheet').classList.add('open');
+}
+window.openLogDay=openLogDay;
+
+function skipPreWorkoutSoreness(){
+  document.getElementById('preWorkoutSorenessOvl').classList.remove('open');
+  document.getElementById('preWorkoutSorenessSheet').classList.remove('open');
+  _launchLogDay([]);
+}
+window.skipPreWorkoutSoreness=skipPreWorkoutSoreness;
+
+function confirmPreWorkoutSoreness(){
+  const soreness=[...document.querySelectorAll('#preWorkoutSorenessC .chip.sel')].map(el=>el.dataset.val);
+  document.getElementById('preWorkoutSorenessOvl').classList.remove('open');
+  document.getElementById('preWorkoutSorenessSheet').classList.remove('open');
+  _launchLogDay(soreness);
+}
+window.confirmPreWorkoutSoreness=confirmPreWorkoutSoreness;
+
+function _applyPreWorkoutSoreness(exercises, sorenessAreas){
+  if(!sorenessAreas||!sorenessAreas.length)return exercises;
+  return exercises.map(ex=>{
+    if(!ex.muscle||!sorenessAreas.includes(ex.muscle))return ex;
+    const m=String(ex.scheme||'').match(/^(\d+)×(.+)$/);
+    if(!m)return ex;
+    // Reduce by 1 set for sore muscles; keep a minimum of 2 sets for effective training stimulus
+    const newSets=Math.max(parseInt(m[1])-1,2);
+    return{...ex,scheme:`${newSets}×${m[2]}`};
+  });
+}
+
+async function _launchLogDay(sorenessAreas){
+  const plan=window.currentPlanData;
+  if(!plan)return;
+  const trainDays=plan.splitDays.filter(d=>d.tag!=='rest'&&d.tag!=='active');
+  const day=trainDays[window.pendingLogDayIdx];
   document.getElementById('logTitle').textContent=day.day+' - '+day.name;
-  document.getElementById('logDayInfo').textContent=day.exercises.filter(e=>e.scheme!=='—').length+' exercises · Enter weight and reps per set';
   const last=window.fbLoadLastSession?await window.fbLoadLastSession(day.name):null;
   const lastIdx={};
   if(last?.exercises)last.exercises.forEach(e=>{lastIdx[e.name]=e;});
   // Use merged exercise list for muscle info
   const allLib = getAllExercises();
-  const exList = day.exercises.filter(e => e.scheme !== '—' && e.muscle);
+  const baseExList = day.exercises.filter(e => e.scheme !== '—' && e.muscle);
+  const exList = _applyPreWorkoutSoreness(baseExList, sorenessAreas);
+  document.getElementById('logDayInfo').textContent=exList.length+' exercises · Enter weight and reps per set';
   const exSel = document.getElementById('wTimerExerciseSel');
   if (exSel) {
     exSel.innerHTML = '<option value="">Select exercise</option>' + exList.map(ex => `<option value="${ex.name}">${ex.name}</option>`).join('');
@@ -3719,7 +3762,6 @@ async function openLogDay(idx){
   if('mediaSession' in navigator)updateMediaSession(Math.floor(APP_STATE.workoutTimer.seconds/60),day.name);
   goTo('logsession');
 }
-window.openLogDay=openLogDay;
 function wireLogInputHelpers(){
   const inputs=[...document.querySelectorAll('#logExWrap .log-in')];
   inputs.forEach((input,idx)=>{
