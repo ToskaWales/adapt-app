@@ -3158,7 +3158,7 @@ function getGoalProfile(goal,focusMuscles=[],avoidMuscles=[],volumePreference='m
     maintenance = [...maintenance, ...avoidMuscles.filter(m=>!maintenance.includes(m))];
   }
   // Volume preference: lower = drop 1 from all, high = add 2 to priority
-  return{priority:promoted,secondary,maintenance,volumePreference};
+  return{priority:promoted,secondary,maintenance,volumePreference,avoidMuscles:avoidMuscles||[]};
 }
 
 // ── 2. WEEKLY SET TARGETS ─────────────────────────────────────────
@@ -3211,22 +3211,22 @@ getSessionTemplates.__orig = function(goal,days){
       2:[{name:'Upper — Back + Delts',          tag:'upper',muscles:['back','shoulders','chest','biceps','triceps','core']},
          {name:'Lower + Shoulders',             tag:'full', muscles:['quads','hamstrings','shoulders','calves','core']}],
       3:[{name:'Upper A — Width',               tag:'upper',muscles:['back','shoulders','biceps','chest','triceps','core']},
-         {name:'Lower A',                       tag:'lower',muscles:['quads','hamstrings','calves','core']},
+         {name:'Lower A',                       tag:'lower',muscles:['quads','hamstrings','glutes','calves','core']},
          {name:'Upper B — Delts + Chest',       tag:'upper',muscles:['shoulders','chest','back','triceps','biceps']}],
       4:[{name:'Upper A — Back Lead',           tag:'upper',muscles:['back','shoulders','biceps','chest','core']},
-         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','calves','core']},
+         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','glutes','calves','core']},
          {name:'Upper B — Delts + Chest',       tag:'upper',muscles:['shoulders','chest','triceps','back','biceps']},
-         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','calves','core']}],
+         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','glutes','calves','core']}],
       5:[{name:'Upper A — Back Lead',           tag:'upper',muscles:['back','shoulders','biceps','chest','core']},
-         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','calves','core']},
+         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','glutes','calves','core']},
          {name:'Upper B — Delts + Chest',       tag:'upper',muscles:['shoulders','chest','triceps','back']},
-         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','calves','core']},
+         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','glutes','calves','core']},
          {name:'Back + Arms Focus',             tag:'focus',muscles:['back','shoulders','biceps','triceps','core']}],
       6:[{name:'Pull A — Lat Width',            tag:'upper',muscles:['back','biceps','shoulders','core']},
-         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','calves','core']},
+         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','glutes','calves','core']},
          {name:'Push — Delts + Chest',          tag:'upper',muscles:['shoulders','chest','triceps','back']},
          {name:'Pull B — Thickness',            tag:'upper',muscles:['back','biceps','shoulders']},
-         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','calves','core']},
+         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','glutes','calves','core']},
          {name:'Delts + Arms',                  tag:'focus',muscles:['shoulders','back','biceps','triceps','core']}],
     },
     hourglass:{
@@ -3347,6 +3347,8 @@ function getScheme(isStr,tier,muscle){
 function setsIn(scheme){const m=String(scheme).match(/^(\d+)×/);return m?parseInt(m[1]):3;}
 
 // ── 6. BUILD ONE SESSION ─────────────────────────────────────────
+// Primary lower-body muscles that must always get a compound movement on a lower day.
+const LOWER_COMPOUND_MUSCLES=['quads','hamstrings','glutes'];
 function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionLen,isStr,tier,suggestFn,recoveryMap={},sorenessAreas=[],lastSessions=[]){
   const maxEx={30:4,45:5,60:7,90:9}[sessionLen]||7;
   const exercises=[];
@@ -3356,14 +3358,23 @@ function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionL
     const rawBudget=muscleSetBudget[muscle]||0;
     if(rawBudget<=0)continue;
     const volMod=getMuscleVolumeModifier(muscle,recoveryMap,sorenessAreas);
-    const budget=Math.max(2,Math.round(rawBudget*volMod));
     const[baseCompSch,baseIsoSch]=getScheme(isStr,tier,muscle);
     const compSets=setsIn(baseCompSch),isoSets=setsIn(baseIsoSch);
+    // On dedicated lower-body sessions, primary leg muscles (quads/hamstrings/glutes)
+    // must get at least a compound exercise even when they are in the maintenance tier
+    // (e.g. vtaper goal). Raise the budget floor to compSets so the compound check passes.
+    // Skip this override for any muscle the user has explicitly flagged to avoid.
+    const isLowerLegMuscle=template.tag==='lower'&&LOWER_COMPOUND_MUSCLES.includes(muscle);
+    const isAvoidedMuscle=(goalProfile.avoidMuscles||[]).includes(muscle);
+    const budgetFloor=isLowerLegMuscle&&!isAvoidedMuscle?compSets:2;
+    const budget=Math.max(budgetFloor,Math.round(rawBudget*volMod));
     const isAnchorMuscle=muscle===template.muscles[0];
     const isMaintenance=goalProfile.maintenance.includes(muscle);
     let remaining=budget;
-    // Compound / anchor — skipped for maintenance muscles (iso-only)
-    if(!isMaintenance&&remaining>=compSets&&exercises.length<maxEx){
+    // Compound / anchor — skipped for maintenance muscles unless this is a lower-day
+    // primary leg muscle (and the user hasn't asked to avoid it).
+    const forceCompound=isLowerLegMuscle&&!isAvoidedMuscle;
+    if((!isMaintenance||forceCompound)&&remaining>=compSets&&exercises.length<maxEx){
       const ex=pickEx(muscle,isAnchorMuscle?'anchor':'work',equipment,used);
       if(ex){
         const compSch=getAdaptiveScheme(baseCompSch,ex.name,lastSessions,sorenessAreas,muscle);
