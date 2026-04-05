@@ -1617,7 +1617,8 @@ function selMuscle(el,val){
     selectedMuscles=selectedMuscles.filter(m=>m!==val);
   }else{
     if(selectedReduceMuscles.includes(val)){
-      document.getElementById('muscleNote').textContent='That muscle is set to reduce — remove it from reduce first.';
+      document.getElementById('muscleNote').textContent='That muscle is set to reduce — deselect it below first.';
+      document.getElementById('reduceNote').textContent='↑ Deselect '+cap(val)+' here before adding it as a focus muscle.';
       return;
     }
     if(selectedMuscles.length>=2){
@@ -3442,12 +3443,11 @@ function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,
   const weeklyTargets=getWeeklySetTargets(goalProfile,goal,days,sessionLen,tier);
   const rawTemplates=getSessionTemplates(goal,days,profile.structurePreset||'adaptive');
   // Cap calves to at most 1 session per week — they recover fast but benefit little from extra frequency
-  let calvesSeen=false;
-  const templates=rawTemplates.map(t=>{
-    if(!t.muscles.includes('calves'))return t;
-    if(!calvesSeen){calvesSeen=true;return t;}
-    return{...t,muscles:t.muscles.filter(m=>m!=='calves')};
-  });
+  const templates=rawTemplates.reduce((acc,t)=>{
+    const calvesDone=acc.some(s=>s.muscles.includes('calves'));
+    acc.push(calvesDone&&t.muscles.includes('calves')?{...t,muscles:t.muscles.filter(m=>m!=='calves')}:t);
+    return acc;
+  },[]);
   const perSession=distributeVolume(templates,weeklyTargets);
   const builtSessions=templates.map((t,i)=>buildOneSession(t,perSession[i],goalProfile,equipment,sessionLen,isStr,tier,suggestFn,recoveryMap,sorenessAreas,lastSessions));
 
