@@ -3347,8 +3347,6 @@ function getScheme(isStr,tier,muscle){
 function setsIn(scheme){const m=String(scheme).match(/^(\d+)×/);return m?parseInt(m[1]):3;}
 
 // ── 6. BUILD ONE SESSION ─────────────────────────────────────────
-// Primary lower-body muscles that must always get a compound movement on a lower day.
-const LOWER_COMPOUND_MUSCLES=['quads','hamstrings','glutes'];
 function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionLen,isStr,tier,suggestFn,recoveryMap={},sorenessAreas=[],lastSessions=[]){
   const maxEx={30:4,45:5,60:7,90:9}[sessionLen]||7;
   const exercises=[];
@@ -3399,6 +3397,8 @@ function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionL
 }
 
 // ── 7. ASSEMBLE SPLIT DAYS ───────────────────────────────────────
+// Primary lower-body muscles that must always get a compound movement on a lower day.
+const LOWER_COMPOUND_MUSCLES=['quads','hamstrings','glutes'];
 const _TRAIN_SCHED_DEFAULTS={1:['Mon'],2:['Mon','Thu'],3:['Mon','Wed','Fri'],4:['Mon','Tue','Thu','Fri'],5:['Mon','Tue','Thu','Fri','Sat'],6:['Mon','Tue','Wed','Fri','Sat','Sun']};
 
 function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,suggestFn,scheduleOverride,recoveryMap={},sorenessAreas=[],lastSessions=[]){
