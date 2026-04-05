@@ -8,6 +8,7 @@ function formatRelativeTime(msAgo) {
 export function formatLastSyncedLabel(meta = null, now = Date.now()) {
   if (!meta?.ts) return 'Not synced on this device yet.';
   if (meta.status === 'saving') return 'Syncing changes now…';
+  if (meta.status === 'pending') return 'Changes pending sync · waiting for connection.';
 
   const relative = formatRelativeTime(Math.max(0, now - Number(meta.ts)));
 
