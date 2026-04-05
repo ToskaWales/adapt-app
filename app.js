@@ -3143,7 +3143,7 @@ function getEx(ids,eq){return ids.map(id=>EX_LIB[id]).filter(e=>e&&e.eq.includes
 // Patch: Use avoidMuscles, compoundBias, structurePreset, volumePreference in split logic
 function getGoalProfile(goal,focusMuscles=[],avoidMuscles=[],volumePreference='moderate'){
   const base={
-    vtaper:   {priority:['back','shoulders'],          secondary:['chest','triceps','biceps','core'],   maintenance:['quads','hamstrings','glutes','calves'], noIsoMuscles:['glutes']},
+    vtaper:   {priority:['back','shoulders'],          secondary:['chest','triceps','biceps','core'],   maintenance:['quads','hamstrings','calves']},
     hourglass:{priority:['glutes','shoulders'],         secondary:['hamstrings','quads','back','core'],  maintenance:['chest','biceps','triceps','calves']},
     strength: {priority:['quads','hamstrings','chest','back','shoulders'],secondary:['glutes','triceps','biceps','core'],maintenance:['calves']},
     general:  {priority:['back','quads'],              secondary:['chest','shoulders','glutes','hamstrings','core'],maintenance:['biceps','triceps','calves']},
@@ -3211,22 +3211,22 @@ getSessionTemplates.__orig = function(goal,days){
       2:[{name:'Upper — Back + Delts',          tag:'upper',muscles:['back','shoulders','chest','biceps','triceps','core']},
          {name:'Lower + Shoulders',             tag:'full', muscles:['quads','hamstrings','shoulders','calves','core']}],
       3:[{name:'Upper A — Width',               tag:'upper',muscles:['back','shoulders','biceps','chest','triceps','core']},
-         {name:'Lower A',                       tag:'lower',muscles:['quads','hamstrings','glutes','calves','core']},
+         {name:'Lower A',                       tag:'lower',muscles:['quads','hamstrings','calves','core']},
          {name:'Upper B — Delts + Chest',       tag:'upper',muscles:['shoulders','chest','back','triceps','biceps']}],
       4:[{name:'Upper A — Back Lead',           tag:'upper',muscles:['back','shoulders','biceps','chest','core']},
-         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','glutes','calves','core']},
+         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','calves','core']},
          {name:'Upper B — Delts + Chest',       tag:'upper',muscles:['shoulders','chest','triceps','back','biceps']},
-         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','glutes','calves','core']}],
+         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','calves','core']}],
       5:[{name:'Upper A — Back Lead',           tag:'upper',muscles:['back','shoulders','biceps','chest','core']},
-         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','glutes','calves','core']},
+         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','calves','core']},
          {name:'Upper B — Delts + Chest',       tag:'upper',muscles:['shoulders','chest','triceps','back']},
-         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','glutes','calves','core']},
+         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','calves','core']},
          {name:'Back + Arms Focus',             tag:'focus',muscles:['back','shoulders','biceps','triceps','core']}],
       6:[{name:'Pull A — Lat Width',            tag:'upper',muscles:['back','biceps','shoulders','core']},
-         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','glutes','calves','core']},
+         {name:'Lower A — Quad Focus',          tag:'lower',muscles:['quads','hamstrings','calves','core']},
          {name:'Push — Delts + Chest',          tag:'upper',muscles:['shoulders','chest','triceps','back']},
          {name:'Pull B — Thickness',            tag:'upper',muscles:['back','biceps','shoulders']},
-         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','glutes','calves','core']},
+         {name:'Lower B — Posterior Chain',     tag:'lower',muscles:['hamstrings','quads','calves','core']},
          {name:'Delts + Arms',                  tag:'focus',muscles:['shoulders','back','biceps','triceps','core']}],
     },
     hourglass:{
@@ -3379,8 +3379,8 @@ function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionL
         used.add(ex.name);exercises.push({...ex,scheme:compSch,suggest:suggestFn?suggestFn(ex.name,compSch):null,isFocus:goalProfile.priority.includes(muscle)});remaining-=setsIn(compSch);
       }
     }
-    // Isolation if budget remains — skipped for muscles in the goal's noIsoMuscles list
-    if(remaining>=isoSets&&exercises.length<maxEx&&!(goalProfile.noIsoMuscles||[]).includes(muscle)){
+    // Isolation if budget remains
+    if(remaining>=isoSets&&exercises.length<maxEx){
       const ex=pickEx(muscle,'iso',equipment,used);
       if(ex){
         const adaptedIsoSch=getAdaptiveScheme(baseIsoSch,ex.name,lastSessions,sorenessAreas,muscle);
