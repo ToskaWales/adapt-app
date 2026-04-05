@@ -3143,7 +3143,7 @@ function getEx(ids,eq){return ids.map(id=>EX_LIB[id]).filter(e=>e&&e.eq.includes
 // Patch: Use avoidMuscles, compoundBias, structurePreset, volumePreference in split logic
 function getGoalProfile(goal,focusMuscles=[],avoidMuscles=[],volumePreference='moderate'){
   const base={
-    vtaper:   {priority:['back','shoulders'],          secondary:['chest','triceps','biceps','core'],   maintenance:['quads','hamstrings','glutes','calves']},
+    vtaper:   {priority:['back','shoulders'],          secondary:['chest','triceps','biceps','core'],   maintenance:['quads','hamstrings','calves']},
     hourglass:{priority:['glutes','shoulders'],         secondary:['hamstrings','quads','back','core'],  maintenance:['chest','biceps','triceps','calves']},
     strength: {priority:['quads','hamstrings','chest','back','shoulders'],secondary:['glutes','triceps','biceps','core'],maintenance:['calves']},
     general:  {priority:['back','quads'],              secondary:['chest','shoulders','glutes','hamstrings','core'],maintenance:['biceps','triceps','calves']},
@@ -3158,7 +3158,7 @@ function getGoalProfile(goal,focusMuscles=[],avoidMuscles=[],volumePreference='m
     maintenance = [...maintenance, ...avoidMuscles.filter(m=>!maintenance.includes(m))];
   }
   // Volume preference: lower = drop 1 from all, high = add 2 to priority
-  return{priority:promoted,secondary,maintenance,volumePreference};
+  return{priority:promoted,secondary,maintenance,volumePreference,avoidMuscles:avoidMuscles||[]};
 }
 
 // ── 2. WEEKLY SET TARGETS ─────────────────────────────────────────
@@ -3356,14 +3356,23 @@ function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionL
     const rawBudget=muscleSetBudget[muscle]||0;
     if(rawBudget<=0)continue;
     const volMod=getMuscleVolumeModifier(muscle,recoveryMap,sorenessAreas);
-    const budget=Math.max(2,Math.round(rawBudget*volMod));
     const[baseCompSch,baseIsoSch]=getScheme(isStr,tier,muscle);
     const compSets=setsIn(baseCompSch),isoSets=setsIn(baseIsoSch);
+    // On dedicated lower-body sessions, primary leg muscles (quads/hamstrings/glutes)
+    // must get at least a compound exercise even when they are in the maintenance tier
+    // (e.g. vtaper goal). Raise the budget floor to compSets so the compound check passes.
+    // Skip this override for any muscle the user has explicitly flagged to avoid.
+    const isLowerLegMuscle=template.tag==='lower'&&LOWER_COMPOUND_MUSCLES.includes(muscle);
+    const isAvoidedMuscle=(goalProfile.avoidMuscles||[]).includes(muscle);
+    const budgetFloor=isLowerLegMuscle&&!isAvoidedMuscle?compSets:2;
+    const budget=Math.max(budgetFloor,Math.round(rawBudget*volMod));
     const isAnchorMuscle=muscle===template.muscles[0];
     const isMaintenance=goalProfile.maintenance.includes(muscle);
     let remaining=budget;
-    // Compound / anchor — skipped for maintenance muscles (iso-only)
-    if(!isMaintenance&&remaining>=compSets&&exercises.length<maxEx){
+    // Compound / anchor — skipped for maintenance muscles unless this is a lower-day
+    // primary leg muscle (and the user hasn't asked to avoid it).
+    const forceCompound=isLowerLegMuscle&&!isAvoidedMuscle;
+    if((!isMaintenance||forceCompound)&&remaining>=compSets&&exercises.length<maxEx){
       const ex=pickEx(muscle,isAnchorMuscle?'anchor':'work',equipment,used);
       if(ex){
         const compSch=getAdaptiveScheme(baseCompSch,ex.name,lastSessions,sorenessAreas,muscle);
@@ -3388,6 +3397,8 @@ function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionL
 }
 
 // ── 7. ASSEMBLE SPLIT DAYS ───────────────────────────────────────
+// Primary lower-body muscles that must always get a compound movement on a lower day.
+const LOWER_COMPOUND_MUSCLES=['quads','hamstrings','glutes'];
 const _TRAIN_SCHED_DEFAULTS={1:['Mon'],2:['Mon','Thu'],3:['Mon','Wed','Fri'],4:['Mon','Tue','Thu','Fri'],5:['Mon','Tue','Thu','Fri','Sat'],6:['Mon','Tue','Wed','Fri','Sat','Sun']};
 
 function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,suggestFn,scheduleOverride,recoveryMap={},sorenessAreas=[],lastSessions=[]){
