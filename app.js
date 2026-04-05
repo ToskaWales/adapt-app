@@ -210,7 +210,7 @@ window.fbSaveProfile=async p=>{
 window.fbSaveCheckin=async d=>{
   const u=window.currentUser;if(!u)return;
   const payload={...d,createdAt:serverTimestamp()};
-  if(!navigator.onLine){addPendingWrite({collection:'checkins',payload:d});setSD('pending');return;}
+  if(!navigator.onLine){addPendingWrite({collection:'checkins',payload:d});setSD('pending');showToast(t('toast.offlineSaved.title'),t('toast.offlineSaved.body'));return;}
   setSD('saving');
   try{await withRetries(()=>addDoc(collection(db,'users',u.uid,'checkins'),payload));setSD('saved');}
   catch(e){console.error(e);addPendingWrite({collection:'checkins',payload:d});setSD('pending');showToast('Check-in sync failed','Saved locally. Will sync when you reconnect.');}
@@ -221,7 +221,7 @@ window.fbSaveSession=async sd=>{
   const id=sd.isoDate+'_'+sd.dayName.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);
   const el=document.getElementById('logSD');
   const payload={...sd,createdAt:serverTimestamp()};
-  if(!navigator.onLine){addPendingWrite({collection:'sessions',id,payload:sd});if(el)el.className='sync-dot pending';return;}
+  if(!navigator.onLine){addPendingWrite({collection:'sessions',id,payload:sd});if(el)el.className='sync-dot pending';showToast(t('toast.offlineSaved.title'),t('toast.offlineSaved.body'));return;}
   if(el)el.className='sync-dot saving';
   try{await withRetries(()=>setDoc(doc(db,'users',u.uid,'sessions',id),payload));if(el)el.className='sync-dot saved';}
   catch(e){console.error(e);addPendingWrite({collection:'sessions',id,payload:sd});if(el)el.className='sync-dot pending';showToast('Session sync failed','Saved locally. Will sync when you reconnect.');}
@@ -232,7 +232,7 @@ window.fbResetUserData=async()=>{const u=window.currentUser;if(!u)return false;s
 window.fbSaveActivity=async a=>{
   const u=window.currentUser;if(!u)return;
   const el=document.getElementById('cardioSD');
-  if(!navigator.onLine){addPendingWrite({collection:'activities',payload:a});if(el)el.className='sync-dot pending';return;}
+  if(!navigator.onLine){addPendingWrite({collection:'activities',payload:a});if(el)el.className='sync-dot pending';showToast(t('toast.offlineSaved.title'),t('toast.offlineSaved.body'));return;}
   if(el)el.className='sync-dot saving';
   try{await withRetries(()=>addDoc(collection(db,'users',u.uid,'activities'),{...a,createdAt:serverTimestamp()}));if(el)el.className='sync-dot saved';}
   catch(e){console.error(e);addPendingWrite({collection:'activities',payload:a});if(el)el.className='sync-dot pending';showToast('Activity sync failed','Saved locally. Will sync when you reconnect.');}
@@ -2063,14 +2063,16 @@ function checkMilestones(n){
     }
   }
 }
+// XP needed per level in the gamification system
+const XP_PER_LEVEL=220;
 function calcGamification(checkins,sessions){
   const checkinCount=(checkins||[]).length;
   const sessionCount=(sessions||[]).length;
   const prCount=(sessions||[]).reduce((acc,s)=>acc+(s.exercises||[]).filter(ex=>ex.maxWeight&&ex.maxWeight>0).length,0);
   const streak=calcStreak(checkins).count;
   const xp=checkinCount*40+sessionCount*30+Math.min(prCount,80)*5+streak*25;
-  const level=Math.max(1,Math.floor(xp/220)+1);
-  const nextXp=level*220;
+  const level=Math.max(1,Math.floor(xp/XP_PER_LEVEL)+1);
+  const nextXp=level*XP_PER_LEVEL;
   return{xp,level,nextXp,sessionCount,prCount,streak};
 }
 
@@ -2517,8 +2519,8 @@ function renderHomeDashboard({p,checkins,sessions,activities=[],plan,streak,game
   const habitCheckins=getHabitCheckins(checkins);
   if(heroBadges){
     const level=getLevel(checkins.length);
-    const xpInLevel=game.xp-(game.level-1)*220;
-    const xpNeeded=220;
+    const xpInLevel=game.xp-(game.level-1)*XP_PER_LEVEL;
+    const xpNeeded=XP_PER_LEVEL;
     const xpPct=Math.min(100,Math.round(xpInLevel/xpNeeded*100));
     heroBadges.innerHTML=`<div class="badge g">${p.days}x/week</div><div class="badge b">${p.sessionLen}min</div><div class="badge">${trEnum('experience',p.experience)}</div>${(p.focusMuscles||[]).map(m=>`<div class="badge p">${trEnum('muscle',m)}</div>`).join('')}<div class="level-badge" style="color:${level.color};border-color:${level.color}50;background:${level.color}10;">${level.name}</div><div class="xp-bar-wrap" aria-label="XP progress: ${game.xp} of ${game.nextXp}"><div class="xp-bar-label"><span>Lv ${game.level}</span><span>${game.xp} XP</span></div><div class="xp-bar-track" role="progressbar" aria-valuenow="${xpPct}" aria-valuemin="0" aria-valuemax="100"><div class="xp-bar-fill" style="width:${xpPct}%;background:${level.color};"></div></div><div class="xp-bar-next" style="color:#888;">Next level at ${game.nextXp} XP</div></div>`;
   }

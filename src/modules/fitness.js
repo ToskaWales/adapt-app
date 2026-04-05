@@ -68,6 +68,7 @@ export function mlFeatureVecV2(c, priorCheckins = []) {
     ({ way_under: 0.15, under: 0.4, on_target: 0.85, over: 0.35 }[v] ?? 0.5);
 
   // Day-of-week: 0 = Monday, 6 = Sunday, normalised 0–1
+  // Default to Wednesday (3) when isoDate is absent — a neutral mid-week value
   const dow = c.isoDate ? (new Date(c.isoDate).getDay() + 6) % 7 : 3;
   const dowNorm = dow / 6;
 
