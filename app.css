@@ -41,6 +41,7 @@ body{background:#080808;color:#f2f2f2;font-family:'DM Sans',-apple-system,BlinkM
 .chip:active{background:#2a2a2a;}
 .chip.sel{border-color:#c8ff00!important;background:rgba(200,255,0,0.1)!important;color:#c8ff00!important;font-weight:600;}
 .chip.sel2{border-color:#ff69b4!important;background:rgba(255,105,180,0.1)!important;color:#ff69b4!important;font-weight:600;}
+.chip.sel-r{border-color:#ff6b35!important;background:rgba(255,107,53,0.1)!important;color:#ff6b35!important;font-weight:600;}
 .chip-wrap{display:flex;flex-wrap:wrap;gap:8px;}
 .opt-grid{display:grid;gap:10px;}
 .opt-grid.c2{grid-template-columns:1fr 1fr;}.opt-grid.c3{grid-template-columns:1fr 1fr 1fr;}

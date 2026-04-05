@@ -227,6 +227,21 @@
         <div class="chip" data-val="calves" onclick="selMuscle(this,'calves')">Calves</div>
       </div>
       <div id="muscleNote" style="margin-top:12px;font-size:12px;color:#888;">Pick 1 or 2 muscles.</div>
+      <div style="margin-top:20px;font-size:13px;font-weight:600;color:#aaa;">Muscles to reduce or skip</div>
+      <div style="font-size:12px;color:#666;margin-bottom:8px;">These will get minimum maintenance volume only.</div>
+      <div class="chip-wrap" id="reduceMuscleChips">
+        <div class="chip" data-val="chest" onclick="selReduceMuscle(this,'chest')">Chest</div>
+        <div class="chip" data-val="back" onclick="selReduceMuscle(this,'back')">Back</div>
+        <div class="chip" data-val="shoulders" onclick="selReduceMuscle(this,'shoulders')">Shoulders</div>
+        <div class="chip" data-val="biceps" onclick="selReduceMuscle(this,'biceps')">Biceps</div>
+        <div class="chip" data-val="triceps" onclick="selReduceMuscle(this,'triceps')">Triceps</div>
+        <div class="chip" data-val="glutes" onclick="selReduceMuscle(this,'glutes')">Glutes</div>
+        <div class="chip" data-val="quads" onclick="selReduceMuscle(this,'quads')">Quads</div>
+        <div class="chip" data-val="hamstrings" onclick="selReduceMuscle(this,'hamstrings')">Hamstrings</div>
+        <div class="chip" data-val="core" onclick="selReduceMuscle(this,'core')">Core</div>
+        <div class="chip" data-val="calves" onclick="selReduceMuscle(this,'calves')">Calves</div>
+      </div>
+      <div id="reduceNote" style="margin-top:12px;font-size:12px;color:#888;">Optional — select muscles to de-emphasise.</div>
     </div>
     <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(13)">Back</button><button class="btn btn-acc" onclick="obNext(13)" id="ob13n" disabled>Continue</button></div>
   </div>
