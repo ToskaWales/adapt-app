@@ -206,3 +206,134 @@ describe('mlFeatureVecV2', () => {
   });
 });
 
+import { getMuscleRecoveryMap, getMuscleVolumeModifier, getAdaptiveScheme } from '../src/modules/fitness.js';
+
+describe('getMuscleRecoveryMap', () => {
+  const TODAY = '2025-06-15';
+
+  function makeSession(isoDate, exercises) {
+    return { isoDate, exercises };
+  }
+
+  it('returns full recovery for a muscle never trained', () => {
+    const map = getMuscleRecoveryMap([], [], TODAY);
+    expect(map.chest).toBeGreaterThanOrEqual(1.0);
+  });
+
+  it('returns low recovery score immediately after a session', () => {
+    const sessions = [makeSession(TODAY, [{ name: 'bench', muscle: 'chest', maxWeight: 100 }])];
+    const map = getMuscleRecoveryMap([], sessions, TODAY);
+    expect(map.chest).toBeLessThan(0.5);
+  });
+
+  it('returns higher recovery score after 3 days have passed', () => {
+    const sessions = [makeSession('2025-06-12', [{ name: 'bench', muscle: 'chest', maxWeight: 100 }])];
+    const map = getMuscleRecoveryMap([], sessions, TODAY);
+    expect(map.chest).toBeCloseTo(1.0, 1);
+  });
+
+  it('reduces recovery when soreness is reported after last session', () => {
+    const sessions = [makeSession('2025-06-13', [{ name: 'bench', muscle: 'chest', maxWeight: 100 }])];
+    const checkins = [{ isoDate: '2025-06-14', sorenessAreas: ['chest'] }];
+    const map = getMuscleRecoveryMap(checkins, sessions, TODAY);
+    const noSorenessMap = getMuscleRecoveryMap([], sessions, TODAY);
+    expect(map.chest).toBeLessThan(noSorenessMap.chest);
+  });
+
+  it('gives a small bonus for 3-session progressive overload', () => {
+    const sessions = [
+      // Last session 3 days ago → base recovery = 1.0, then bonus applies
+      makeSession('2025-06-12', [{ name: 'bench', muscle: 'chest', maxWeight: 110 }]),
+      makeSession('2025-06-09', [{ name: 'bench', muscle: 'chest', maxWeight: 105 }]),
+      makeSession('2025-06-06', [{ name: 'bench', muscle: 'chest', maxWeight: 100 }]),
+    ];
+    const map = getMuscleRecoveryMap([], sessions, TODAY);
+    expect(map.chest).toBeGreaterThan(1.0);
+  });
+
+  it('all values are clamped between 0 and 1.1', () => {
+    const sessions = [makeSession(TODAY, [{ name: 'bench', muscle: 'chest', maxWeight: 100 }])];
+    const map = getMuscleRecoveryMap([], sessions, TODAY);
+    Object.values(map).forEach(v => {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1.1);
+    });
+  });
+});
+
+describe('getMuscleVolumeModifier', () => {
+  it('returns 0.6 when muscle is sore regardless of recovery', () => {
+    expect(getMuscleVolumeModifier('chest', { chest: 0.9 }, ['chest'])).toBe(0.6);
+  });
+
+  it('returns 0.6 when recovery is below 0.4', () => {
+    expect(getMuscleVolumeModifier('back', { back: 0.3 }, [])).toBe(0.6);
+  });
+
+  it('returns 0.85 when recovery is between 0.4 and 0.7', () => {
+    expect(getMuscleVolumeModifier('quads', { quads: 0.55 }, [])).toBe(0.85);
+  });
+
+  it('returns 1.0 for full recovery with no soreness', () => {
+    expect(getMuscleVolumeModifier('hamstrings', { hamstrings: 0.8 }, [])).toBe(1.0);
+  });
+
+  it('returns 1.1 for overload-bonus recovery score above 1.0', () => {
+    expect(getMuscleVolumeModifier('shoulders', { shoulders: 1.05 }, [])).toBe(1.1);
+  });
+
+  it('defaults to 1.0 when muscle not in recovery map', () => {
+    expect(getMuscleVolumeModifier('biceps', {}, [])).toBe(1.0);
+  });
+});
+
+describe('getAdaptiveScheme', () => {
+  const makeSession = (isoDate, exName, maxReps) => ({
+    isoDate,
+    exercises: [{ name: exName, muscle: 'chest', maxReps, maxWeight: 100 }],
+  });
+
+  it('returns base scheme unchanged when no history', () => {
+    expect(getAdaptiveScheme('3×8–12', 'bench', [], [], 'chest')).toBe('3×8–12');
+  });
+
+  it('pushes rep range up when hitting top consistently', () => {
+    const sessions = [
+      makeSession('2025-06-14', 'bench', 12),
+      makeSession('2025-06-11', 'bench', 12),
+    ];
+    const result = getAdaptiveScheme('3×8–12', 'bench', sessions, [], 'chest');
+    expect(result).not.toBe('3×8–12');
+    expect(result).toContain('9–14');
+  });
+
+  it('reduces sets when consistently missing target reps', () => {
+    const sessions = [
+      makeSession('2025-06-14', 'bench', 4),
+      makeSession('2025-06-11', 'bench', 3),
+    ];
+    const result = getAdaptiveScheme('3×8–12', 'bench', sessions, [], 'chest');
+    expect(result.startsWith('2×')).toBe(true);
+  });
+
+  it('reduces sets when muscle is sore even without history', () => {
+    const result = getAdaptiveScheme('3×8–12', 'bench', [], ['chest'], 'chest');
+    expect(result.startsWith('2×')).toBe(true);
+  });
+
+  it('does not reduce below 2 sets', () => {
+    const result = getAdaptiveScheme('2×8–12', 'bench', [], ['chest'], 'chest');
+    expect(result.startsWith('2×')).toBe(true);
+  });
+
+  it('leaves time-based schemes (e.g. plank) unchanged', () => {
+    expect(getAdaptiveScheme('3×30–45s', 'plank', [], ['core'], 'core')).toBe('3×30–45s');
+  });
+
+  it('returns base scheme when null inputs are provided', () => {
+    expect(getAdaptiveScheme(null, 'bench', [], [], 'chest')).toBeNull();
+    expect(getAdaptiveScheme('3×8–12', null, [], [], 'chest')).toBe('3×8–12');
+  });
+});
+
+

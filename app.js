@@ -7,7 +7,7 @@ import{getGoalAdherenceInsights,getWeeklyProgressSummary}from'./src/modules/insi
 import{buildFirstRunEmptyState,getRecommendedFocusMuscles,getRecommendedTrainingSetup}from'./src/modules/onboarding.js';
 import{formatLastSyncedLabel,registerServiceWorker}from'./src/modules/ui.js';
 import{APP_I18N}from'./src/modules/i18n.js';
-import{calculateBMR,shouldAutoDeload,mlFeatureVecV2}from'./src/modules/fitness.js';
+import{calculateBMR,shouldAutoDeload,mlFeatureVecV2,getMuscleRecoveryMap,getMuscleVolumeModifier,getAdaptiveScheme}from'./src/modules/fitness.js';
 const cfg={apiKey:"AIzaSyDQKmSRuK0cpIupdwVOilD8gX88ML-3K8s",authDomain:"adaptive-plan-app.firebaseapp.com",projectId:"adaptive-plan-app",storageBucket:"adaptive-plan-app.firebasestorage.app",messagingSenderId:"214755243355",appId:"1:214755243355:web:4fe3818b936a442477967e"};
 const {auth,db,prov}=createFirebaseServices(cfg);
 registerServiceWorker();
@@ -1183,6 +1183,8 @@ function updS(sid,vid,val){const el=document.getElementById(vid);if(!el)return;e
 window.updS=updS;
 function selC(el,gid){document.querySelectorAll('#'+gid+' .chip').forEach(c=>{c.classList.remove('sel');c.style.borderColor='';c.style.color='';});el.classList.add('sel');}
 window.selC=selC;
+function toggleSorenessChip(el){el.classList.toggle('sel');}
+window.toggleSorenessChip=toggleSorenessChip;
 
 // ── ONBOARDING ──
 let obStep=1;
@@ -2077,7 +2079,7 @@ function calcGamification(checkins,sessions){
 }
 
 // ── HOME UI ──
-function getDefaultDashboardCheckin(){return{energy:7,stress:3,sleep:'7-8hrs',lifts:'same',diet:'on_target',weight:null,notes:'',isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB'),calOverride:null};}
+function getDefaultDashboardCheckin(){return{energy:7,stress:3,sleep:'7-8hrs',lifts:'same',diet:'on_target',weight:null,notes:'',sorenessAreas:[],isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB'),calOverride:null};}
 function getTodayWeekday(){return WEEKDAYS[(new Date().getDay()+6)%7];}
 function buildLivePlan(checkins,sessions,checkinOverride,activities=[]){
   const ci=checkinOverride||window.currentCheckin||getDefaultDashboardCheckin();
@@ -2713,7 +2715,8 @@ function setGeneratingContext(mode='checkin'){
 }
 function submitCheckin(){
   const energy=parseInt(document.getElementById('eS').value),stress=parseInt(document.getElementById('sS').value),weight=document.getElementById('ciW').value?parseFloat(document.getElementById('ciW').value):null,notes=document.getElementById('ciNotes').value||'',sleep=document.querySelector('#sleepC .chip.sel')?.dataset.val||'7-8hrs',lifts=document.querySelector('#liftC .chip.sel')?.dataset.val||'same',diet=document.querySelector('#dietC .chip.sel')?.dataset.val||'under',calOverride=getCalOverride();
-  window.currentCheckin={energy,stress,weight,notes,sleep,lifts,diet,calOverride,isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB')};
+  const sorenessAreas=[...document.querySelectorAll('#sorenessC .chip.sel')].map(el=>el.dataset.val);
+  window.currentCheckin={energy,stress,weight,notes,sleep,lifts,diet,calOverride,sorenessAreas,isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB')};
   trackFlowEvent('checkin_submitted',{hasWeight:Boolean(weight),energy,stress,lifts,diet});
   goTo('generating');runSteps('checkin');
   setTimeout(async()=>{
@@ -3344,27 +3347,36 @@ function getScheme(isStr,tier,muscle){
 function setsIn(scheme){const m=String(scheme).match(/^(\d+)×/);return m?parseInt(m[1]):3;}
 
 // ── 6. BUILD ONE SESSION ─────────────────────────────────────────
-function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionLen,isStr,tier,suggestFn){
+function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionLen,isStr,tier,suggestFn,recoveryMap={},sorenessAreas=[],lastSessions=[]){
   const maxEx={30:4,45:5,60:7,90:9}[sessionLen]||7;
   const exercises=[];
   const used=new Set();
   for(const muscle of template.muscles){
     if(exercises.length>=maxEx)break;
-    const budget=muscleSetBudget[muscle]||0;
-    if(budget<=0)continue;
-    const[compSch,isoSch]=getScheme(isStr,tier,muscle);
-    const compSets=setsIn(compSch),isoSets=setsIn(isoSch);
+    const rawBudget=muscleSetBudget[muscle]||0;
+    if(rawBudget<=0)continue;
+    const volMod=getMuscleVolumeModifier(muscle,recoveryMap,sorenessAreas);
+    const budget=Math.max(2,Math.round(rawBudget*volMod));
+    const[baseCompSch,baseIsoSch]=getScheme(isStr,tier,muscle);
+    const compSets=setsIn(baseCompSch),isoSets=setsIn(baseIsoSch);
     const isAnchorMuscle=muscle===template.muscles[0];
     let remaining=budget;
     // Compound / anchor
     if(remaining>=compSets&&exercises.length<maxEx){
       const ex=pickEx(muscle,isAnchorMuscle?'anchor':'work',equipment,used);
-      if(ex){used.add(ex.name);exercises.push({...ex,scheme:compSch,suggest:suggestFn?suggestFn(ex.name,compSch):null,isFocus:goalProfile.priority.includes(muscle)});remaining-=compSets;}
+      if(ex){
+        const compSch=getAdaptiveScheme(baseCompSch,ex.name,lastSessions,sorenessAreas,muscle);
+        used.add(ex.name);exercises.push({...ex,scheme:compSch,suggest:suggestFn?suggestFn(ex.name,compSch):null,isFocus:goalProfile.priority.includes(muscle)});remaining-=setsIn(compSch);
+      }
     }
     // Isolation if budget remains
     if(remaining>=isoSets&&exercises.length<maxEx){
       const ex=pickEx(muscle,'iso',equipment,used);
-      if(ex){used.add(ex.name);const sch=`${isoSets}×${isoSch.split('×')[1]||'12–15'}`;exercises.push({...ex,scheme:sch,suggest:suggestFn?suggestFn(ex.name,sch):null,isFocus:goalProfile.priority.includes(muscle)});}
+      if(ex){
+        const adaptedIsoSch=getAdaptiveScheme(baseIsoSch,ex.name,lastSessions,sorenessAreas,muscle);
+        const sch=`${setsIn(adaptedIsoSch)}×${adaptedIsoSch.split('×')[1]||'12–15'}`;
+        used.add(ex.name);exercises.push({...ex,scheme:sch,suggest:suggestFn?suggestFn(ex.name,sch):null,isFocus:goalProfile.priority.includes(muscle)});
+      }
     }
   }
   let note='';
@@ -3377,14 +3389,14 @@ function buildOneSession(template,muscleSetBudget,goalProfile,equipment,sessionL
 // ── 7. ASSEMBLE SPLIT DAYS ───────────────────────────────────────
 const _TRAIN_SCHED_DEFAULTS={1:['Mon'],2:['Mon','Thu'],3:['Mon','Wed','Fri'],4:['Mon','Tue','Thu','Fri'],5:['Mon','Tue','Thu','Fri','Sat'],6:['Mon','Tue','Wed','Fri','Sat','Sun']};
 
-function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,suggestFn,scheduleOverride){
+function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,suggestFn,scheduleOverride,recoveryMap={},sorenessAreas=[],lastSessions=[]){
   const{goal='general',days=4}=profile;
   const trainDays=Math.min(days===7?6:days,6);
   const goalProfile=getGoalProfile(goal,focusMuscles,profile.avoidMuscles||[],profile.volumePreference||'moderate');
   const weeklyTargets=getWeeklySetTargets(goalProfile,goal,days,sessionLen,tier);
   const templates=getSessionTemplates(goal,days,profile.structurePreset||'adaptive');
   const perSession=distributeVolume(templates,weeklyTargets);
-  const builtSessions=templates.map((t,i)=>buildOneSession(t,perSession[i],goalProfile,equipment,sessionLen,isStr,tier,suggestFn));
+  const builtSessions=templates.map((t,i)=>buildOneSession(t,perSession[i],goalProfile,equipment,sessionLen,isStr,tier,suggestFn,recoveryMap,sorenessAreas,lastSessions));
 
   // Build default day→sessionIndex map
   const defaultDays=_TRAIN_SCHED_DEFAULTS[trainDays]||_TRAIN_SCHED_DEFAULTS[4];
@@ -3452,7 +3464,7 @@ function adaptSplitForPain(splitDays,equipment,painAreas=[]){
 function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivities=[]){
   if(!profile)profile={goal:'general',bodyGoal:'maintain',experience:'intermediate',days:4,sessionLen:60,focusMuscles:['chest','back'],equipment:'full',dietGoal:'maintain',restrictions:['none'],weight:75,height:175,age:25,sex:'male',activityLevel:'moderate',workStyle:'mixed',bodyFat:18,painAreas:['none'],consistency:'building',selfRating:'balanced'};
   const{goal='general',bodyGoal='maintain',experience='beginner',days=3,sessionLen=60,focusMuscles=[],equipment='full',dietGoal='maintain',restrictions=['none'],weight:pw,height=175,age=25,sex='male',customCalories,activityLevel='moderate',workStyle='mixed',bodyFat=18,painAreas=['none'],consistency='building',selfRating='balanced',saunaGoal='recovery'}=profile;
-  const{energy,stress,sleep,lifts,diet,weight:cw,calOverride}=checkin;
+  const{energy,stress,sleep,lifts,diet,weight:cw,calOverride,sorenessAreas=[]}=checkin;
   const weight=cw||pw||75;
   let tier;if(energy<=3)tier=0;else if(energy<=5)tier=((sleep==='7-8hrs'||sleep==='8+hrs')&&stress<=5)?1:0;else if(energy<=7)tier=(sleep==='<5hrs'||stress>=8)?1:2;else tier=((sleep==='<5hrs'||sleep==='5-6hrs')&&stress>=7)?1:2;
   const baseTier=tier;
@@ -3492,7 +3504,7 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivit
   const cardioAdj=calcWeeklyCardioAdj(recentActivities,weight);
   let kcal=kcalBase+dietAdj+trend.adj+cardioAdj;if(tier===0)kcal=Math.max(kcal,tdee-50);kcal=Math.round(kcal/50)*50;
   const protein=Math.round(weight*(bodyGoal==='lose'?2.4:bodyGoal==='recomp'?2.2:effectiveDietGoal==='cut'?2.4:2.0));const fatK=Math.round(kcal*0.28);const fat=Math.round(fatK/9);const carbs=Math.round((kcal-protein*4-fatK)/4);
-  const adaptiveSplit=assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,suggestW,profile.trainingDayMap||profile.trainingSchedule);
+  const adaptiveSplit=assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,suggestW,profile.trainingDayMap||profile.trainingSchedule,getMuscleRecoveryMap(pastCheckins,lastSessions),sorenessAreas,lastSessions);
   const splitDays=adaptSplitForPain(adaptiveSplit.splitDays,equipment,painAreas);
   const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
   const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,effectiveDietGoal);
