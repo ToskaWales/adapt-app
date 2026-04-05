@@ -1,11 +1,13 @@
 
 import{signInWithPopup,signInWithRedirect,getRedirectResult,signOut as fbSO,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import{doc,setDoc,getDoc,deleteDoc,collection,addDoc,getDocs,query,orderBy,limit,where,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{doc,setDoc,getDoc,deleteDoc,collection,addDoc,getDocs,query,orderBy,limit,where,serverTimestamp,onSnapshot}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import{shouldPreferGoogleRedirect,getGoogleLoginErrorMessage}from'./src/modules/auth.js';
 import{createFirebaseServices}from'./src/modules/firestore.js';
 import{getGoalAdherenceInsights,getWeeklyProgressSummary}from'./src/modules/insights.js';
 import{buildFirstRunEmptyState,getRecommendedFocusMuscles,getRecommendedTrainingSetup}from'./src/modules/onboarding.js';
 import{formatLastSyncedLabel,registerServiceWorker}from'./src/modules/ui.js';
+import{APP_I18N}from'./src/modules/i18n.js';
+import{calculateBMR,shouldAutoDeload,mlFeatureVecV2}from'./src/modules/fitness.js';
 const cfg={apiKey:"AIzaSyDQKmSRuK0cpIupdwVOilD8gX88ML-3K8s",authDomain:"adaptive-plan-app.firebaseapp.com",projectId:"adaptive-plan-app",storageBucket:"adaptive-plan-app.firebasestorage.app",messagingSenderId:"214755243355",appId:"1:214755243355:web:4fe3818b936a442477967e"};
 const {auth,db,prov}=createFirebaseServices(cfg);
 registerServiceWorker();
@@ -44,6 +46,51 @@ function refreshLastSyncBadge(){
   const el=document.getElementById('settingsLastSync');
   if(el)el.textContent=formatLastSyncedLabel(getLastSyncMeta());
 }
+
+// ── OFFLINE WRITE QUEUE ──
+const PENDING_WRITES_KEY='addapt_pending_writes_v1';
+function getPendingWrites(){try{const raw=JSON.parse(localStorage.getItem(PENDING_WRITES_KEY)||'[]');return Array.isArray(raw)?raw:[];}catch{return[];}}
+function _savePendingWrites(queue){try{localStorage.setItem(PENDING_WRITES_KEY,JSON.stringify(queue));}catch{}}
+function addPendingWrite(entry){const queue=getPendingWrites();queue.push({...entry,queuedAt:Date.now()});_savePendingWrites(queue);}
+function hasPendingWrites(){return getPendingWrites().length>0;}
+async function drainWriteQueue(){
+  const u=window.currentUser;
+  if(!u||!navigator.onLine)return;
+  const queue=getPendingWrites();
+  if(!queue.length)return;
+  const remaining=[...queue];
+  const succeeded=[];
+  for(let i=0;i<remaining.length;i++){
+    const entry=remaining[i];
+    try{
+      if(entry.collection==='profile'){
+        await setDoc(doc(db,'users',u.uid,'profile','data'),entry.payload);
+      }else if(entry.collection==='checkins'){
+        await addDoc(collection(db,'users',u.uid,'checkins'),entry.payload);
+      }else if(entry.collection==='sessions'&&entry.id){
+        await setDoc(doc(db,'users',u.uid,'sessions',entry.id),entry.payload);
+      }else if(entry.collection==='activities'){
+        await addDoc(collection(db,'users',u.uid,'activities'),entry.payload);
+      }
+      succeeded.push(i);
+    }catch(err){
+      console.error('Queue drain failed:',entry,err);
+      break;
+    }
+  }
+  if(succeeded.length){
+    const newQueue=remaining.filter((_,i)=>!succeeded.includes(i));
+    _savePendingWrites(newQueue);
+    if(!newQueue.length){
+      updateLastSyncMeta('saved');
+      refreshLastSyncBadge();
+      const title=typeof t==='function'?t('toast.queueDrained.title'):'Synced';
+      const body=typeof t==='function'?t('toast.queueDrained.body'):'Your offline changes have been saved.';
+      if(typeof showToast==='function')showToast(title,body);
+    }
+  }
+}
+window.addEventListener('online',()=>drainWriteQueue());
 function resetLoginButton(){
   const b=document.querySelector('.btn-google');
   if(!b)return;
@@ -82,7 +129,13 @@ window.signInWithGoogle=async()=>{
 getRedirectResult(auth)
   .then(()=>resetLoginButton())
   .catch(e=>{handleGoogleLoginError(e);resetLoginButton();});
-window.signOut=async()=>{await fbSO(auth);window.userProfile=null;goTo('login');};
+let _unsubscribeProfile=null;
+window.signOut=async()=>{
+  if(_unsubscribeProfile){_unsubscribeProfile();_unsubscribeProfile=null;}
+  await fbSO(auth);
+  window.userProfile=null;
+  goTo('login');
+};
 async function withRetries(task,{retries=2,delayMs=450}={}){
   let lastErr=null;
   for(let attempt=0;attempt<=retries;attempt++){
@@ -110,6 +163,25 @@ onAuthStateChanged(auth,async u=>{
         startOb();
         goTo('onboarding');
       }
+      // Set up real-time profile listener so changes on another device propagate here
+      if(_unsubscribeProfile){_unsubscribeProfile();_unsubscribeProfile=null;}
+      _unsubscribeProfile=onSnapshot(
+        doc(db,'users',u.uid,'profile','data'),
+        snap=>{
+          if(!snap.exists())return;
+          const incoming=snap.data();
+          if(JSON.stringify(incoming)!==JSON.stringify(window.userProfile)){
+            window.userProfile=incoming;
+            setCachedProfile(u.uid,incoming);
+            syncProfileDrivenState();
+            updateLastSyncMeta('saved');
+            refreshLastSyncBadge();
+          }
+        },
+        err=>console.error('Profile listener error:',err)
+      );
+      // Drain any writes that queued while offline
+      drainWriteQueue();
     }catch(e){
       console.error(e);
       const cached=getCachedProfile(u.uid);
@@ -127,14 +199,44 @@ onAuthStateChanged(auth,async u=>{
     resetLoginButton();
   }else{window.currentUser=null;goTo('login');resetLoginButton();}
 });
-window.fbSaveProfile=async p=>{const u=window.currentUser;if(!u)return;setSD('saving');try{await withRetries(()=>setDoc(doc(db,'users',u.uid,'profile','data'),p));window.userProfile=p;setCachedProfile(u.uid,p);setSD('saved');}catch(e){console.error(e);setCachedProfile(u.uid,p);setSD('error');showToast('Profile sync failed','Your changes are local. Retry from settings.');throw e;}};
-window.fbSaveCheckin=async d=>{const u=window.currentUser;if(!u)return;setSD('saving');try{await withRetries(()=>addDoc(collection(db,'users',u.uid,'checkins'),{...d,createdAt:serverTimestamp()}));setSD('saved');}catch(e){console.error(e);setSD('error');showToast('Check-in sync failed','Network issue. Try submitting again.');throw e;}};
+window.fbSaveProfile=async p=>{
+  const u=window.currentUser;if(!u)return;
+  window.userProfile=p;setCachedProfile(u.uid,p);
+  if(!navigator.onLine){addPendingWrite({collection:'profile',payload:p});setSD('pending');showToast(t('toast.offlineSaved.title'),t('toast.offlineSaved.body'));return;}
+  setSD('saving');
+  try{await withRetries(()=>setDoc(doc(db,'users',u.uid,'profile','data'),p));setSD('saved');}
+  catch(e){console.error(e);addPendingWrite({collection:'profile',payload:p});setSD('pending');showToast('Profile sync failed','Your changes are local. Will sync when you reconnect.');}
+};
+window.fbSaveCheckin=async d=>{
+  const u=window.currentUser;if(!u)return;
+  const payload={...d,createdAt:serverTimestamp()};
+  if(!navigator.onLine){addPendingWrite({collection:'checkins',payload:d});setSD('pending');showToast(t('toast.offlineSaved.title'),t('toast.offlineSaved.body'));return;}
+  setSD('saving');
+  try{await withRetries(()=>addDoc(collection(db,'users',u.uid,'checkins'),payload));setSD('saved');}
+  catch(e){console.error(e);addPendingWrite({collection:'checkins',payload:d});setSD('pending');showToast('Check-in sync failed','Saved locally. Will sync when you reconnect.');}
+};
 window.fbLoadCheckins=async()=>{const u=window.currentUser;if(!u)return[];try{const q=query(collection(db,'users',u.uid,'checkins'),orderBy('createdAt','desc'),limit(50));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){console.error(e);return[];}};
-window.fbSaveSession=async sd=>{const u=window.currentUser;if(!u)return;const id=sd.isoDate+'_'+sd.dayName.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);const el=document.getElementById('logSD');if(el)el.className='sync-dot saving';try{await withRetries(()=>setDoc(doc(db,'users',u.uid,'sessions',id),{...sd,createdAt:serverTimestamp()}));if(el)el.className='sync-dot saved';}catch(e){console.error(e);if(el)el.className='sync-dot error';showToast('Session sync failed','Save did not confirm. Retry in a moment.');throw e;}};
+window.fbSaveSession=async sd=>{
+  const u=window.currentUser;if(!u)return;
+  const id=sd.isoDate+'_'+sd.dayName.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);
+  const el=document.getElementById('logSD');
+  const payload={...sd,createdAt:serverTimestamp()};
+  if(!navigator.onLine){addPendingWrite({collection:'sessions',id,payload:sd});if(el)el.className='sync-dot pending';showToast(t('toast.offlineSaved.title'),t('toast.offlineSaved.body'));return;}
+  if(el)el.className='sync-dot saving';
+  try{await withRetries(()=>setDoc(doc(db,'users',u.uid,'sessions',id),payload));if(el)el.className='sync-dot saved';}
+  catch(e){console.error(e);addPendingWrite({collection:'sessions',id,payload:sd});if(el)el.className='sync-dot pending';showToast('Session sync failed','Saved locally. Will sync when you reconnect.');}
+};
 window.fbLoadSessions=async()=>{const u=window.currentUser;if(!u)return[];try{const q=query(collection(db,'users',u.uid,'sessions'),orderBy('createdAt','desc'),limit(80));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){console.error(e);return[];}};
 window.fbLoadLastSession=async dn=>{const u=window.currentUser;if(!u)return null;try{const q=query(collection(db,'users',u.uid,'sessions'),where('dayName','==',dn),orderBy('createdAt','desc'),limit(1));const s=await getDocs(q);return s.empty?null:{id:s.docs[0].id,...s.docs[0].data()};}catch(e){console.error(e);return null;}};
-window.fbResetUserData=async()=>{const u=window.currentUser;if(!u)return false;setSD('saving');try{const checkins=await getDocs(collection(db,'users',u.uid,'checkins'));for(const snap of checkins.docs)await deleteDoc(snap.ref);const sessions=await getDocs(collection(db,'users',u.uid,'sessions'));for(const snap of sessions.docs)await deleteDoc(snap.ref);const activities=await getDocs(collection(db,'users',u.uid,'activities'));for(const snap of activities.docs)await deleteDoc(snap.ref);await deleteDoc(doc(db,'users',u.uid,'profile','data'));setSD('saved');return true;}catch(e){console.error(e);setSD('error');return false;}};
-window.fbSaveActivity=async a=>{const u=window.currentUser;if(!u)return;const el=document.getElementById('cardioSD');if(el)el.className='sync-dot saving';try{await withRetries(()=>addDoc(collection(db,'users',u.uid,'activities'),{...a,createdAt:serverTimestamp()}));if(el)el.className='sync-dot saved';}catch(e){console.error(e);if(el)el.className='sync-dot error';showToast('Activity sync failed','Cardio save did not confirm. Retry now.');throw e;}};
+window.fbResetUserData=async()=>{const u=window.currentUser;if(!u)return false;setSD('saving');try{const checkins=await getDocs(collection(db,'users',u.uid,'checkins'));for(const snap of checkins.docs)await deleteDoc(snap.ref);const sessions=await getDocs(collection(db,'users',u.uid,'sessions'));for(const snap of sessions.docs)await deleteDoc(snap.ref);const activities=await getDocs(collection(db,'users',u.uid,'activities'));for(const snap of activities.docs)await deleteDoc(snap.ref);await deleteDoc(doc(db,'users',u.uid,'profile','data'));if(_unsubscribeProfile){_unsubscribeProfile();_unsubscribeProfile=null;}setSD('saved');return true;}catch(e){console.error(e);setSD('error');return false;}};
+window.fbSaveActivity=async a=>{
+  const u=window.currentUser;if(!u)return;
+  const el=document.getElementById('cardioSD');
+  if(!navigator.onLine){addPendingWrite({collection:'activities',payload:a});if(el)el.className='sync-dot pending';showToast(t('toast.offlineSaved.title'),t('toast.offlineSaved.body'));return;}
+  if(el)el.className='sync-dot saving';
+  try{await withRetries(()=>addDoc(collection(db,'users',u.uid,'activities'),{...a,createdAt:serverTimestamp()}));if(el)el.className='sync-dot saved';}
+  catch(e){console.error(e);addPendingWrite({collection:'activities',payload:a});if(el)el.className='sync-dot pending';showToast('Activity sync failed','Saved locally. Will sync when you reconnect.');}
+};
 window.fbLoadActivities=async()=>{const u=window.currentUser;if(!u)return[];try{const q=query(collection(db,'users',u.uid,'activities'),orderBy('createdAt','desc'),limit(30));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){console.error(e);return[];}};
 
 
@@ -662,7 +764,7 @@ function deleteEmomTemplate(index){
 window.deleteEmomTemplate=deleteEmomTemplate;
 function setSD(s){
   ['syncDot','ciSD','logSD'].forEach(id=>{const e=document.getElementById(id);if(e)e.className='sync-dot'+(s?' '+s:'');});
-  if(['saving','saved','error'].includes(s)){
+  if(['saving','saved','error','pending'].includes(s)){
     updateLastSyncMeta(s);
     refreshLastSyncBadge();
   }
@@ -939,185 +1041,10 @@ function launchEmomFromHome(){pendingLogMode='emom';goTo('logselect');renderLogS
 window.launchEmomFromHome=launchEmomFromHome;
 loadWorkoutTimerState();
 if(APP_STATE.workoutTimer.running){setWorkoutTimerActive(true);}else{renderWorkoutTimer();}
-const APP_I18N={
-  en:{
-    intro:{
-      hero:{
-        kicker:'Why ADDAPT Hits Different',
-        title:'One app for your plan, progress, food and recovery',
-        copy:'Instead of giving you one fixed routine, ADDAPT keeps updating your training and diet from your real check-ins, saved lifts, bodyweight trend and recovery score.',
-        pill1:'Addaptive training split',
-        pill2:'Auto calorie shifts',
-        pill3:'Weight analytics',
-        pill4:'Goal-based sauna guide'
-      },
-      tour:{
-        kicker:'How To Use ADDAPT',
-        title:'Check in, train, log, improve',
-        copy:'The app works best when you run the loop: update your status, follow the plan, log your lifts, then let ADDAPT adjust the next block around what actually happened.',
-        f1:{title:'Check-In drives the plan',copy:'Energy, sleep, diet, lifts and bodyweight feed the adaptive engine so calories and training mode stay aligned with your real week.'},
-        f2:{title:'Training and analytics stay connected',copy:'Current Plan shows the split, Log Session stores performance, and Strength Progress turns that into PR tracking, charts and useful weight history.'},
-        f3:{title:'Recovery gets its own system',copy:'Sauna Calculator gives a guide for cardio, stress, recovery or longevity with heat protocol, timer, hydration and weekly placement.'},
-        safari:'In Safari: tap Share then Add to Home Screen for the full native app experience.',
-        legal:'Built for general fitness and recovery planning. If you are dealing with injury, symptoms, or treatment decisions, use a qualified clinician for that part.'
-      }
-    },
-    home:{
-      greeting:'Hey {name}',
-      goalSub:'{goal} plan active',
-      streak:{title:'{count}-week streak',done:'You already locked in this week.',pending:'One check-in this week keeps it alive.'},
-      checkin:{today:'You checked in today — check in again anytime',yesterday:'Last check-in: yesterday — update your plan?',daysAgo:'Last check-in: {days} days ago — update your plan now'},
-      card:{
-        checkin:{title:'Check-In',desc:'Log energy, lifts and diet — get your updated plan instantly'},
-        plan:{title:'Current Plan',desc:'View your personalised training and diet'},
-        log:{title:'Log Session',desc:'Record today\'s lifts and track strength progress'},
-        emom:{title:'EMOM',desc:'Quick minute-by-minute rounds with auto set tracking'},
-        strength:{title:'Strength Progress',desc:'Exercise charts, PRs and volume'},
-        sauna:{title:'Sauna Calculator',badge:'Hot New',desc:'Heat protocol, timer, hydration and weekly planning for recovery work'},
-        history:{title:'Check-In History',desc:'Weight chart and all past check-ins'},
-        settings:{title:'Settings and Profile',desc:'Edit goals, calories, focus muscles, session length'}
-      }
-    },
-    walkthrough:{
-      step:'Feature {current} of {total}',
-      spotlight:'Now showing',
-      skip:'Skip',
-      next:'Next',
-      finish:'Finish',
-      checkin:{title:'Check-In',copy:'Start here most often. This updates your calories, recovery mode, training focus, and the next version of your plan from your real data.'},
-      plan:{title:'Current Plan',copy:'This is your live split. It shows the exact sessions, set bank logic, frequency, and why the week is structured the way it is.'},
-      log:{title:'Log Session',copy:'Store your lifts after training so ADDAPT can keep building suggestions from your actual performance, not guesses.'},
-      strength:{title:'Strength Progress',copy:'Track PRs, exercise load trends, volume, and bodyweight changes so progress is visible and measurable.'},
-      sauna:{title:'Sauna Calculator',copy:'Use goal-specific sauna guidance for recovery, cardio, stress relief or longevity with protocol, timer, hydration and weekly planning.'},
-      history:{title:'Check-In History',copy:'Look back at bodyweight, old check-ins and plan changes so you can spot trends across whole blocks, not just single days.'},
-      settings:{title:'Settings and Profile',copy:'Change goals, session length, focus muscles and other inputs whenever your priorities change.'}
-    },
-    settings:{
-      title:'Profile and Settings',
-      redo:'Redo Onboarding',
-      reset:'Reset My Data',
-      signout:'Sign Out',
-      helper:'Tap Redo Onboarding to update any setting.',
-      label:{
-        goal:'Goal',
-        sex:'Sex',
-        age:'Age',
-        experience:'Experience',
-        days:'Days/week',
-        session:'Session length',
-        focus:'Focus muscles',
-        equipment:'Equipment',
-        diet:'Diet goal',
-        goalWeight:'Goal weight'
-      }
-    },
-    history:{loading:'Loading...',empty:'No check-ins yet.',today:'Today',yesterday:'Yesterday',daysAgo:'{days} days ago',energy:'energy'},
-    toast:{
-      welcome:{title:'Welcome to ADDAPT',body:'Your personalised plan is ready.'},
-      resetFail:{title:'Reset failed',body:'Your data could not be cleared right now.'},
-      resetDone:{title:'Data reset',body:'Your account is ready for a fresh start.'}
-    },
-    confirm:{reset:'Delete your profile, check-ins, and logged sessions and start over?'},
-    level:{rookie:'Rookie',consistent:'Consistent',dedicated:'Dedicated',elite:'Elite'},
-    enum:{
-      goal:{vtaper:'V-Taper',hourglass:'Hourglass',strength:'Strength',general:'General Fitness'},
-      experience:{beginner:'Beginner',intermediate:'Intermediate',advanced:'Advanced'},
-      sex:{male:'Male',female:'Female',other:'Other'},
-      equipment:{full:'Full Gym',dumbbells:'Dumbbells Only',bands:'Resistance Bands',none:'Bodyweight Only'},
-      dietGoal:{bulk:'Bulk',maintain:'Maintain',cut:'Cut'},
-      muscle:{chest:'Chest',back:'Back',shoulders:'Shoulders',biceps:'Biceps',triceps:'Triceps',glutes:'Glutes',quads:'Quads',hamstrings:'Hamstrings',core:'Core',calves:'Calves'}
-    }
-  },
-  de:{
-    intro:{
-      hero:{
-        kicker:'Warum ADDAPT heraussticht',
-        title:'Eine App fuer Trainingsplan, Fortschritt, Ernaehrung und Regeneration',
-        copy:'Statt dir einmal einen festen Plan zu geben, passt ADDAPT dein Training und deine Ernaehrung laufend an echte Check-ins, gespeicherte Lifts, Gewichtstrends und deinen Erholungsstatus an.',
-        pill1:'Addaptiver Trainingssplit',
-        pill2:'Automatische Kalorienanpassung',
-        pill3:'Gewichtsanalyse',
-        pill4:'Zielbasierter Sauna-Guide'
-      },
-      tour:{
-        kicker:'So nutzt du ADDAPT',
-        title:'Einchecken, trainieren, loggen, verbessern',
-        copy:'Die App funktioniert am besten, wenn du diesen Kreislauf nutzt: Status updaten, Plan ausfuehren, Lifts loggen und den naechsten Block von ADDAPT anhand deiner echten Woche anpassen lassen.',
-        f1:{title:'Der Check-In steuert den Plan',copy:'Energie, Schlaf, Ernaehrung, Lifts und Koerpergewicht fuettern die adaptive Engine, damit Kalorien und Trainingsmodus zu deiner echten Woche passen.'},
-        f2:{title:'Training und Analytik greifen ineinander',copy:'Current Plan zeigt den Split, Log Session speichert die Leistung und Strength Progress macht daraus PR-Tracking, Charts und eine brauchbare Gewichtshistorie.'},
-        f3:{title:'Regeneration bekommt ein eigenes System',copy:'Der Sauna Calculator liefert je nach Ziel einen Leitfaden fuer Cardio, Stress, Regeneration oder Langlebigkeit inklusive Protokoll, Timer, Hydration und Wochenplanung.'},
-        safari:'In Safari: Tippe auf Teilen und dann auf Zum Home-Bildschirm fuer das volle native App-Gefuehl.',
-        legal:'Gedacht fuer allgemeine Fitness- und Regenerationsplanung. Bei Verletzungen, Symptomen oder medizinischen Entscheidungen sollte eine qualifizierte Fachperson uebernehmen.'
-      }
-    },
-    home:{
-      greeting:'Hi {name}',
-      goalSub:'{goal}-Plan aktiv',
-      streak:{title:'{count}-Wochen-Serie',done:'Diese Woche ist schon gesichert.',pending:'Ein Check-In diese Woche haelt die Serie am Leben.'},
-      checkin:{today:'Du hast heute schon eingecheckt — du kannst jederzeit erneut aktualisieren',yesterday:'Letzter Check-In: gestern — Plan aktualisieren?',daysAgo:'Letzter Check-In: vor {days} Tagen — jetzt deinen Plan aktualisieren'},
-      card:{
-        checkin:{title:'Check-In',desc:'Energie, Lifts und Ernaehrung eintragen — dein Plan wird sofort angepasst'},
-        plan:{title:'Aktueller Plan',desc:'Deinen personalisierten Trainings- und Ernaehrungsplan ansehen'},
-        log:{title:'Session loggen',desc:'Heutige Lifts speichern und Kraftfortschritt verfolgen'},
-        emom:{title:'EMOM',desc:'Schnelle Minutentakte mit automatischer Satzzaehlung'},
-        strength:{title:'Kraftfortschritt',desc:'Uebungs-Charts, PRs und Volumen'},
-        sauna:{title:'Sauna Calculator',badge:'Neu',desc:'Hitzeprotokoll, Timer, Hydration und Wochenplanung fuer deine Regeneration'},
-        history:{title:'Check-In-Verlauf',desc:'Gewichtskurve und alle bisherigen Check-ins'},
-        settings:{title:'Einstellungen und Profil',desc:'Ziele, Kalorien, Fokusmuskeln und Session-Laenge anpassen'}
-      }
-    },
-    walkthrough:{
-      step:'Feature {current} von {total}',
-      spotlight:'Gerade sichtbar',
-      skip:'Ueberspringen',
-      next:'Weiter',
-      finish:'Fertig',
-      checkin:{title:'Check-In',copy:'Hier startest du am haeufigsten. Dieser Bereich aktualisiert Kalorien, Erholungsmodus, Trainingsfokus und die naechste Version deines Plans anhand echter Daten.'},
-      plan:{title:'Aktueller Plan',copy:'Das ist dein live adaptierter Split. Hier siehst du Sessions, Set-Bank-Logik, Frequenz und warum die Woche genau so aufgebaut ist.'},
-      log:{title:'Session loggen',copy:'Speichere nach dem Training deine Lifts, damit ADDAPT Vorschlaege auf echter Leistung statt auf Schaetzungen aufbaut.'},
-      strength:{title:'Kraftfortschritt',copy:'Verfolge PRs, Lasttrends, Volumen und Gewichtsentwicklung, damit Fortschritt sichtbar und messbar wird.'},
-      sauna:{title:'Sauna Calculator',copy:'Nutze zielbasierte Sauna-Empfehlungen fuer Regeneration, Cardio, Stressabbau oder Langlebigkeit inklusive Protokoll, Timer, Hydration und Wochenplanung.'},
-      history:{title:'Check-In-Verlauf',copy:'Sieh dir Gewicht, alte Check-ins und Planveraenderungen ueber ganze Bloecke hinweg an statt nur ueber einzelne Tage.'},
-      settings:{title:'Einstellungen und Profil',copy:'Passe Ziele, Session-Laenge, Fokusmuskeln und andere Inputs an, sobald sich deine Prioritaeten aendern.'}
-    },
-    settings:{
-      title:'Profil und Einstellungen',
-      redo:'Onboarding erneut starten',
-      reset:'Meine Daten zuruecksetzen',
-      signout:'Abmelden',
-      helper:'Tippe auf Onboarding erneut starten, um deine Angaben zu aktualisieren.',
-      label:{
-        goal:'Ziel',
-        sex:'Geschlecht',
-        age:'Alter',
-        experience:'Erfahrung',
-        days:'Tage/Woche',
-        session:'Session-Laenge',
-        focus:'Fokusmuskeln',
-        equipment:'Equipment',
-        diet:'Ernaehrungsziel',
-        goalWeight:'Zielgewicht'
-      }
-    },
-    history:{loading:'Wird geladen...',empty:'Noch keine Check-ins.',today:'Heute',yesterday:'Gestern',daysAgo:'vor {days} Tagen',energy:'Energie'},
-    toast:{
-      welcome:{title:'Willkommen bei ADDAPT',body:'Dein personalisierter Plan ist bereit.'},
-      resetFail:{title:'Zuruecksetzen fehlgeschlagen',body:'Deine Daten konnten gerade nicht geloescht werden.'},
-      resetDone:{title:'Daten zurueckgesetzt',body:'Dein Account ist bereit fuer einen frischen Start.'}
-    },
-    confirm:{reset:'Profil, Check-ins und geloggte Sessions loeschen und neu starten?'},
-    level:{rookie:'Rookie',consistent:'Konstant',dedicated:'Engagiert',elite:'Elite'},
-    enum:{
-      goal:{vtaper:'V-Taper',hourglass:'Hourglass',strength:'Kraft',general:'Allgemeine Fitness'},
-      experience:{beginner:'Anfaenger',intermediate:'Fortgeschritten',advanced:'Sehr fortgeschritten'},
-      sex:{male:'Maennlich',female:'Weiblich',other:'Divers'},
-      equipment:{full:'Volles Gym',dumbbells:'Nur Kurzhanteln',bands:'Widerstandsbaender',none:'Nur Koerpergewicht'},
-      dietGoal:{bulk:'Aufbau',maintain:'Erhalten',cut:'Diät'},
-      muscle:{chest:'Brust',back:'Ruecken',shoulders:'Schultern',biceps:'Bizeps',triceps:'Trizeps',glutes:'Glutes',quads:'Quadrizeps',hamstrings:'Hamstrings',core:'Core',calves:'Waden'}
-    }
-  }
-};
+// ── LOCALE PREFERENCE ──
+const LOCALE_PREF_KEY='addapt_locale_pref';
 function getAppLocale(){
+  try{const pref=localStorage.getItem(LOCALE_PREF_KEY);if(pref&&APP_I18N[pref])return pref;}catch{}
   const prefs=[...(navigator.languages||[]),navigator.language,'en'].filter(Boolean).map(v=>String(v).toLowerCase());
   for(const pref of prefs){
     if(APP_I18N[pref])return pref;
@@ -1126,6 +1053,11 @@ function getAppLocale(){
   }
   return 'en';
 }
+window.setAppLocale=function(locale){
+  if(!APP_I18N[locale])return;
+  try{localStorage.setItem(LOCALE_PREF_KEY,locale);}catch{}
+  window.location.reload();
+};
 const APP_LOCALE=getAppLocale();
 function t(key){
   const walk=(src)=>key.split('.').reduce((acc,part)=>acc&&acc[part]!==undefined?acc[part]:undefined,src);
@@ -1991,18 +1923,7 @@ function calcBlock(checkins){
 }
 
 function getAutoDeloadTrigger(checkins,sessions){
-  const recentCheckins=(checkins||[]).slice(0,3);
-  const recentSessions=(sessions||[]).slice(0,8);
-  const regressions=recentCheckins.filter(c=>c.lifts==='regressed').length;
-  const lowEnergyCount=recentCheckins.filter(c=>parseInt(c.energy,10)<=4).length;
-  const avgStress=recentCheckins.length?recentCheckins.reduce((a,c)=>a+(parseInt(c.stress,10)||0),0)/recentCheckins.length:0;
-  let stallCount=0;
-  const bestByExercise={};
-  [...recentSessions].reverse().forEach(sess=>{(sess.exercises||[]).forEach(ex=>{const prev=bestByExercise[ex.name]||0;if(ex.maxWeight<=prev)stallCount++;bestByExercise[ex.name]=Math.max(prev,ex.maxWeight||0);});});
-  if(regressions>=2&&lowEnergyCount>=2)return'Deload auto-triggered: two regressed check-ins plus low energy.';
-  if(regressions>=2&&avgStress>=7)return'Deload auto-triggered: repeated regressions with high stress.';
-  if(stallCount>=8&&lowEnergyCount>=1)return'Deload auto-triggered: stalled top sets across recent sessions.';
-  return null;
+  return shouldAutoDeload({recentCheckins:(checkins||[]).slice(0,3),recentSessions:(sessions||[]).slice(0,8)});
 }
 
 // ── WEIGHT TREND (date-based, last 28 days) ──
@@ -2027,9 +1948,6 @@ const ML_MODEL_STORAGE_KEY='addapt_ml_model_cache';
 
 function mlSigmoid(z){return 1/(1+Math.exp(-z));}
 function mlDot(a,b){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
-function mlSleepVal(v){return {'<5hrs':0,'5-6hrs':0.35,'7-8hrs':0.75,'8+hrs':1}[v]??0.5;}
-function mlLiftVal(v){return {regressed:0,same:0.45,slightly_up:0.72,pbs:1}[v]??0.5;}
-function mlDietVal(v){return {way_under:0.15,under:0.4,on_target:0.85,over:0.35}[v]??0.5;}
 function mlDatasetFingerprint(xs,ys){
   // Hash every sample so any change to any entry (including intermediate ones) invalidates the cache.
   const all=xs.flat().map(v=>Number(v).toFixed(3)).join('|');
@@ -2057,24 +1975,15 @@ function mlSaveCachedModel(fingerprint,w,samples){
     }));
   }catch(_){/* ignore storage failures */}
 }
-function mlFeatureVec(c){
-  return[
-    1,
-    Math.max(0,Math.min(1,(parseFloat(c.energy)||5)/10)),
-    Math.max(0,Math.min(1,1-((parseFloat(c.stress)||5)/10))),
-    mlSleepVal(c.sleep),
-    mlLiftVal(c.lifts),
-    mlDietVal(c.diet),
-    Math.max(0,Math.min(1,(parseFloat(c.weight)||75)/140)),
-  ];
-}
+// buildMlDataset uses the enhanced v2 feature vector (day-of-week + rolling averages)
 function buildMlDataset(checkins){
   const sorted=[...(checkins||[])].filter(c=>c&&c.createdAt).sort((a,b)=>toMs(a.createdAt)-toMs(b.createdAt));
   const xs=[],ys=[];
   for(let i=0;i<sorted.length-1;i++){
     const c=sorted[i],next=sorted[i+1];
     if(c.energy===undefined||c.stress===undefined)continue;
-    const x=mlFeatureVec(c);
+    const priorCheckins=sorted.slice(Math.max(0,i-3),i);
+    const x=mlFeatureVecV2(c,priorCheckins);
     const y=(next.lifts==='slightly_up'||next.lifts==='pbs')?1:0;
     xs.push(x);ys.push(y);
   }
@@ -2106,6 +2015,26 @@ function evalMlModel(model,xs,ys){
   }
   return{accuracy:correct/xs.length,brier:brier/xs.length,samples:xs.length};
 }
+// Compute day-of-week energy averages for AI insight display
+function calcDayOfWeekInsight(checkins){
+  if(!checkins||checkins.length<8)return null;
+  const DAY_NAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const byDay={};
+  checkins.forEach(c=>{
+    if(!c.isoDate)return;
+    const dow=(new Date(c.isoDate).getDay()+6)%7;
+    if(!byDay[dow])byDay[dow]=[];
+    byDay[dow].push(parseFloat(c.energy)||5);
+  });
+  const avgByDay=Object.entries(byDay)
+    .filter(([,vals])=>vals.length>=2)
+    .map(([dow,vals])=>({day:DAY_NAMES[parseInt(dow)],avg:vals.reduce((a,b)=>a+b,0)/vals.length}))
+    .sort((a,b)=>a.avg-b.avg);
+  if(avgByDay.length<3)return null;
+  const lowest=avgByDay[0],highest=avgByDay[avgByDay.length-1];
+  if(highest.avg-lowest.avg<1.0)return null;
+  return{bestDay:highest.day,bestAvg:highest.avg,worstDay:lowest.day,worstAvg:lowest.avg};
+}
 function getMlReadinessSignal(pastCheckins,currentCheckin){
   const ds=buildMlDataset(pastCheckins);
   if(ds.xs.length<8)return{enabled:false,samples:ds.xs.length,reason:'not-enough-data'};
@@ -2114,10 +2043,12 @@ function getMlReadinessSignal(pastCheckins,currentCheckin){
   const model=cached?.w?{w:cached.w}:trainMlLogReg(ds.xs,ds.ys);
   if(!model)return{enabled:false,samples:ds.xs.length,reason:'train-failed'};
   if(!cached)mlSaveCachedModel(fingerprint,model.w,ds.xs.length);
-  const p=mlSigmoid(mlDot(model.w,mlFeatureVec(currentCheckin)));
+  const priorForCurrent=pastCheckins.slice(-3);
+  const p=mlSigmoid(mlDot(model.w,mlFeatureVecV2(currentCheckin,priorForCurrent)));
   const confidence=Math.abs(p-0.5)*2;
   const perf=evalMlModel(model,ds.xs,ds.ys);
-  return{enabled:true,samples:ds.xs.length,probability:p,confidence,version:ML_MODEL_VERSION,cached:!!cached,performance:perf};
+  const dayInsight=calcDayOfWeekInsight(pastCheckins);
+  return{enabled:true,samples:ds.xs.length,probability:p,confidence,version:ML_MODEL_VERSION,cached:!!cached,performance:perf,dayInsight};
 }
 
 // ── GAMIFICATION ──
@@ -2132,14 +2063,16 @@ function checkMilestones(n){
     }
   }
 }
+// XP needed per level in the gamification system
+const XP_PER_LEVEL=220;
 function calcGamification(checkins,sessions){
   const checkinCount=(checkins||[]).length;
   const sessionCount=(sessions||[]).length;
   const prCount=(sessions||[]).reduce((acc,s)=>acc+(s.exercises||[]).filter(ex=>ex.maxWeight&&ex.maxWeight>0).length,0);
   const streak=calcStreak(checkins).count;
   const xp=checkinCount*40+sessionCount*30+Math.min(prCount,80)*5+streak*25;
-  const level=Math.max(1,Math.floor(xp/220)+1);
-  const nextXp=level*220;
+  const level=Math.max(1,Math.floor(xp/XP_PER_LEVEL)+1);
+  const nextXp=level*XP_PER_LEVEL;
   return{xp,level,nextXp,sessionCount,prCount,streak};
 }
 
@@ -2586,7 +2519,10 @@ function renderHomeDashboard({p,checkins,sessions,activities=[],plan,streak,game
   const habitCheckins=getHabitCheckins(checkins);
   if(heroBadges){
     const level=getLevel(checkins.length);
-    heroBadges.innerHTML=`<div class="badge g">${p.days}x/week</div><div class="badge b">${p.sessionLen}min</div><div class="badge">${trEnum('experience',p.experience)}</div>${(p.focusMuscles||[]).map(m=>`<div class="badge p">${trEnum('muscle',m)}</div>`).join('')}<div class="level-badge" style="color:${level.color};border-color:${level.color}50;background:${level.color}10;">${level.name}</div>`;
+    const xpInLevel=game.xp-(game.level-1)*XP_PER_LEVEL;
+    const xpNeeded=XP_PER_LEVEL;
+    const xpPct=Math.min(100,Math.round(xpInLevel/xpNeeded*100));
+    heroBadges.innerHTML=`<div class="badge g">${p.days}x/week</div><div class="badge b">${p.sessionLen}min</div><div class="badge">${trEnum('experience',p.experience)}</div>${(p.focusMuscles||[]).map(m=>`<div class="badge p">${trEnum('muscle',m)}</div>`).join('')}<div class="level-badge" style="color:${level.color};border-color:${level.color}50;background:${level.color}10;">${level.name}</div><div class="xp-bar-wrap" aria-label="XP progress: ${game.xp} of ${game.nextXp}"><div class="xp-bar-label"><span>Lv ${game.level}</span><span>${game.xp} XP</span></div><div class="xp-bar-track" role="progressbar" aria-valuenow="${xpPct}" aria-valuemin="0" aria-valuemax="100"><div class="xp-bar-fill" style="width:${xpPct}%;background:${level.color};"></div></div><div class="xp-bar-next" style="color:#888;">Next level at ${game.nextXp} XP</div></div>`;
   }
   if(streakMini)streakMini.textContent=`${Math.max(0,streak.count)}w`;
   const primary=getPrimarySession(plan);
@@ -2710,9 +2646,12 @@ function renderStatsHub({p,checkins,sessions,plan,game,streak}){
       trackFlowEvent('insight_shown',{insightType:types[idx%3],position:'stats_hub_training'});
     });
   }
-  nutritionSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div class="stats-card-head-main"><span class="stats-card-icon lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4c1.7 2 2.5 4 2.5 6S8.7 14 7 16c-1.7-2-2.5-4-2.5-6S5.3 6 7 4zm10 0c1.7 2 2.5 4 2.5 6s-.8 4-2.5 6c-1.7-2-2.5-4-2.5-6S15.3 6 17 4zM12 10v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="stats-card-title">Nutrition</div><div class="stats-card-copy">Bodyweight trend, goal progress, and the gamified layer underneath it.</div></div></div><button class="btn btn-outline btn-sm highlight-btn" onclick="goTo('nutritionHub')">Nutrition</button></div><div class="chart-shell"><div class="chart-shell-head"><span>Weight Change</span><span>Tap chart</span></div><canvas id="statsWeightChart" style="width:100%;height:120px;"></canvas><div id="statsWeightChartMeta" class="chart-meta"></div><div id="statsWeightEmpty" class="chart-empty" style="display:none;">Add bodyweight in check-ins to start this graph.</div></div><div class="stats-grid">${buildGoalProgressMarkup(checkins,p,game)}<div class="stats-mini"><strong>${streak.count} week${streak.count===1?'':'s'}</strong><span>${game.xp} XP earned · next level at ${game.nextXp} XP.</span></div></div></div>`;
   const ml=plan.analysis?.ml;
-  nutritionSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div class="stats-card-head-main"><span class="stats-card-icon lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4c1.7 2 2.5 4 2.5 6S8.7 14 7 16c-1.7-2-2.5-4-2.5-6S5.3 6 7 4zm10 0c1.7 2 2.5 4 2.5 6s-.8 4-2.5 6c-1.7-2-2.5-4-2.5-6S15.3 6 17 4zM12 10v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="stats-card-title">Nutrition</div><div class="stats-card-copy">Bodyweight trend, goal progress, and the gamified layer underneath it.</div></div></div><button class="btn btn-outline btn-sm highlight-btn" onclick="goTo('nutritionHub')">Nutrition</button></div><div class="chart-shell"><div class="chart-shell-head"><span>Weight Change</span><span>Tap chart</span></div><canvas id="statsWeightChart" style="width:100%;height:120px;"></canvas><div id="statsWeightChartMeta" class="chart-meta"></div><div id="statsWeightEmpty" class="chart-empty" style="display:none;">Add bodyweight in check-ins to start this graph.</div></div><div class="stats-grid">${buildGoalProgressMarkup(checkins,p,game)}<div class="stats-mini"><strong>${streak.count} week${streak.count===1?'':'s'}</strong><span>${game.xp} XP earned · next level at ${game.nextXp} XP.</span></div><div class="stats-mini"><strong>${ml?.enabled?(ml.probability*100).toFixed(0)+'%' : (ml?.samples||0)+'/8'}</strong><span>${ml?.enabled?`ML readiness confidence ${(ml.confidence*100).toFixed(0)}%${ml.adjusted?` · mode adjusted ${ml.baseTier}→${plan.analysis.tier}`:''}`:'ML trainer inactive until enough check-ins are logged.'}</span></div></div></div>`;
+  const dayInsight=ml?.dayInsight;
+  const aiInsightHtml=dayInsight
+    ?`<div class="insight-card" style="margin-top:12px;"><div class="insight-title">AI Insight · Day-of-Week Pattern</div><div class="insight-section"><div class="insight-label">Best training day</div><div class="insight-text"><strong>${dayInsight.bestDay}</strong> averages ${dayInsight.bestAvg.toFixed(1)}/10 energy — historically your peak performance day.</div></div><div class="insight-section"><div class="insight-label">Lowest energy day</div><div class="insight-text"><strong>${dayInsight.worstDay}</strong> averages ${dayInsight.worstAvg.toFixed(1)}/10 — consider lighter sessions or active recovery here.</div></div></div>`
+    :'';
+  nutritionSection.innerHTML=`<div class="stats-card"><div class="stats-card-head"><div class="stats-card-head-main"><span class="stats-card-icon lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4c1.7 2 2.5 4 2.5 6S8.7 14 7 16c-1.7-2-2.5-4-2.5-6S5.3 6 7 4zm10 0c1.7 2 2.5 4 2.5 6s-.8 4-2.5 6c-1.7-2-2.5-4-2.5-6S15.3 6 17 4zM12 10v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="stats-card-title">Nutrition</div><div class="stats-card-copy">Bodyweight trend, goal progress, and the gamified layer underneath it.</div></div></div><button class="btn btn-outline btn-sm highlight-btn" onclick="goTo('nutritionHub')">Nutrition</button></div><div class="chart-shell"><div class="chart-shell-head"><span>Weight Change</span><span>Tap chart</span></div><canvas id="statsWeightChart" style="width:100%;height:120px;"></canvas><div id="statsWeightChartMeta" class="chart-meta"></div><div id="statsWeightEmpty" class="chart-empty" style="display:none;">Add bodyweight in check-ins to start this graph.</div></div><div class="stats-grid">${buildGoalProgressMarkup(checkins,p,game)}<div class="stats-mini"><strong>${streak.count} week${streak.count===1?'':'s'}</strong><span>${game.xp} XP earned · next level at ${game.nextXp} XP.</span></div><div class="stats-mini"><strong>${ml?.enabled?(ml.probability*100).toFixed(0)+'%' : (ml?.samples||0)+'/8'}</strong><span>${ml?.enabled?`ML readiness confidence ${(ml.confidence*100).toFixed(0)}%${ml.adjusted?` · mode adjusted ${ml.baseTier}→${plan.analysis.tier}`:''}`:'ML trainer inactive until enough check-ins are logged.'}</span></div></div>${aiInsightHtml}</div>`;
   renderInsightChart(checkins.filter(c=>c.weight).reverse().slice(-12).map(item=>({value:parseFloat(item.weight),label:item.date||''})),'statsWeightChart','statsWeightEmpty','#c8ff00',{height:120,formatter:(value)=>`${value.toFixed(1)} kg`,metaLabel:'First log',metaMidLabel:'Latest'});
   const recoveryScore=Math.min(100,Math.round((saunaState.sessions/getSaunaTargetCount())*100));
   const recoveryMode=saunaState.goal==='recovery'?'Soft Reset':saunaState.goal==='cardio'?'Heat Engine':saunaState.goal==='stress'?'Calm Operator':'Long Game';
@@ -3538,7 +3477,7 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivit
   const sIdx={};lastSessions.forEach(sess=>{if(sess.exercises)sess.exercises.forEach(ex=>{if(!sIdx[ex.name]||sess.isoDate>sIdx[ex.name].isoDate)sIdx[ex.name]={isoDate:sess.isoDate,maxWeight:ex.maxWeight,maxReps:ex.maxReps};});});
   function suggestW(name,scheme){const last=sIdx[name];if(!last?.maxWeight)return null;const w=parseFloat(last.maxWeight);if(!w)return null;const top=parseInt((scheme||'').split('–')[1])||10;if(last.maxReps>=top)return'Try '+(Math.round((w+2.5)*2)/2)+'kg';if(last.maxReps<top-3)return'Try '+(Math.round(w*0.95*2)/2)+'kg';return'Try '+w+'kg';}
   const activityMultiplier=getActivityMultiplier(activityLevel,workStyle);
-  const sAdj=sex==='female'?-161:5;const bmr=Math.round(10*weight+6.25*height-5*age+sAdj);const tdee=Math.round(bmr*activityMultiplier);
+  const bmr=calculateBMR({weight,height,age,sex});const tdee=Math.round(bmr*activityMultiplier);
   const effectiveDietGoal=BODY_GOAL_TO_DIET[bodyGoal]||dietGoal||'maintain';
   let kcalBase;
   if(calOverride)kcalBase=calOverride;
@@ -4219,6 +4158,20 @@ function renderSettings() {
       <div class="settings-copy">You still need browser notification permission for reminders to fire.</div>
     </div>
     <div class="settings-actions"><div class="settings-actions-copy"><strong>Save profile changes</strong><span>Home, plan defaults, recovery setup, and reminders will update together.</span></div><button class="btn btn-acc" onclick="saveSettingsProfile()">Save Changes</button></div>
+    <div class="settings-card">
+      <div class="settings-title">${t('settings.language')}</div>
+      <div class="settings-copy">ADDAPT is available in English and German. Changing language reloads the app.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn ${APP_LOCALE==='en'?'btn-acc':'btn-outline'}" onclick="setAppLocale('en')">English</button>
+        <button class="btn ${APP_LOCALE==='de'?'btn-acc':'btn-outline'}" onclick="setAppLocale('de')">Deutsch</button>
+      </div>
+    </div>
+    <div class="settings-card">
+      <div class="settings-title">${t('settings.exportData')}</div>
+      <div class="settings-copy">Download all your check-ins, sessions, and activities as a CSV file.</div>
+      <button class="btn btn-outline" style="margin-top:8px;" onclick="exportDataCSV()">${t('settings.exportData')}</button>
+      ${hasPendingWrites()?'<div class="settings-note" style="color:#ffaa00;margin-top:8px;">⚠ You have pending offline writes that will sync when you reconnect.</div>':''}
+    </div>
     <p style="font-size:12px;color:#888;margin-bottom:16px;">${t('settings.helper')}</p>
   `;
   syncSettingsTrainingHint();
@@ -4249,6 +4202,44 @@ window.testNotification = function() {
     alert('Notifications are not supported in this browser.');
   }
 }
+
+window.exportDataCSV = async function() {
+  const u = window.currentUser;
+  if (!u) { showToast('Not signed in', 'Sign in to export your data.'); return; }
+  showToast('Preparing export', 'Loading your data...');
+  const [checkins, sessions, activities] = await Promise.all([
+    window.fbLoadCheckins ? window.fbLoadCheckins() : Promise.resolve([]),
+    window.fbLoadSessions ? window.fbLoadSessions() : Promise.resolve([]),
+    window.fbLoadActivities ? window.fbLoadActivities() : Promise.resolve([]),
+  ]);
+  function csvRow(vals) {
+    return vals.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',');
+  }
+  const lines = [];
+  lines.push('=== CHECK-INS ===');
+  lines.push(csvRow(['Date','Energy','Sleep','Stress','Lifts','Diet','Weight(kg)','Notes']));
+  checkins.forEach(c => lines.push(csvRow([c.date||c.isoDate,c.energy,c.sleep,c.stress,c.lifts,c.diet,c.weight||'',c.notes||''])));
+  lines.push('');
+  lines.push('=== SESSIONS ===');
+  lines.push(csvRow(['Date','Session','Exercise','MaxWeight(kg)','MaxReps']));
+  sessions.forEach(s => (s.exercises||[]).forEach(ex => lines.push(csvRow([s.date||s.isoDate,s.dayName,ex.name,ex.maxWeight,ex.maxReps]))));
+  lines.push('');
+  lines.push('=== ACTIVITIES ===');
+  lines.push(csvRow(['Date','Sport','Duration(min)']));
+  activities.forEach(a => lines.push(csvRow([a.date||a.isoDate,a.sport,a.duration])));
+  const csv = '\uFEFF' + lines.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `addapt-export-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Export ready', `Downloaded ${checkins.length} check-ins, ${sessions.length} sessions, ${activities.length} activities.`);
+  trackFlowEvent('data_exported', { checkins: checkins.length, sessions: sessions.length, activities: activities.length });
+};
 
 function normalizeSchedule(days,count,fallback){if(Array.isArray(days)){const cleaned=[...new Set(days.filter(d=>WEEKDAYS.includes(d)))].sort((a,b)=>WEEKDAYS.indexOf(a)-WEEKDAYS.indexOf(b));if(cleaned.length===count)return cleaned;}return fallback.slice();}
 function getSaunaTargetCount(){return saunaState.goal==='recovery'?2:saunaState.goal==='cardio'?4:3;}
