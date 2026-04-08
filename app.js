@@ -7,7 +7,7 @@ import{getGoalAdherenceInsights,getWeeklyProgressSummary}from'./src/modules/insi
 import{buildFirstRunEmptyState,getRecommendedFocusMuscles,getRecommendedTrainingSetup}from'./src/modules/onboarding.js';
 import{formatLastSyncedLabel,registerServiceWorker}from'./src/modules/ui.js';
 import{APP_I18N}from'./src/modules/i18n.js';
-import{calculateBMR,shouldAutoDeload,mlFeatureVecV2,getMuscleRecoveryMap,getMuscleVolumeModifier,getAdaptiveScheme}from'./src/modules/fitness.js';
+import{calculateBMR,shouldAutoDeload,mlFeatureVecV2,getMuscleRecoveryMap,getMuscleVolumeModifier,getAdaptiveScheme,deriveSessionTag}from'./src/modules/fitness.js';
 const cfg={apiKey:"AIzaSyDQKmSRuK0cpIupdwVOilD8gX88ML-3K8s",authDomain:"adaptive-plan-app.firebaseapp.com",projectId:"adaptive-plan-app",storageBucket:"adaptive-plan-app.firebasestorage.app",messagingSenderId:"214755243355",appId:"1:214755243355:web:4fe3818b936a442477967e"};
 const {auth,db,prov}=createFirebaseServices(cfg);
 registerServiceWorker();
@@ -446,6 +446,126 @@ window.openCustomExModal = openCustomExModal;
 window.closeCustomExModal = closeCustomExModal;
 window.saveCustomExercise = saveCustomExercise;
 window.deleteCustomExercise = deleteCustomExercise;
+
+// ════════════════════════════════════
+// CUSTOM SPLIT MODAL
+// ════════════════════════════════════
+const ALL_SPLIT_MUSCLES = ['chest','back','shoulders','biceps','triceps','glutes','quads','hamstrings','calves','core'];
+
+// In-memory draft for the custom split editor
+let _customSplitDraft = [];
+
+function openCustomSplitModal() {
+  const profile = window.userProfile || {};
+  // Clone existing custom template (or build one from the current plan)
+  if (Array.isArray(profile.customSplitTemplate) && profile.customSplitTemplate.length) {
+    _customSplitDraft = profile.customSplitTemplate.map(t => ({ ...t, muscles: [...(t.muscles || [])] }));
+  } else {
+    // Pre-populate from the currently active plan so users can start editing from the generated split
+    const currentSessions = (window.currentPlanData?.splitDays || [])
+      .filter(d => d.tag !== 'rest' && d.tag !== 'active')
+      .map(d => ({ name: d.name, muscles: [...new Set((d.exercises || []).map(e => e.muscle).filter(Boolean))] }));
+    _customSplitDraft = currentSessions.length
+      ? currentSessions
+      : [{ name: 'Training Day 1', muscles: ['chest', 'shoulders', 'triceps'] }];
+  }
+  renderCustomSplitEditor();
+  document.getElementById('customSplitOvl').classList.add('open');
+  document.getElementById('customSplitSheet').classList.add('open');
+}
+
+function closeCustomSplitModal() {
+  document.getElementById('customSplitOvl').classList.remove('open');
+  document.getElementById('customSplitSheet').classList.remove('open');
+}
+
+function renderCustomSplitEditor() {
+  const wrap = document.getElementById('customSplitSessions');
+  if (!wrap) return;
+  if (!_customSplitDraft.length) {
+    wrap.innerHTML = '<div style="color:#888;font-size:13px;padding:8px 0;">No sessions yet. Add one below.</div>';
+    return;
+  }
+  wrap.innerHTML = _customSplitDraft.map((session, si) => {
+    const muscleToggles = ALL_SPLIT_MUSCLES.map(m => {
+      const active = (session.muscles || []).includes(m);
+      return `<button class="split-muscle-btn${active ? ' active' : ''}" onclick="toggleCustomSplitMuscle(${si},'${m}')" type="button">${cap(m)}</button>`;
+    }).join('');
+    return `<div class="custom-split-session" data-idx="${si}">
+      <div class="custom-split-session-head">
+        <input class="custom-split-name-input" value="${escapeHtml(session.name || '')}" placeholder="Session name" oninput="updateCustomSplitName(${si},this.value)" />
+        <button class="btn btn-outline btn-sm" onclick="removeCustomSplitSession(${si})" type="button" aria-label="Remove session">✕</button>
+      </div>
+      <div class="split-muscle-grid">${muscleToggles}</div>
+    </div>`;
+  }).join('');
+}
+
+window.toggleCustomSplitMuscle = function(sessionIdx, muscle) {
+  const session = _customSplitDraft[sessionIdx];
+  if (!session) return;
+  const idx = session.muscles.indexOf(muscle);
+  if (idx === -1) session.muscles.push(muscle);
+  else session.muscles.splice(idx, 1);
+  renderCustomSplitEditor();
+};
+
+window.updateCustomSplitName = function(sessionIdx, value) {
+  if (_customSplitDraft[sessionIdx]) _customSplitDraft[sessionIdx].name = value;
+};
+
+window.removeCustomSplitSession = function(sessionIdx) {
+  _customSplitDraft.splice(sessionIdx, 1);
+  renderCustomSplitEditor();
+};
+
+window.addCustomSplitSession = function() {
+  _customSplitDraft.push({ name: `Training Day ${_customSplitDraft.length + 1}`, muscles: [] });
+  renderCustomSplitEditor();
+};
+
+async function saveCustomSplit() {
+  // Validate: every session must have at least 1 muscle and a name
+  const invalid = _customSplitDraft.some(s => !s.name?.trim() || !s.muscles?.length);
+  if (invalid) {
+    showToast('Incomplete split', 'Each session needs a name and at least one muscle group.');
+    return;
+  }
+  if (_customSplitDraft.length < 1) {
+    showToast('Empty split', 'Add at least one training session.');
+    return;
+  }
+  const profile = window.userProfile || {};
+  // Persist template + clear any stale day-map so it rebuilds for the new session count
+  profile.customSplitTemplate = _customSplitDraft.map(s => ({
+    name: s.name.trim(),
+    muscles: [...s.muscles],
+    tag: deriveSessionTag(s.muscles),
+  }));
+  // Clear customSplitDayMap so days auto-assign for the new session count
+  delete profile.customSplitDayMap;
+  window.userProfile = profile;
+  if (window.fbSaveProfile) window.fbSaveProfile(profile);
+  closeCustomSplitModal();
+  showToast('Custom split saved', 'Your split is locked in. Volume and rep ranges will still adapt.');
+  await refreshCurrentPlan('training');
+}
+
+async function resetCustomSplit() {
+  const profile = window.userProfile || {};
+  delete profile.customSplitTemplate;
+  delete profile.customSplitDayMap;
+  window.userProfile = profile;
+  if (window.fbSaveProfile) window.fbSaveProfile(profile);
+  closeCustomSplitModal();
+  showToast('Split reset', 'Back to auto-generated split.');
+  await refreshCurrentPlan('training');
+}
+
+window.openCustomSplitModal = openCustomSplitModal;
+window.closeCustomSplitModal = closeCustomSplitModal;
+window.saveCustomSplit = saveCustomSplit;
+window.resetCustomSplit = resetCustomSplit;
 
 // ════════════════════════════════════
 // ADD WEIGHT MODAL
@@ -3438,10 +3558,24 @@ const _TRAIN_SCHED_DEFAULTS={1:['Mon'],2:['Mon','Thu'],3:['Mon','Wed','Fri'],4:[
 
 function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,suggestFn,scheduleOverride,recoveryMap={},sorenessAreas=[],lastSessions=[]){
   const{goal='general',days=4}=profile;
-  const trainDays=Math.min(days===7?6:days,6);
+
+  // Use a custom split template when the user has defined one
+  const hasCustomTemplate=Array.isArray(profile.customSplitTemplate)&&profile.customSplitTemplate.length>0;
+  const effectiveDays=hasCustomTemplate?profile.customSplitTemplate.length:days;
+  const trainDays=Math.min(effectiveDays===7?6:effectiveDays,6);
+
   const goalProfile=getGoalProfile(goal,focusMuscles,profile.avoidMuscles||[],profile.volumePreference||'moderate');
-  const weeklyTargets=getWeeklySetTargets(goalProfile,goal,days,sessionLen,tier);
-  const rawTemplates=getSessionTemplates(goal,days,profile.structurePreset||'adaptive');
+  const weeklyTargets=getWeeklySetTargets(goalProfile,goal,effectiveDays,sessionLen,tier);
+
+  // Determine session templates: custom takes precedence over generated
+  const rawTemplates=hasCustomTemplate
+    ? profile.customSplitTemplate.map(t=>({
+        name:t.name||'Training Day',
+        tag:t.tag||deriveSessionTag(t.muscles||[]),
+        muscles:(t.muscles||[]).filter(m=>typeof m==='string'&&m.length>0),
+      }))
+    : getSessionTemplates(goal,days,profile.structurePreset||'adaptive');
+
   // Cap calves to at most 1 session per week — they recover fast but benefit little from extra frequency
   const templates=rawTemplates.reduce((acc,t)=>{
     const calvesDone=acc.some(s=>s.muscles.includes('calves'));
@@ -3456,26 +3590,35 @@ function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,
   let trainDayMap={};
   defaultDays.forEach((day,idx)=>{trainDayMap[day]=idx;});
 
+  // For custom splits, customSplitDayMap takes priority over the generic trainingDayMap
+  // because it is written alongside the custom template and always matches the session count.
+  // The generic trainingDayMap is for rescheduling auto-generated sessions and may have a
+  // different session count than the custom template, so it must not be applied to it.
+  const effectiveScheduleOverride=hasCustomTemplate
+    ? (profile.customSplitDayMap||scheduleOverride)
+    : scheduleOverride;
+
   // Apply saved override — only accept if it covers every session exactly once
-  if(scheduleOverride&&typeof scheduleOverride==='object'&&!Array.isArray(scheduleOverride)){
-    const entries=Object.entries(scheduleOverride).filter(([day,idx])=>WEEKDAYS.includes(day)&&Number.isInteger(idx)&&idx>=0&&idx<builtSessions.length);
+  if(effectiveScheduleOverride&&typeof effectiveScheduleOverride==='object'&&!Array.isArray(effectiveScheduleOverride)){
+    const entries=Object.entries(effectiveScheduleOverride).filter(([day,idx])=>WEEKDAYS.includes(day)&&Number.isInteger(idx)&&idx>=0&&idx<builtSessions.length);
     const uniqueIdx=new Set(entries.map(([,idx])=>idx));
     if(entries.length===builtSessions.length&&uniqueIdx.size===builtSessions.length)trainDayMap=Object.fromEntries(entries);
   }
 
   const splitDays=WEEKDAYS.map(day=>{
     if(trainDayMap[day]!==undefined&&builtSessions[trainDayMap[day]])return{day,...builtSessions[trainDayMap[day]]};
-    return{day,...(days===7?{name:'Active Recovery',tag:'active',exercises:[{name:'Walk or mobility',scheme:'20–30 min',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'Keep moving without adding fatigue.'}:{name:'Rest Day',tag:'rest',exercises:[{name:'Rest and recover',scheme:'—',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'Eat well and sleep 7–9 hrs.'})};
+    return{day,...(effectiveDays===7?{name:'Active Recovery',tag:'active',exercises:[{name:'Walk or mobility',scheme:'20–30 min',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'Keep moving without adding fatigue.'}:{name:'Rest Day',tag:'rest',exercises:[{name:'Rest and recover',scheme:'—',muscle:'',pattern:'',isFocus:false,suggest:null}],note:'Eat well and sleep 7–9 hrs.'})};
   });
 
   const defaultPriority={vtaper:['back','shoulders'],hourglass:['glutes','shoulders'],strength:['quads','hamstrings','chest','back','shoulders'],general:['back','quads']}[goal]||['back','quads'];
+  const customNote=hasCustomTemplate?'Custom split — structure set by you, volume and schemes adapt automatically.':'';
   const rationale=[
-    {vtaper:'Lats and delts lead every session. Legs trained 2× per week — width needs full-body frequency to work.',hourglass:'Glutes get the most weekly sessions, with upper days added for shoulder-to-waist contrast.',strength:'Sessions built around the big lifts first; accessory work fills remaining budget.',general:'Volume spread evenly with priority muscles leading each session.'}[goal]||'',
+    customNote||{vtaper:'Lats and delts lead every session. Legs trained 2× per week — width needs full-body frequency to work.',hourglass:'Glutes get the most weekly sessions, with upper days added for shoulder-to-waist contrast.',strength:'Sessions built around the big lifts first; accessory work fills remaining budget.',general:'Volume spread evenly with priority muscles leading each session.'}[goal]||'',
     focusMuscles.length?`${focusMuscles.map(m=>m.charAt(0).toUpperCase()+m.slice(1)).join(' and ')} promoted to priority — appear first and get extra weekly sets.`:'',
     `Priority muscles: ${goalProfile.priority.map(m=>m.charAt(0).toUpperCase()+m.slice(1)).join(', ')} — ${trainDays>=4?'2×':'1–2×'} per week.`,
   ].filter(Boolean).join(' ');
 
-  return{splitDays,splitMeta:{goalProfile,weeklySets:weeklyTargets,frequency:Object.fromEntries(Object.keys(weeklyTargets).map(m=>[m,templates.filter(t=>t.muscles.includes(m)).length])),rationale}};
+  return{splitDays,isCustomSplit:hasCustomTemplate,splitMeta:{goalProfile,weeklySets:weeklyTargets,frequency:Object.fromEntries(Object.keys(weeklyTargets).map(m=>[m,templates.filter(t=>t.muscles.includes(m)).length])),rationale}};
 }
 
 const BODY_GOAL_LABELS={build:'Build muscle',maintain:'Maintain',recomp:'Recomp',lose:'Lose weight'};
@@ -3561,7 +3704,7 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivit
   const splitDays=adaptSplitForPain(adaptiveSplit.splitDays,equipment,painAreas);
   const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
   const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,effectiveDietGoal);
-  return{summary:{tier,kcal,protein,carbs,fat,days,goal,bodyGoal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal:effectiveDietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,cardioAdj,block,isStr,calOverride,autoDeloadReason,activityLevel,workStyle,bodyGoal,bodyFat,painAreas,consistency,selfRating,recoveryFocus:saunaGoal,activityMultiplier,recommendationHooks:{readinessModel:'ml-ready-v1',splitSelector:profile?.recommendationHooks?.engine||'rule-based-v2',calorieTargetModel:'rule-based-calorie-v2'},ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
+  return{summary:{tier,kcal,protein,carbs,fat,days,goal,bodyGoal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal:effectiveDietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,cardioAdj,block,isStr,calOverride,autoDeloadReason,activityLevel,workStyle,bodyGoal,bodyFat,painAreas,consistency,selfRating,recoveryFocus:saunaGoal,activityMultiplier,recommendationHooks:{readinessModel:'ml-ready-v1',splitSelector:profile?.recommendationHooks?.engine||'rule-based-v2',calorieTargetModel:'rule-based-calorie-v2'},ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,isCustomSplit:adaptiveSplit.isCustomSplit||false,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
 }
 
 // ── MEAL BUILDER ──
@@ -3577,7 +3720,7 @@ function buildMeals(kcal,protein,carbs,fat,count,restrictions,dietGoal){
 // RENDER PLAN
 // ════════════════════════════════════
 function renderPlan(plan,activeTab='overview',focusDay=''){
-  const{analysis,splitDays,meals,tier,focusMuscles,experience,splitMeta}=plan;
+  const{analysis,splitDays,meals,tier,focusMuscles,experience,splitMeta,isCustomSplit}=plan;
   const{energy,kcal,protein,carbs,fat,dietGoal,tdee,trendMsg,trendAdj,cardioAdj,block,isStr,calOverride,autoDeloadReason,ml}=analysis;
   const p=window.userProfile||{};
   const profileHtml=splitMeta?`<h2>Goal Profile</h2><ul><li><span>Priority muscles</span><span class="li-r">${splitMeta.goalProfile.priority.map(cap).join(' · ')}</span></li><li><span>Secondary muscles</span><span class="li-r">${splitMeta.goalProfile.secondary.map(cap).join(' · ')}</span></li><li><span>Maintenance muscles</span><span class="li-r">${splitMeta.goalProfile.maintenance.map(cap).join(' · ')}</span></li></ul>`:'';
@@ -3592,9 +3735,12 @@ function renderPlan(plan,activeTab='overview',focusDay=''){
     ?`<div style="padding:12px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.22);border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:#00d4ff;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">ML Performance · v${ml.version}${ml.cached?' · cached':''}</div><div style="font-size:13px;color:#f2f2f2;line-height:1.5;">Accuracy ${(ml.performance.accuracy*100).toFixed(0)}% · Brier loss ${ml.performance.brier.toFixed(3)} · ${ml.performance.samples} training samples</div></div>`
     :'';
   const cardioAdjHtml=cardioAdj?`<div style="padding:12px;background:rgba(200,255,0,0.05);border:1px solid rgba(200,255,0,0.15);border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:#c8ff00;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Cardio Adjustment · +${cardioAdj} kcal/day</div><div style="font-size:13px;color:#f2f2f2;">Weekly cardio activity is raising your daily calorie target to offset the burn. Keep logging runs, swims and cycles to keep it accurate.</div></div>`:'';
-  document.getElementById('tab-overview').innerHTML=`<div class="stat-row"><div class="stat-box"><div class="stat-val">${energy}/10</div><div class="stat-lbl">Energy</div></div><div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal${calOverride?' (custom)':''}</div></div><div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div><div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div></div><div class="block-card ${isStr?'str':'hyp'}"><div class="block-tag">${isStr?'Strength Block':'Hypertrophy Block'}</div><div class="block-name">${block.name} Block — Week ${block.week} of ${block.total}</div><div class="block-desc">${isStr?'Lower reps, heavier weight, 3–4 min rest. Neural adaptation.':'Higher reps, moderate weight, shorter rest. Muscle growth and volume.'}</div>${block.earlyTrigger?`<div style="font-size:12px;color:#ffaa00;margin-bottom:8px;">${block.earlyTrigger}</div>`:''}<div class="block-row"><div class="block-bar-track"><div class="block-bar-fill" style="width:${Math.round(block.week/block.total*100)}%;"></div></div><div class="block-weeks">${block.week}/${block.total} weeks</div></div></div><h2>Analysis</h2><p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>${mlInsight}${mlPerfCard}${autoDeloadReason?`<p style="color:#ffaa00;">${autoDeloadReason}</p>`:''}<p>${{regressed:'Lifts went backwards. Do not add weight — fix recovery and nutrition first.',same:'Held steady. Target +1 rep or 2.5kg on at least one compound.',slightly_up:'Good progress. Keep increments small and consistent.',pbs:'PRs hit. Ride this momentum carefully.'}[analysis.lifts]||''}</p><p>${dietMsg}</p>${trendMsg?`<div style="padding:12px;background:${trendAdj>0?'rgba(200,255,0,0.05)':trendAdj<0?'rgba(255,77,0,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${trendAdj>0?'rgba(200,255,0,0.15)':trendAdj<0?'rgba(255,77,0,0.15)':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:${trendAdj>0?'#c8ff00':trendAdj<0?'#ff4d00':'#888'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Weight Trend${trendAdj?` · ${trendAdj>0?'+':''}${trendAdj} kcal`:''}</div><div style="font-size:13px;color:#f2f2f2;">${trendMsg}</div></div>`:''}${cardioAdjHtml}<h2>Macros</h2><ul><li><span>Daily Calories</span><span class="li-r">${kcal} kcal${calOverride?' (custom)':''}</span></li><li><span>TDEE estimate</span><span class="li-r">${tdee} kcal</span></li>${cardioAdj?`<li><span>Cardio adjustment</span><span class="li-r" style="color:#c8ff00;">+${cardioAdj} kcal/day</span></li>`:''}<li><span>Protein</span><span class="li-r">${protein}g · ${protein*4} kcal</span></li><li><span>Carbs</span><span class="li-r">${carbs}g · ${carbs*4} kcal</span></li><li><span>Fats</span><span class="li-r">${fat}g · ${fat*9} kcal</span></li></ul><h2>Profile</h2><ul><li><span>Goal</span><span class="li-r">${cap(p.goal||'general')}</span></li><li><span>Body goal</span><span class="li-r">${BODY_GOAL_LABELS[analysis.bodyGoal||p.bodyGoal||'maintain']||cap(analysis.bodyGoal||p.bodyGoal||'maintain')}</span></li><li><span>Focus muscles</span><span class="li-r">${(focusMuscles||[]).map(cap).join(' & ')}</span></li><li><span>Experience</span><span class="li-r">${cap(experience)}</span></li><li><span>Split</span><span class="li-r">${p.days||4} days · ${p.sessionLen||60} min</span></li><li><span>Body fat est.</span><span class="li-r">${p.bodyFat?`${p.bodyFat}%`:'—'}</span></li><li><span>Lifestyle</span><span class="li-r">${cap(String(analysis.activityLevel||p.activityLevel||'moderate').replace(/_/g,' '))} · ${cap(String(analysis.workStyle||p.workStyle||'mixed').replace(/_/g,' '))}</span></li><li><span>Pain flags</span><span class="li-r">${(analysis.painAreas||p.painAreas||[]).filter(v=>v&&v!=='none').map(v=>cap(String(v).replace(/_/g,' '))).join(' · ')||'None'}</span></li><li><span>Diet goal</span><span class="li-r">${cap(dietGoal)}</span></li></ul>${profileHtml}${freqHtml}${setHtml}${whyHtml}`;
-  // Training tab
-  let th='<h2>Training Plan</h2>'+renderTrainingScheduleEditor(splitDays);
+  document.getElementById('tab-overview').innerHTML=`<div class="stat-row"><div class="stat-box"><div class="stat-val">${energy}/10</div><div class="stat-lbl">Energy</div></div><div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal${calOverride?' (custom)':''}</div></div><div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div><div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div></div><div class="block-card ${isStr?'str':'hyp'}"><div class="block-tag">${isStr?'Strength Block':'Hypertrophy Block'}</div><div class="block-name">${block.name} Block — Week ${block.week} of ${block.total}</div><div class="block-desc">${isStr?'Lower reps, heavier weight, 3–4 min rest. Neural adaptation.':'Higher reps, moderate weight, shorter rest. Muscle growth and volume.'}</div>${block.earlyTrigger?`<div style="font-size:12px;color:#ffaa00;margin-bottom:8px;">${block.earlyTrigger}</div>`:''}<div class="block-row"><div class="block-bar-track"><div class="block-bar-fill" style="width:${Math.round(block.week/block.total*100)}%;"></div></div><div class="block-weeks">${block.week}/${block.total} weeks</div></div></div><h2>Analysis</h2><p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>${mlInsight}${mlPerfCard}${autoDeloadReason?`<p style="color:#ffaa00;">${autoDeloadReason}</p>`:''}<p>${{regressed:'Lifts went backwards. Do not add weight — fix recovery and nutrition first.',same:'Held steady. Target +1 rep or 2.5kg on at least one compound.',slightly_up:'Good progress. Keep increments small and consistent.',pbs:'PRs hit. Ride this momentum carefully.'}[analysis.lifts]||''}</p><p>${dietMsg}</p>${trendMsg?`<div style="padding:12px;background:${trendAdj>0?'rgba(200,255,0,0.05)':trendAdj<0?'rgba(255,77,0,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${trendAdj>0?'rgba(200,255,0,0.15)':trendAdj<0?'rgba(255,77,0,0.15)':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:${trendAdj>0?'#c8ff00':trendAdj<0?'#ff4d00':'#888'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Weight Trend${trendAdj?` · ${trendAdj>0?'+':''}${trendAdj} kcal`:''}</div><div style="font-size:13px;color:#f2f2f2;">${trendMsg}</div></div>`:''}${cardioAdjHtml}<h2>Macros</h2><ul><li><span>Daily Calories</span><span class="li-r">${kcal} kcal${calOverride?' (custom)':''}</span></li><li><span>TDEE estimate</span><span class="li-r">${tdee} kcal</span></li>${cardioAdj?`<li><span>Cardio adjustment</span><span class="li-r" style="color:#c8ff00;">+${cardioAdj} kcal/day</span></li>`:''}<li><span>Protein</span><span class="li-r">${protein}g · ${protein*4} kcal</span></li><li><span>Carbs</span><span class="li-r">${carbs}g · ${carbs*4} kcal</span></li><li><span>Fats</span><span class="li-r">${fat}g · ${fat*9} kcal</span></li></ul><h2>Profile</h2><ul><li><span>Goal</span><span class="li-r">${cap(p.goal||'general')}</span></li><li><span>Body goal</span><span class="li-r">${BODY_GOAL_LABELS[analysis.bodyGoal||p.bodyGoal||'maintain']||cap(analysis.bodyGoal||p.bodyGoal||'maintain')}</span></li><li><span>Focus muscles</span><span class="li-r">${(focusMuscles||[]).map(cap).join(' & ')}</span></li><li><span>Experience</span><span class="li-r">${cap(experience)}</span></li><li><span>Split</span><span class="li-r">${isCustomSplit?'Custom':'Auto'} · ${p.days||4} days · ${p.sessionLen||60} min</span></li><li><span>Body fat est.</span><span class="li-r">${p.bodyFat?`${p.bodyFat}%`:'—'}</span></li><li><span>Lifestyle</span><span class="li-r">${cap(String(analysis.activityLevel||p.activityLevel||'moderate').replace(/_/g,' '))} · ${cap(String(analysis.workStyle||p.workStyle||'mixed').replace(/_/g,' '))}</span></li><li><span>Pain flags</span><span class="li-r">${(analysis.painAreas||p.painAreas||[]).filter(v=>v&&v!=='none').map(v=>cap(String(v).replace(/_/g,' '))).join(' · ')||'None'}</span></li><li><span>Diet goal</span><span class="li-r">${cap(dietGoal)}</span></li></ul>${profileHtml}${freqHtml}${setHtml}${whyHtml}`;
+  // Training tab — custom split banner + customize button
+  const customSplitBanner=isCustomSplit
+    ?`<div class="custom-split-banner"><span class="custom-split-badge">Custom Split</span><span class="custom-split-note">Your structure is locked in — sets &amp; rep ranges still adapt automatically.</span><div class="custom-split-actions"><button class="btn btn-outline btn-sm" onclick="openCustomSplitModal()">Edit Split</button><button class="btn btn-outline btn-sm" onclick="resetCustomSplit()">Reset to Auto</button></div></div>`
+    :`<div class="custom-split-banner auto"><span class="custom-split-note">Using auto-generated split.</span><button class="btn btn-outline btn-sm" onclick="openCustomSplitModal()">Customize Split</button></div>`;
+  let th='<h2>Training Plan</h2>'+customSplitBanner+renderTrainingScheduleEditor(splitDays);
   splitDays.forEach(day=>{
     const isRest=day.tag==='rest',isActive=day.tag==='active';const tagCls={'upper':'t-u','lower':'t-l','full':'t-f','focus':'t-fo','rest':'t-r','active':'t-a'}[day.tag]||'t-r';
     th+=`<div class="day-card"><div class="day-hdr" onclick="togDay(this)"><div><div class="day-title">${day.day}</div><div class="day-sub">${day.name}</div></div><div style="display:flex;align-items:center;gap:8px;"><div class="day-tag ${tagCls}">${day.tag.toUpperCase()}</div><div style="color:#888;font-size:13px;transition:transform 0.2s;">▼</div></div></div><div class="day-body">`;
