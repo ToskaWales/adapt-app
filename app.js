@@ -3590,7 +3590,10 @@ function assembleSplitDays(profile,equipment,sessionLen,focusMuscles,isStr,tier,
   let trainDayMap={};
   defaultDays.forEach((day,idx)=>{trainDayMap[day]=idx;});
 
-  // For custom splits, prefer the stored customSplitDayMap over the generic trainingDayMap
+  // For custom splits, customSplitDayMap takes priority over the generic trainingDayMap
+  // because it is written alongside the custom template and always matches the session count.
+  // The generic trainingDayMap is for rescheduling auto-generated sessions and may have a
+  // different session count than the custom template, so it must not be applied to it.
   const effectiveScheduleOverride=hasCustomTemplate
     ? (profile.customSplitDayMap||scheduleOverride)
     : scheduleOverride;
