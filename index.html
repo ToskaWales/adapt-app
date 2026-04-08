@@ -834,6 +834,20 @@
   </div>
 </div>
 
+<!-- Custom Split Modal -->
+<div class="overlay" id="customSplitOvl" onclick="closeCustomSplitModal()"></div>
+<div class="bsheet" id="customSplitSheet">
+  <div class="sh-handle"></div>
+  <div class="sh-title">Customize Your Split</div>
+  <div class="sh-sub">Define which muscle groups belong to each session. Sets and rep ranges will still adapt automatically based on your readiness and recovery.</div>
+  <div id="customSplitSessions" class="custom-split-list"></div>
+  <button class="btn btn-outline btn-sm" style="width:100%;margin-top:10px;" onclick="addCustomSplitSession()" type="button">+ Add Session</button>
+  <div style="display:flex;gap:8px;margin-top:12px;">
+    <button class="btn btn-outline btn-sm" style="flex:1;" onclick="closeCustomSplitModal()" type="button">Cancel</button>
+    <button class="btn btn-acc btn-sm" style="flex:1;" onclick="saveCustomSplit()" type="button">Save Split</button>
+  </div>
+</div>
+
 <!-- Add Weight Modal -->
 <div id="addWeightModal" class="modal">
   <div class="modal-sheet">

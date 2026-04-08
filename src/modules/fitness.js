@@ -292,3 +292,26 @@ export function mlFeatureVecV2(c, priorCheckins = []) {
     rollStress,
   ];
 }
+
+/**
+ * Derive a training-session tag from a list of muscle groups.
+ *
+ * Logic:
+ *  - 'full'  : session targets both upper-body and lower-body muscles
+ *  - 'lower' : session targets only lower-body muscles
+ *  - 'upper' : session targets only upper-body muscles
+ *  - 'focus' : session targets only accessory / isolation muscles (e.g. calves, core)
+ *
+ * @param {string[]} muscles - Array of muscle group names
+ * @returns {'upper'|'lower'|'full'|'focus'}
+ */
+export function deriveSessionTag(muscles) {
+  const lower = ['quads', 'hamstrings', 'glutes'];
+  const upper = ['chest', 'back', 'shoulders', 'biceps', 'triceps'];
+  const hasLower = muscles.some(m => lower.includes(m));
+  const hasUpper = muscles.some(m => upper.includes(m));
+  if (hasLower && hasUpper) return 'full';
+  if (hasLower) return 'lower';
+  if (hasUpper) return 'upper';
+  return 'focus';
+}

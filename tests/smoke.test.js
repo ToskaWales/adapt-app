@@ -336,4 +336,32 @@ describe('getAdaptiveScheme', () => {
   });
 });
 
+import { deriveSessionTag } from '../src/modules/fitness.js';
+
+describe('deriveSessionTag', () => {
+  it('returns "upper" for chest/back/shoulders session', () => {
+    expect(deriveSessionTag(['chest', 'shoulders', 'triceps'])).toBe('upper');
+  });
+
+  it('returns "lower" for quads/hamstrings/glutes session', () => {
+    expect(deriveSessionTag(['quads', 'hamstrings', 'glutes'])).toBe('lower');
+  });
+
+  it('returns "full" when both upper and lower muscles are present', () => {
+    expect(deriveSessionTag(['back', 'quads', 'hamstrings'])).toBe('full');
+  });
+
+  it('returns "focus" for accessory-only muscles (calves, core)', () => {
+    expect(deriveSessionTag(['calves', 'core'])).toBe('focus');
+  });
+
+  it('returns "focus" for an empty muscle list', () => {
+    expect(deriveSessionTag([])).toBe('focus');
+  });
+
+  it('returns "lower" even when calves are included', () => {
+    expect(deriveSessionTag(['quads', 'hamstrings', 'calves'])).toBe('lower');
+  });
+});
+
 
