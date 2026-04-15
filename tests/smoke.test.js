@@ -23,6 +23,26 @@ describe('login helpers', () => {
     ).toBe(true);
   });
 
+  it('prefers redirect on any deployed (non-localhost) domain', () => {
+    expect(
+      shouldPreferGoogleRedirect(
+        { hostname: 'mycustomdomain.com' },
+        { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        () => ({ matches: false })
+      )
+    ).toBe(true);
+  });
+
+  it('uses popup on localhost dev environment', () => {
+    expect(
+      shouldPreferGoogleRedirect(
+        { hostname: 'localhost' },
+        { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        () => ({ matches: false })
+      )
+    ).toBe(false);
+  });
+
   it('explains unauthorized domain failures clearly', () => {
     expect(getGoogleLoginErrorMessage({ code: 'auth/unauthorized-domain' }, 'toskawales.github.io')).toContain(
       'Authorized domains'
