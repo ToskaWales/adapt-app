@@ -9,9 +9,12 @@ export function shouldPreferGoogleRedirect(
     matchMediaLike?.('(display-mode: standalone)')?.matches || navigatorLike?.standalone === true
   );
   const inAppBrowser = /Instagram|FBAN|FBAV|Line|wv/i.test(userAgent);
+  // Use popup only on localhost dev; all deployed environments use redirect because
+  // signInWithPopup silently fails on modern browsers with cross-origin cookie restrictions.
+  const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '';
 
   return (
-    host.endsWith('github.io') ||
+    !isLocalhost ||
     standalone ||
     inAppBrowser ||
     /iPad|iPhone|iPod/i.test(userAgent)
