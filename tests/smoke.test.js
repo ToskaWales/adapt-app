@@ -13,7 +13,7 @@ import {
 import { formatLastSyncedLabel } from '../src/modules/ui.js';
 
 describe('login helpers', () => {
-  it('prefers redirect on GitHub Pages and iPhone browsers', () => {
+  it('prefers redirect on iPhone browsers (popup unreliable on iOS)', () => {
     expect(
       shouldPreferGoogleRedirect(
         { hostname: 'toskawales.github.io' },
@@ -21,6 +21,46 @@ describe('login helpers', () => {
         () => ({ matches: false })
       )
     ).toBe(true);
+  });
+
+  it('prefers redirect in in-app browsers', () => {
+    expect(
+      shouldPreferGoogleRedirect(
+        { hostname: 'toskawales.github.io' },
+        { userAgent: 'Mozilla/5.0 Instagram/123' },
+        () => ({ matches: false })
+      )
+    ).toBe(true);
+  });
+
+  it('prefers redirect when running as standalone PWA', () => {
+    expect(
+      shouldPreferGoogleRedirect(
+        { hostname: 'toskawales.github.io' },
+        { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        () => ({ matches: true }) // display-mode: standalone
+      )
+    ).toBe(true);
+  });
+
+  it('uses popup on GitHub Pages desktop (popup postMessage avoids cross-origin iframe failure)', () => {
+    expect(
+      shouldPreferGoogleRedirect(
+        { hostname: 'toskawales.github.io' },
+        { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        () => ({ matches: false })
+      )
+    ).toBe(false);
+  });
+
+  it('uses popup on localhost dev environment', () => {
+    expect(
+      shouldPreferGoogleRedirect(
+        { hostname: 'localhost' },
+        { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        () => ({ matches: false })
+      )
+    ).toBe(false);
   });
 
   it('explains unauthorized domain failures clearly', () => {

@@ -9,9 +9,12 @@ export function shouldPreferGoogleRedirect(
     matchMediaLike?.('(display-mode: standalone)')?.matches || navigatorLike?.standalone === true
   );
   const inAppBrowser = /Instagram|FBAN|FBAV|Line|wv/i.test(userAgent);
-
+  // signInWithPopup communicates via window.opener.postMessage — no cross-origin
+  // iframe required, so it works on any deployed domain including github.io.
+  // signInWithRedirect routes through firebaseapp.com and needs a cross-origin
+  // iframe to deliver the result, which modern browsers block silently.
+  // Only force redirect for environments where popups are genuinely unusable.
   return (
-    host.endsWith('github.io') ||
     standalone ||
     inAppBrowser ||
     /iPad|iPhone|iPod/i.test(userAgent)

@@ -112,14 +112,16 @@ window.signInWithGoogle=async()=>{
   }
   try{
     if(shouldPreferGoogleRedirect()){
+      sessionStorage.setItem('pendingGoogleRedirect','1');
       await signInWithRedirect(auth,prov);
       return;
     }
     await signInWithPopup(auth,prov);
   }catch(e){
+    sessionStorage.removeItem('pendingGoogleRedirect');
     const fallbackCodes=['auth/popup-blocked','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment','auth/internal-error'];
     if(fallbackCodes.includes(e.code)){
-      try{await signInWithRedirect(auth,prov);return;}catch(redirectErr){handleGoogleLoginError(redirectErr);}
+      try{sessionStorage.setItem('pendingGoogleRedirect','1');await signInWithRedirect(auth,prov);return;}catch(redirectErr){handleGoogleLoginError(redirectErr);}
     }else{
       handleGoogleLoginError(e);
     }
@@ -127,8 +129,19 @@ window.signInWithGoogle=async()=>{
   }
 };
 getRedirectResult(auth)
-  .then(()=>resetLoginButton())
-  .catch(e=>{handleGoogleLoginError(e);resetLoginButton();});
+  .then(result=>{
+    const wasPending=sessionStorage.getItem('pendingGoogleRedirect');
+    sessionStorage.removeItem('pendingGoogleRedirect');
+    if(wasPending&&!result?.user){
+      showToast('Sign-in incomplete','Google sign-in did not complete. Please try again.');
+    }
+    resetLoginButton();
+  })
+  .catch(e=>{
+    sessionStorage.removeItem('pendingGoogleRedirect');
+    handleGoogleLoginError(e);
+    resetLoginButton();
+  });
 let _unsubscribeProfile=null;
 window.signOut=async()=>{
   if(_unsubscribeProfile){_unsubscribeProfile();_unsubscribeProfile=null;}
