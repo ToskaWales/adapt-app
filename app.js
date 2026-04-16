@@ -98,8 +98,8 @@ function resetLoginButton(){
   b.disabled=false;
 }
 function handleGoogleLoginError(err){
-  if(!err||err.code==='auth/popup-closed-by-user')return;
-  console.error(err);
+  if(!err)return;
+  console.error('[auth]',err.code,err);
   showToast('Login failed',getGoogleLoginErrorMessage(err));
 }
 window.signInWithGoogle=async()=>{

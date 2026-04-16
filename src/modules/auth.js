@@ -34,7 +34,9 @@ export function getGoogleLoginErrorMessage(
       return 'Network error while contacting Google. Check your connection and try again.';
     case 'auth/web-storage-unsupported':
       return 'This browser is blocking the storage Google sign-in needs. Try a normal browser tab.';
+    case 'auth/popup-closed-by-user':
+      return 'The sign-in popup closed before completing. Try again — if it keeps happening, disable browser extensions or try a different browser.';
     default:
-      return 'Please try again.';
+      return `Sign-in failed (${err?.code || 'unknown'}). Please try again.`;
   }
 }
