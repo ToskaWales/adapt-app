@@ -9,12 +9,12 @@ export function shouldPreferGoogleRedirect(
     matchMediaLike?.('(display-mode: standalone)')?.matches || navigatorLike?.standalone === true
   );
   const inAppBrowser = /Instagram|FBAN|FBAV|Line|wv/i.test(userAgent);
-  // Use popup only on localhost dev; all deployed environments use redirect because
-  // signInWithPopup silently fails on modern browsers with cross-origin cookie restrictions.
-  const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '';
-
+  // signInWithPopup communicates via window.opener.postMessage — no cross-origin
+  // iframe required, so it works on any deployed domain including github.io.
+  // signInWithRedirect routes through firebaseapp.com and needs a cross-origin
+  // iframe to deliver the result, which modern browsers block silently.
+  // Only force redirect for environments where popups are genuinely unusable.
   return (
-    !isLocalhost ||
     standalone ||
     inAppBrowser ||
     /iPad|iPhone|iPod/i.test(userAgent)
