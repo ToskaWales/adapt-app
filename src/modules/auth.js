@@ -1,24 +1,17 @@
+export function isInAppBrowser(navigatorLike = globalThis.navigator) {
+  return /Instagram|FBAN|FBAV|Line|wv/i.test(navigatorLike?.userAgent || '');
+}
+
 export function shouldPreferGoogleRedirect(
   locationLike = globalThis.location,
   navigatorLike = globalThis.navigator,
   matchMediaLike = globalThis.matchMedia?.bind(globalThis)
 ) {
-  const host = locationLike?.hostname || '';
-  const userAgent = navigatorLike?.userAgent || '';
-  const standalone = Boolean(
-    matchMediaLike?.('(display-mode: standalone)')?.matches || navigatorLike?.standalone === true
-  );
-  const inAppBrowser = /Instagram|FBAN|FBAV|Line|wv/i.test(userAgent);
-  // signInWithPopup communicates via window.opener.postMessage — no cross-origin
-  // iframe required, so it works on any deployed domain including github.io.
-  // signInWithRedirect routes through firebaseapp.com and needs a cross-origin
-  // iframe to deliver the result, which modern browsers block silently.
-  // Only force redirect for environments where popups are genuinely unusable.
-  return (
-    standalone ||
-    inAppBrowser ||
-    /iPad|iPhone|iPod/i.test(userAgent)
-  );
+  // signInWithRedirect silently fails in all modern browsers because they block
+  // the cross-origin iframe Firebase needs to deliver the token back, even when
+  // the redirect itself completes successfully. Use signInWithPopup everywhere.
+  // In-app browsers (Instagram, etc.) are handled separately with an open-externally message.
+  return false;
 }
 
 export function getGoogleLoginErrorMessage(

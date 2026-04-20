@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getGoogleLoginErrorMessage, shouldPreferGoogleRedirect } from '../src/modules/auth.js';
+import { getGoogleLoginErrorMessage, isInAppBrowser, shouldPreferGoogleRedirect } from '../src/modules/auth.js';
 import { calculateBMR, mlFeatureVecV2, shouldAutoDeload } from '../src/modules/fitness.js';
 import { getGoalAdherenceInsights, getWeeklyProgressSummary } from '../src/modules/insights.js';
 import { APP_I18N } from '../src/modules/i18n.js';
@@ -13,37 +13,27 @@ import {
 import { formatLastSyncedLabel } from '../src/modules/ui.js';
 
 describe('login helpers', () => {
-  it('prefers redirect on iPhone browsers (popup unreliable on iOS)', () => {
+  it('uses popup on iPhone (signInWithRedirect silently fails on modern iOS due to cross-origin iframe block)', () => {
     expect(
       shouldPreferGoogleRedirect(
         { hostname: 'toskawales.github.io' },
         { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' },
         () => ({ matches: false })
       )
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  it('prefers redirect in in-app browsers', () => {
-    expect(
-      shouldPreferGoogleRedirect(
-        { hostname: 'toskawales.github.io' },
-        { userAgent: 'Mozilla/5.0 Instagram/123' },
-        () => ({ matches: false })
-      )
-    ).toBe(true);
-  });
-
-  it('prefers redirect when running as standalone PWA', () => {
+  it('uses popup when running as standalone PWA', () => {
     expect(
       shouldPreferGoogleRedirect(
         { hostname: 'toskawales.github.io' },
         { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
         () => ({ matches: true }) // display-mode: standalone
       )
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  it('uses popup on GitHub Pages desktop (popup postMessage avoids cross-origin iframe failure)', () => {
+  it('uses popup on GitHub Pages desktop', () => {
     expect(
       shouldPreferGoogleRedirect(
         { hostname: 'toskawales.github.io' },
@@ -61,6 +51,13 @@ describe('login helpers', () => {
         () => ({ matches: false })
       )
     ).toBe(false);
+  });
+
+  it('detects in-app browsers (Instagram, Facebook) so the UI can show an open-externally prompt', () => {
+    expect(isInAppBrowser({ userAgent: 'Mozilla/5.0 Instagram/123' })).toBe(true);
+    expect(isInAppBrowser({ userAgent: 'Mozilla/5.0 FBAN/123' })).toBe(true);
+    expect(isInAppBrowser({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Safari/604.1' })).toBe(false);
+    expect(isInAppBrowser({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' })).toBe(false);
   });
 
   it('explains unauthorized domain failures clearly', () => {

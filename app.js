@@ -1,7 +1,7 @@
 
 import{signInWithPopup,signInWithRedirect,getRedirectResult,signOut as fbSO,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import{doc,setDoc,getDoc,deleteDoc,collection,addDoc,getDocs,query,orderBy,limit,where,serverTimestamp,onSnapshot}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import{shouldPreferGoogleRedirect,getGoogleLoginErrorMessage}from'./src/modules/auth.js';
+import{shouldPreferGoogleRedirect,isInAppBrowser,getGoogleLoginErrorMessage}from'./src/modules/auth.js';
 import{createFirebaseServices}from'./src/modules/firestore.js';
 import{getGoalAdherenceInsights,getWeeklyProgressSummary}from'./src/modules/insights.js';
 import{buildFirstRunEmptyState,getRecommendedFocusMuscles,getRecommendedTrainingSetup}from'./src/modules/onboarding.js';
@@ -110,18 +110,21 @@ window.signInWithGoogle=async()=>{
     resetLoginButton();
     return;
   }
+  if(isInAppBrowser()){
+    showToast('Open in your browser','Google sign-in doesn\'t work inside apps like Instagram or Facebook. Tap the menu and choose "Open in browser".');
+    resetLoginButton();
+    return;
+  }
   try{
-    if(shouldPreferGoogleRedirect()){
-      sessionStorage.setItem('pendingGoogleRedirect','1');
-      await signInWithRedirect(auth,prov);
-      return;
-    }
     await signInWithPopup(auth,prov);
   }catch(e){
-    sessionStorage.removeItem('pendingGoogleRedirect');
-    const fallbackCodes=['auth/popup-blocked','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment','auth/internal-error'];
+    const fallbackCodes=['auth/popup-blocked','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment'];
     if(fallbackCodes.includes(e.code)){
-      try{sessionStorage.setItem('pendingGoogleRedirect','1');await signInWithRedirect(auth,prov);return;}catch(redirectErr){handleGoogleLoginError(redirectErr);}
+      try{
+        sessionStorage.setItem('pendingGoogleRedirect','1');
+        await signInWithRedirect(auth,prov);
+        return;
+      }catch(redirectErr){handleGoogleLoginError(redirectErr);}
     }else{
       handleGoogleLoginError(e);
     }
