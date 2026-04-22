@@ -1677,7 +1677,15 @@ function obSel(el,key,val){
     if(cycleSection)cycleSection.style.display=val==='female'?'block':'none';
     // Default cycleProfile based on sex
     if(val!=='female')obAnswers.cycleProfile=CYCLE_PROFILES.NOT_APPLICABLE;
-    else if(!obAnswers.cycleProfile||obAnswers.cycleProfile===CYCLE_PROFILES.NOT_APPLICABLE)obAnswers.cycleProfile=CYCLE_PROFILES.EUMENORRHEIC;
+    else{
+      if(!obAnswers.cycleProfile||obAnswers.cycleProfile===CYCLE_PROFILES.NOT_APPLICABLE)obAnswers.cycleProfile=CYCLE_PROFILES.EUMENORRHEIC;
+      // Visually select the default cycle-profile card if none already selected
+      const cycleCards=document.querySelectorAll('#ob3CycleSection .opt-card');
+      if(![...cycleCards].some(c=>c.classList.contains('sel'))){
+        const defaultCard=document.querySelector('#ob3CycleSection [data-value="eumenorrheic"]');
+        if(defaultCard){cycleCards.forEach(c=>c.classList.remove('sel'));defaultCard.classList.add('sel');}
+      }
+    }
   }
   if(key==='structurePreset')selectedStructurePreset=val;
   const nb=document.getElementById('ob'+obStep+'n');
@@ -2174,7 +2182,8 @@ function buildMlDataset(checkins){
     const c=sorted[i],next=sorted[i+1];
     if(c.energy===undefined||c.stress===undefined)continue;
     const priorCheckins=sorted.slice(Math.max(0,i-3),i);
-    const x=mlFeatureVecV2(c,priorCheckins);
+    const cf=c.cycleSnapshot?buildCycleFeatures(c.cycleSnapshot,c.cycleSnapshot.crampSeverity||0):null;
+    const x=mlFeatureVecV2(c,priorCheckins,cf);
     const y=(next.lifts==='slightly_up'||next.lifts==='pbs')?1:0;
     xs.push(x);ys.push(y);
   }
@@ -2939,7 +2948,9 @@ function submitCheckin(){
     const plan=buildPlan(window.userProfile,window.currentCheckin,lastSessions,pastCheckins,recentActivities);
     window.currentPlanData=plan;
     if(window.currentUser?.uid)setCachedPlan(window.currentUser.uid,plan);
-    if(window.fbSaveCheckin)await window.fbSaveCheckin({...window.currentCheckin,planSummary:plan.summary});
+    const cycleCtx=plan.analysis?.cycle;
+    const cycleSnapshot=cycleCtx?{phase:cycleCtx.phase,confidence:cycleCtx.confidence,cycleDay:cycleCtx.cycleDay,avgCycleLength:cycleCtx.avgCycleLength,crampSeverity:cycleCtx.crampSeverity}:null;
+    if(window.fbSaveCheckin)await window.fbSaveCheckin({...window.currentCheckin,planSummary:plan.summary,...(cycleSnapshot?{cycleSnapshot}:{})});
     // Update cycle logs if user tapped period start/end
     if(window.currentCheckin.periodStartToday||window.currentCheckin.periodEndToday){
       window.userProfile=updateCycleLogs(window.userProfile,window.currentCheckin);
@@ -3776,7 +3787,7 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivit
   const splitDays=adaptSplitForPain(adaptiveSplit.splitDays,equipment,painAreas);
   const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
   const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,effectiveDietGoal);
-  return{summary:{tier,kcal,protein,carbs,fat,days,goal,bodyGoal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal:effectiveDietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,cardioAdj,block,isStr,calOverride,autoDeloadReason,activityLevel,workStyle,bodyGoal,bodyFat,painAreas,consistency,selfRating,recoveryFocus:saunaGoal,activityMultiplier,cycle:{phase:cycleInference.phase,cycleDay:cycleInference.cycleDay,confidence:cycleInference.confidence,cycleAbsenceFlag:cycleInference.cycleAbsenceFlag,isIrregular:cycleInference.isIrregular,phaseNote:cycleInference.phaseNote,crampSeverity,cycleMod},recommendationHooks:{readinessModel:'ml-ready-v1',splitSelector:profile?.recommendationHooks?.engine||'rule-based-v2',calorieTargetModel:'rule-based-calorie-v2'},ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,isCustomSplit:adaptiveSplit.isCustomSplit||false,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
+  return{summary:{tier,kcal,protein,carbs,fat,days,goal,bodyGoal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal:effectiveDietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,cardioAdj,block,isStr,calOverride,autoDeloadReason,activityLevel,workStyle,bodyGoal,bodyFat,painAreas,consistency,selfRating,recoveryFocus:saunaGoal,activityMultiplier,cycle:{phase:cycleInference.phase,cycleDay:cycleInference.cycleDay,confidence:cycleInference.confidence,avgCycleLength:cycleInference.avgCycleLength,cycleAbsenceFlag:cycleInference.cycleAbsenceFlag,isIrregular:cycleInference.isIrregular,phaseNote:cycleInference.phaseNote,crampSeverity,cycleMod},recommendationHooks:{readinessModel:'ml-ready-v1',splitSelector:profile?.recommendationHooks?.engine||'rule-based-v2',calorieTargetModel:'rule-based-calorie-v2'},ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,isCustomSplit:adaptiveSplit.isCustomSplit||false,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
 }
 
 // ── MEAL BUILDER ──
@@ -4432,6 +4443,9 @@ function renderSettings() {
   const calorieMode=p.customCalories?`${p.customCalories} kcal fixed`:`${trEnum('dietGoal',p.dietGoal)} adaptive`;
   const reminderSummary=buildProfileReminderSummary(p);
   const lastSyncLabel=formatLastSyncedLabel(getLastSyncMeta());
+  const showCycleCard=p.sex==='female'&&p.cycleProfile&&p.cycleProfile!==CYCLE_PROFILES.NOT_APPLICABLE;
+  const sortedCycleLogs=[...(p.cycleLogs||[])].filter(l=>l.startDate).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
+  const todayIso=new Date().toISOString().split('T')[0];
   document.getElementById('settingsBody').innerHTML = `
     <div class="settings-card">
       <div class="settings-card-head">
@@ -4487,6 +4501,16 @@ function renderSettings() {
       <div class="settings-copy">You still need browser notification permission for reminders to fire.</div>
     </div>
     <div class="settings-actions"><div class="settings-actions-copy"><strong>Save profile changes</strong><span>Home, plan defaults, recovery setup, and reminders will update together.</span></div><button class="btn btn-acc" onclick="saveSettingsProfile()">Save Changes</button></div>
+    ${showCycleCard?`<div class="settings-card">
+      <div class="settings-title">Period Log</div>
+      <div class="settings-copy">Log period start and end dates. Up to 12 entries are kept — used to estimate your cycle phase and adjust training intensity.</div>
+      <div style="margin:12px 0;">${sortedCycleLogs.length?sortedCycleLogs.map(l=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:14px;color:#f2f2f2;">Started ${l.startDate}${l.endDate?` · Ended ${l.endDate}`:' · End not logged'}</span><button class="btn btn-outline btn-sm" onclick="deleteCycleLogEntry('${l.startDate}')">Remove</button></div>`).join(''):'<div style="font-size:13px;color:#888;padding:8px 0;">No periods logged yet.</div>'}</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:4px;">
+        <label class="settings-field" style="flex:1;min-width:140px;margin:0;"><span class="settings-field-label">Period start</span><input type="date" id="newCycleStart" class="settings-input" max="${todayIso}"></label>
+        <label class="settings-field" style="flex:1;min-width:140px;margin:0;"><span class="settings-field-label">End date (optional)</span><input type="date" id="newCycleEnd" class="settings-input" max="${todayIso}"></label>
+        <button class="btn btn-outline btn-sm" style="align-self:flex-end;" onclick="addCycleLogEntry()">Add Entry</button>
+      </div>
+    </div>`:''}
     <div class="settings-card">
       <div class="settings-title">${t('settings.language')}</div>
       <div class="settings-copy">ADDAPT is available in English and German. Changing language reloads the app.</div>
@@ -4507,6 +4531,30 @@ function renderSettings() {
   syncSettingsFocusHint();
   syncSettingsSaunaHint();
 }
+
+window.addCycleLogEntry=function(){
+  const startDate=document.getElementById('newCycleStart')?.value;
+  if(!startDate){showToast('Date required','Please enter a period start date.');return;}
+  const endDate=document.getElementById('newCycleEnd')?.value||undefined;
+  if(endDate&&endDate<startDate){showToast('Invalid dates','End date must be on or after start date.');return;}
+  const p=window.userProfile;if(!p)return;
+  const logs=[...(p.cycleLogs||[])];
+  if(logs.some(l=>l.startDate===startDate)){showToast('Already logged','A period starting on this date is already recorded.');return;}
+  const entry={startDate,...(endDate?{endDate}:{})};
+  logs.push(entry);
+  logs.sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
+  p.cycleLogs=logs.slice(0,12);
+  if(window.fbSaveProfile)window.fbSaveProfile(p);
+  renderSettings();
+  showToast('Entry added','Period log updated.');
+};
+window.deleteCycleLogEntry=function(startDate){
+  const p=window.userProfile;if(!p)return;
+  p.cycleLogs=(p.cycleLogs||[]).filter(l=>l.startDate!==startDate);
+  if(window.fbSaveProfile)window.fbSaveProfile(p);
+  renderSettings();
+  showToast('Entry removed','Period log updated.');
+};
 
 window.toggleNotifSetting = function(key, val) {
   if (!window.userProfile) return;
