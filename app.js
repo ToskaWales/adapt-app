@@ -2891,8 +2891,9 @@ function updateCycleLogs(profile,{periodStartToday,periodEndToday,isoDate}){
     }
   }
   if(periodEndToday){
-    // Close the most recent open log (no endDate yet)
-    const openIdx=logs.findLastIndex(l=>!l.endDate);
+    // Close the most recent open log (no endDate yet) — avoid findLastIndex for older browser compat
+    let openIdx=-1;
+    for(let i=logs.length-1;i>=0;i--){if(!logs[i].endDate){openIdx=i;break;}}
     if(openIdx>=0)logs[openIdx]={...logs[openIdx],endDate:isoDate};
   }
   // Keep up to last 12 logs to bound profile size

@@ -123,17 +123,19 @@ export function inferCyclePhase(cycleLogs = [], cycleProfile = 'eumenorrheic', t
     .filter(l => l.startDate)
     .sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
 
-  if (!sortedLogs.length) {
-    return {
-      ...fallback,
-      cycleAbsenceFlag: true,
-    };
-  }
+  // No logs yet — user may simply not have started tracking; don't flag absence
+  if (!sortedLogs.length) return fallback;
 
   const lastStart = new Date(sortedLogs[0].startDate);
   const lastEnd = sortedLogs[0].endDate ? new Date(sortedLogs[0].endDate) : null;
   const daysSinceLastBleed = (todayMs - lastStart.getTime()) / 86400000;
-  const cycleAbsenceFlag = daysSinceLastBleed > 90;
+
+  // Only flag absence when the user has at least one logged period that is
+  // genuinely overdue. Suppress for profiles where long gaps are expected.
+  const isProfileWithExpectedGaps =
+    cycleProfile === CYCLE_PROFILES.PERIMENOPAUSE ||
+    cycleProfile === CYCLE_PROFILES.IRREGULAR;
+  const cycleAbsenceFlag = !isProfileWithExpectedGaps && daysSinceLastBleed > 90;
 
   const avgCycleLength = calcAvgCycleLength(cycleLogs) ?? 28;
   const variability = calcCycleLengthVariability(cycleLogs);

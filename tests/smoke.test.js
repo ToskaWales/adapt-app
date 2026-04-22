@@ -477,10 +477,28 @@ describe('inferCyclePhase', () => {
     expect(result.phase).toBe(CYCLE_PHASES.LATE_LUTEAL);
   });
 
-  it('sets cycleAbsenceFlag when no period logged in > 90 days', () => {
+  it('does NOT set cycleAbsenceFlag when no periods have ever been logged', () => {
+    // New users who haven't started tracking should not see the clinician prompt
+    const result = inferCyclePhase([], CYCLE_PROFILES.EUMENORRHEIC, '2025-06-15');
+    expect(result.cycleAbsenceFlag).toBe(false);
+  });
+
+  it('sets cycleAbsenceFlag when last logged period was > 90 days ago', () => {
     const logs = [{ startDate: '2024-01-01' }];
     const result = inferCyclePhase(logs, CYCLE_PROFILES.EUMENORRHEIC, '2025-06-15');
     expect(result.cycleAbsenceFlag).toBe(true);
+  });
+
+  it('does NOT set cycleAbsenceFlag for perimenopause even after a long gap', () => {
+    const logs = [{ startDate: '2024-01-01' }];
+    const result = inferCyclePhase(logs, CYCLE_PROFILES.PERIMENOPAUSE, '2025-06-15');
+    expect(result.cycleAbsenceFlag).toBe(false);
+  });
+
+  it('does NOT set cycleAbsenceFlag for irregular cycle profile after a long gap', () => {
+    const logs = [{ startDate: '2024-01-01' }];
+    const result = inferCyclePhase(logs, CYCLE_PROFILES.IRREGULAR, '2025-06-15');
+    expect(result.cycleAbsenceFlag).toBe(false);
   });
 
   it('reduces confidence for irregular cycle profile', () => {
