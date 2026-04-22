@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  inferCyclePhase,
+  getCycleSymptomModifier,
+  buildCycleFeatures,
+  calcAvgCycleLength,
+  calcCycleLengthVariability,
+  CYCLE_PHASES,
+  CYCLE_PROFILES,
+} from '../src/modules/cycle.js';
 import { getGoogleLoginErrorMessage, isInAppBrowser, shouldPreferGoogleRedirect } from '../src/modules/auth.js';
 import { calculateBMR, mlFeatureVecV2, shouldAutoDeload } from '../src/modules/fitness.js';
 import { getGoalAdherenceInsights, getWeeklyProgressSummary } from '../src/modules/insights.js';
@@ -209,8 +218,8 @@ describe('mlFeatureVecV2', () => {
     isoDate: '2025-01-06', // Monday
   };
 
-  it('returns a 10-element vector', () => {
-    expect(mlFeatureVecV2(baseCheckin)).toHaveLength(10);
+  it('returns a 14-element vector (10 base + 4 cycle features)', () => {
+    expect(mlFeatureVecV2(baseCheckin)).toHaveLength(14);
   });
 
   it('first element is bias term 1', () => {
@@ -370,6 +379,198 @@ describe('getAdaptiveScheme', () => {
   it('returns base scheme when null inputs are provided', () => {
     expect(getAdaptiveScheme(null, 'bench', [], [], 'chest')).toBeNull();
     expect(getAdaptiveScheme('3×8–12', null, [], [], 'chest')).toBe('3×8–12');
+  });
+});
+
+// ── CYCLE MODULE ──
+
+describe('calcAvgCycleLength', () => {
+  it('returns null with fewer than 2 logs', () => {
+    expect(calcAvgCycleLength([])).toBeNull();
+    expect(calcAvgCycleLength([{ startDate: '2025-01-01' }])).toBeNull();
+  });
+
+  it('returns the interval between two periods', () => {
+    const logs = [{ startDate: '2025-01-01' }, { startDate: '2025-01-29' }];
+    const avg = calcAvgCycleLength(logs);
+    expect(avg).toBeCloseTo(28, 0);
+  });
+
+  it('averages multiple cycle intervals', () => {
+    const logs = [
+      { startDate: '2025-01-01' },
+      { startDate: '2025-01-29' }, // 28 days
+      { startDate: '2025-02-28' }, // 30 days
+    ];
+    const avg = calcAvgCycleLength(logs);
+    expect(avg).toBeCloseTo(29, 0);
+  });
+
+  it('ignores implausible intervals (< 18 days or > 60 days)', () => {
+    const logs = [
+      { startDate: '2025-01-01' },
+      { startDate: '2025-01-05' }, // 4 days — filtered out
+      { startDate: '2025-02-05' }, // 31 days — valid
+    ];
+    const avg = calcAvgCycleLength(logs);
+    // Only the 31-day interval is valid; needs 2+ logs for calculation
+    // After filtering the 4-day interval, only one interval remains — still valid
+    expect(avg).toBeCloseTo(31, 0);
+  });
+});
+
+describe('calcCycleLengthVariability', () => {
+  it('returns null with fewer than 3 logs', () => {
+    expect(calcCycleLengthVariability([])).toBeNull();
+    expect(calcCycleLengthVariability([{ startDate: '2025-01-01' }, { startDate: '2025-01-29' }])).toBeNull();
+  });
+
+  it('returns near-zero variability for perfectly regular cycles', () => {
+    const logs = [
+      { startDate: '2025-01-01' },
+      { startDate: '2025-01-29' },
+      { startDate: '2025-02-26' },
+      { startDate: '2025-03-26' },
+    ];
+    const v = calcCycleLengthVariability(logs);
+    expect(v).toBeGreaterThanOrEqual(0);
+    expect(v).toBeLessThan(1);
+  });
+});
+
+describe('inferCyclePhase', () => {
+  it('returns UNKNOWN for not_applicable profile', () => {
+    const result = inferCyclePhase([], 'not_applicable', '2025-06-15');
+    expect(result.phase).toBe(CYCLE_PHASES.UNKNOWN);
+    expect(result.confidence).toBe(0);
+  });
+
+  it('returns UNKNOWN with phaseNote for hormonal contraception', () => {
+    const result = inferCyclePhase(
+      [{ startDate: '2025-06-01' }],
+      CYCLE_PROFILES.HORMONAL_CONTRACEPTION,
+      '2025-06-15'
+    );
+    expect(result.phase).toBe(CYCLE_PHASES.UNKNOWN);
+    expect(result.phaseNote).toBeTruthy();
+  });
+
+  it('infers menstrual phase on day 1–5', () => {
+    const logs = [{ startDate: '2025-06-14', endDate: null }];
+    const result = inferCyclePhase(logs, CYCLE_PROFILES.EUMENORRHEIC, '2025-06-14');
+    expect(result.phase).toBe(CYCLE_PHASES.MENSTRUAL);
+    expect(result.cycleDay).toBe(1);
+  });
+
+  it('infers early follicular phase around day 8', () => {
+    const logs = [{ startDate: '2025-06-01', endDate: '2025-06-05' }];
+    const result = inferCyclePhase(logs, CYCLE_PROFILES.EUMENORRHEIC, '2025-06-09');
+    expect(result.phase).toBe(CYCLE_PHASES.EARLY_FOLLICULAR);
+  });
+
+  it('infers late luteal phase in the final days before next period', () => {
+    const logs = [
+      { startDate: '2025-05-01' },
+      { startDate: '2025-06-01' }, // 31-day cycle; day 25 = late luteal
+    ];
+    const result = inferCyclePhase(logs, CYCLE_PROFILES.EUMENORRHEIC, '2025-06-25');
+    expect(result.phase).toBe(CYCLE_PHASES.LATE_LUTEAL);
+  });
+
+  it('does NOT set cycleAbsenceFlag when no periods have ever been logged', () => {
+    // New users who haven't started tracking should not see the clinician prompt
+    const result = inferCyclePhase([], CYCLE_PROFILES.EUMENORRHEIC, '2025-06-15');
+    expect(result.cycleAbsenceFlag).toBe(false);
+  });
+
+  it('sets cycleAbsenceFlag when last logged period was > 90 days ago', () => {
+    const logs = [{ startDate: '2024-01-01' }];
+    const result = inferCyclePhase(logs, CYCLE_PROFILES.EUMENORRHEIC, '2025-06-15');
+    expect(result.cycleAbsenceFlag).toBe(true);
+  });
+
+  it('does NOT set cycleAbsenceFlag for perimenopause even after a long gap', () => {
+    const logs = [{ startDate: '2024-01-01' }];
+    const result = inferCyclePhase(logs, CYCLE_PROFILES.PERIMENOPAUSE, '2025-06-15');
+    expect(result.cycleAbsenceFlag).toBe(false);
+  });
+
+  it('does NOT set cycleAbsenceFlag for irregular cycle profile after a long gap', () => {
+    const logs = [{ startDate: '2024-01-01' }];
+    const result = inferCyclePhase(logs, CYCLE_PROFILES.IRREGULAR, '2025-06-15');
+    expect(result.cycleAbsenceFlag).toBe(false);
+  });
+
+  it('reduces confidence for irregular cycle profile', () => {
+    const regularLogs = [
+      { startDate: '2025-05-01' },
+      { startDate: '2025-06-01' },
+    ];
+    const regularResult = inferCyclePhase(regularLogs, CYCLE_PROFILES.EUMENORRHEIC, '2025-06-10');
+    const irregularResult = inferCyclePhase(regularLogs, CYCLE_PROFILES.IRREGULAR, '2025-06-10');
+    expect(irregularResult.confidence).toBeLessThan(regularResult.confidence);
+  });
+});
+
+describe('getCycleSymptomModifier', () => {
+  it('returns no change when confidence is below threshold', () => {
+    const result = getCycleSymptomModifier(CYCLE_PHASES.MENSTRUAL, 5, ['fatigue'], 0.3);
+    expect(result.isApplied).toBe(false);
+    expect(result.tierDelta).toBe(0);
+  });
+
+  it('reduces tier on menstrual phase with severe cramps and fatigue', () => {
+    const result = getCycleSymptomModifier(CYCLE_PHASES.MENSTRUAL, 4, ['fatigue'], 0.8);
+    expect(result.isApplied).toBe(true);
+    expect(result.tierDelta).toBe(-1);
+    expect(result.note).toBeTruthy();
+  });
+
+  it('reduces tier on menstrual phase with severe cramps alone', () => {
+    const result = getCycleSymptomModifier(CYCLE_PHASES.MENSTRUAL, 4, [], 0.8);
+    expect(result.isApplied).toBe(true);
+    expect(result.tierDelta).toBe(-1);
+  });
+
+  it('reduces tier in late luteal phase with moderate cramps and fatigue', () => {
+    const result = getCycleSymptomModifier(CYCLE_PHASES.LATE_LUTEAL, 2, ['fatigue'], 0.8);
+    expect(result.isApplied).toBe(true);
+    expect(result.tierDelta).toBe(-1);
+  });
+
+  it('returns no change in follicular phase with mild symptoms', () => {
+    const result = getCycleSymptomModifier(CYCLE_PHASES.EARLY_FOLLICULAR, 1, ['bloating'], 0.8);
+    expect(result.isApplied).toBe(false);
+    expect(result.tierDelta).toBe(0);
+  });
+});
+
+describe('buildCycleFeatures', () => {
+  it('returns exactly 4 values', () => {
+    const result = buildCycleFeatures({ phase: CYCLE_PHASES.MENSTRUAL, confidence: 0.9, cycleDay: 3, avgCycleLength: 28 }, 2);
+    expect(result).toHaveLength(4);
+  });
+
+  it('all values are between 0 and 1', () => {
+    const result = buildCycleFeatures({ phase: CYCLE_PHASES.LATE_LUTEAL, confidence: 0.7, cycleDay: 25, avgCycleLength: 28 }, 5);
+    result.forEach(v => {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    });
+  });
+
+  it('uses neutral defaults when cycleInference is empty', () => {
+    const result = buildCycleFeatures({}, 0);
+    expect(result[0]).toBe(0.5); // unknown phase → neutral
+    expect(result[1]).toBe(0);   // zero confidence
+    expect(result[3]).toBe(0);   // no cramps
+  });
+
+  it('menstrual phase maps to 0.0, late luteal to 0.9', () => {
+    const menstrual = buildCycleFeatures({ phase: CYCLE_PHASES.MENSTRUAL, confidence: 1, cycleDay: 2, avgCycleLength: 28 }, 0);
+    const lateLuteal = buildCycleFeatures({ phase: CYCLE_PHASES.LATE_LUTEAL, confidence: 1, cycleDay: 25, avgCycleLength: 28 }, 0);
+    expect(menstrual[0]).toBe(0.0);
+    expect(lateLuteal[0]).toBe(0.9);
   });
 });
 

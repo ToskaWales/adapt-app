@@ -8,6 +8,7 @@ import{buildFirstRunEmptyState,getRecommendedFocusMuscles,getRecommendedTraining
 import{formatLastSyncedLabel,registerServiceWorker}from'./src/modules/ui.js';
 import{APP_I18N}from'./src/modules/i18n.js';
 import{calculateBMR,shouldAutoDeload,mlFeatureVecV2,getMuscleRecoveryMap,getMuscleVolumeModifier,getAdaptiveScheme,deriveSessionTag}from'./src/modules/fitness.js';
+import{inferCyclePhase,getCycleSymptomModifier,buildCycleFeatures,CYCLE_PHASES,CYCLE_PROFILES}from'./src/modules/cycle.js';
 const cfg={apiKey:"AIzaSyDQKmSRuK0cpIupdwVOilD8gX88ML-3K8s",authDomain:"adaptive-plan-app.firebaseapp.com",projectId:"adaptive-plan-app",storageBucket:"adaptive-plan-app.firebasestorage.app",messagingSenderId:"214755243355",appId:"1:214755243355:web:4fe3818b936a442477967e"};
 const {auth,db,prov}=createFirebaseServices(cfg);
 registerServiceWorker();
@@ -1292,6 +1293,12 @@ function daysAgo(ms){return daysBetween(ms,Date.now());}
 // ── CHECK-IN META (show days since last) ──
 async function populateCheckinMeta(){
   const p=window.userProfile;
+  // Show cycle symptoms section for female users who have a cycle profile set
+  const cycleSection=document.getElementById('ciCycleSection');
+  if(cycleSection){
+    const showCycle=p?.sex==='female'&&p?.cycleProfile&&p.cycleProfile!==CYCLE_PROFILES.NOT_APPLICABLE;
+    cycleSection.style.display=showCycle?'block':'none';
+  }
   if(p?.weight&&p?.height&&p?.age){const sAdj=(p.sex||'male')==='female'?-161:5;const tdee=Math.round((10*(p.weight||75)+6.25*(p.height||175)-5*(p.age||25)+sAdj)*1.55);const el=document.getElementById('calCalcVal');if(el)el.textContent=tdee;}
   const badge=document.getElementById('ciSinceBadge');
   if(!badge)return;
@@ -1665,6 +1672,21 @@ function obSel(el,key,val){
   obAnswers[key]=val;
   if(key==='goal')syncSplitSuggestion();
   if(key==='bodyGoal')obAnswers.dietGoal=BODY_GOAL_TO_DIET[val]||'maintain';
+  if(key==='sex'){
+    const cycleSection=document.getElementById('ob3CycleSection');
+    if(cycleSection)cycleSection.style.display=val==='female'?'block':'none';
+    // Default cycleProfile based on sex
+    if(val!=='female')obAnswers.cycleProfile=CYCLE_PROFILES.NOT_APPLICABLE;
+    else{
+      if(!obAnswers.cycleProfile||obAnswers.cycleProfile===CYCLE_PROFILES.NOT_APPLICABLE)obAnswers.cycleProfile=CYCLE_PROFILES.EUMENORRHEIC;
+      // Visually select the default cycle-profile card if none already selected
+      const cycleCards=document.querySelectorAll('#ob3CycleSection .opt-card');
+      if(![...cycleCards].some(c=>c.classList.contains('sel'))){
+        const defaultCard=document.querySelector('#ob3CycleSection [data-value="eumenorrheic"]');
+        if(defaultCard){cycleCards.forEach(c=>c.classList.remove('sel'));defaultCard.classList.add('sel');}
+      }
+    }
+  }
   if(key==='structurePreset')selectedStructurePreset=val;
   const nb=document.getElementById('ob'+obStep+'n');
   if(nb)nb.disabled=false;
@@ -1998,6 +2020,10 @@ function sanitizeOnboardingProfile(raw){
     notifCheckin:selectedNotifPrefs.checkin!==false,
     notifEmom:!!selectedNotifPrefs.emom,
     notifSauna:!!selectedNotifPrefs.sauna,
+    // Cycle profile — only relevant for female/other sex; defaults to not_applicable
+    cycleProfile:raw.cycleProfile||(raw.sex==='female'?CYCLE_PROFILES.EUMENORRHEIC:CYCLE_PROFILES.NOT_APPLICABLE),
+    contraceptionStatus:raw.contraceptionStatus||'none',
+    cycleLogs:Array.isArray(raw.cycleLogs)?raw.cycleLogs:[],
     recommendationHooks:{
       engine:'rule-based-v2',
       mlReadyAfterCheckins:8,
@@ -2116,7 +2142,7 @@ function calcWeightTrend(checkins,currentWeight,dietGoal){
 }
 
 // ── LIGHTWEIGHT ML (ON-DEVICE) ──
-const ML_MODEL_VERSION=2;
+const ML_MODEL_VERSION=3;
 const ML_MODEL_STORAGE_KEY='addapt_ml_model_cache';
 
 function mlSigmoid(z){return 1/(1+Math.exp(-z));}
@@ -2156,7 +2182,8 @@ function buildMlDataset(checkins){
     const c=sorted[i],next=sorted[i+1];
     if(c.energy===undefined||c.stress===undefined)continue;
     const priorCheckins=sorted.slice(Math.max(0,i-3),i);
-    const x=mlFeatureVecV2(c,priorCheckins);
+    const cf=c.cycleSnapshot?buildCycleFeatures(c.cycleSnapshot,c.cycleSnapshot.crampSeverity||0):null;
+    const x=mlFeatureVecV2(c,priorCheckins,cf);
     const y=(next.lifts==='slightly_up'||next.lifts==='pbs')?1:0;
     xs.push(x);ys.push(y);
   }
@@ -2208,7 +2235,7 @@ function calcDayOfWeekInsight(checkins){
   if(highest.avg-lowest.avg<1.0)return null;
   return{bestDay:highest.day,bestAvg:highest.avg,worstDay:lowest.day,worstAvg:lowest.avg};
 }
-function getMlReadinessSignal(pastCheckins,currentCheckin){
+function getMlReadinessSignal(pastCheckins,currentCheckin,cycleFeatures=null){
   const ds=buildMlDataset(pastCheckins);
   if(ds.xs.length<8)return{enabled:false,samples:ds.xs.length,reason:'not-enough-data'};
   const fingerprint=mlDatasetFingerprint(ds.xs,ds.ys);
@@ -2217,7 +2244,8 @@ function getMlReadinessSignal(pastCheckins,currentCheckin){
   if(!model)return{enabled:false,samples:ds.xs.length,reason:'train-failed'};
   if(!cached)mlSaveCachedModel(fingerprint,model.w,ds.xs.length);
   const priorForCurrent=pastCheckins.slice(-3);
-  const p=mlSigmoid(mlDot(model.w,mlFeatureVecV2(currentCheckin,priorForCurrent)));
+  // Pass cycle features during inference — training data uses neutral defaults
+  const p=mlSigmoid(mlDot(model.w,mlFeatureVecV2(currentCheckin,priorForCurrent,cycleFeatures)));
   const confidence=Math.abs(p-0.5)*2;
   const perf=evalMlModel(model,ds.xs,ds.ys);
   const dayInsight=calcDayOfWeekInsight(pastCheckins);
@@ -2861,6 +2889,26 @@ function renderGWCard(checkins,p){const gw=p.goalWeight,cw=checkins.find(c=>c.we
 // ════════════════════════════════════
 // CHECK-IN SUBMIT
 // ════════════════════════════════════
+// ── CYCLE LOG HELPERS ──
+function updateCycleLogs(profile,{periodStartToday,periodEndToday,isoDate}){
+  if(!profile||(!periodStartToday&&!periodEndToday))return profile;
+  const logs=[...(profile.cycleLogs||[])];
+  if(periodStartToday){
+    // Only add a new start if there isn't already one for today
+    if(!logs.some(l=>l.startDate===isoDate)){
+      logs.push({startDate:isoDate,endDate:null});
+    }
+  }
+  if(periodEndToday){
+    // Close the most recent open log (no endDate yet) — avoid findLastIndex for older browser compat
+    let openIdx=-1;
+    for(let i=logs.length-1;i>=0;i--){if(!logs[i].endDate){openIdx=i;break;}}
+    if(openIdx>=0)logs[openIdx]={...logs[openIdx],endDate:isoDate};
+  }
+  // Keep up to last 12 logs to bound profile size
+  return{...profile,cycleLogs:logs.slice(-12)};
+}
+window.toggleCycleButton=function(el){el.classList.toggle('sel');};
 function setGeneratingContext(mode='checkin'){
   const title=document.getElementById('genTitle');
   const sub=document.getElementById('genSub');
@@ -2887,7 +2935,11 @@ function setGeneratingContext(mode='checkin'){
 function submitCheckin(){
   const energy=parseInt(document.getElementById('eS').value),stress=parseInt(document.getElementById('sS').value),weight=document.getElementById('ciW').value?parseFloat(document.getElementById('ciW').value):null,notes=document.getElementById('ciNotes').value||'',sleep=document.querySelector('#sleepC .chip.sel')?.dataset.val||'7-8hrs',lifts=document.querySelector('#liftC .chip.sel')?.dataset.val||'same',diet=document.querySelector('#dietC .chip.sel')?.dataset.val||'under',calOverride=getCalOverride();
   const sorenessAreas=[];
-  window.currentCheckin={energy,stress,weight,notes,sleep,lifts,diet,calOverride,sorenessAreas,isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB')};
+  const crampSeverity=parseInt(document.getElementById('ciCrampSlider')?.value||'0')||0;
+  const cycleSymptoms=[...document.querySelectorAll('#ciCycleSympChips .chip.sel')].map(c=>c.dataset.val).filter(Boolean);
+  const periodStartToday=document.getElementById('ciPeriodStart')?.classList.contains('sel')||false;
+  const periodEndToday=document.getElementById('ciPeriodEnd')?.classList.contains('sel')||false;
+  window.currentCheckin={energy,stress,weight,notes,sleep,lifts,diet,calOverride,sorenessAreas,crampSeverity,cycleSymptoms,periodStartToday,periodEndToday,isoDate:new Date().toISOString().split('T')[0],date:new Date().toLocaleDateString('en-GB')};
   trackFlowEvent('checkin_submitted',{hasWeight:Boolean(weight),energy,stress,lifts,diet});
   goTo('generating');runSteps('checkin');
   setTimeout(async()=>{
@@ -2896,7 +2948,14 @@ function submitCheckin(){
     const plan=buildPlan(window.userProfile,window.currentCheckin,lastSessions,pastCheckins,recentActivities);
     window.currentPlanData=plan;
     if(window.currentUser?.uid)setCachedPlan(window.currentUser.uid,plan);
-    if(window.fbSaveCheckin)await window.fbSaveCheckin({...window.currentCheckin,planSummary:plan.summary});
+    const cycleCtx=plan.analysis?.cycle;
+    const cycleSnapshot=cycleCtx?{phase:cycleCtx.phase,confidence:cycleCtx.confidence,cycleDay:cycleCtx.cycleDay,avgCycleLength:cycleCtx.avgCycleLength,crampSeverity:cycleCtx.crampSeverity}:null;
+    if(window.fbSaveCheckin)await window.fbSaveCheckin({...window.currentCheckin,planSummary:plan.summary,...(cycleSnapshot?{cycleSnapshot}:{})});
+    // Update cycle logs if user tapped period start/end
+    if(window.currentCheckin.periodStartToday||window.currentCheckin.periodEndToday){
+      window.userProfile=updateCycleLogs(window.userProfile,window.currentCheckin);
+      if(window.fbSaveProfile)window.fbSaveProfile(window.userProfile);
+    }
     trackFlowEvent('checkin_saved',{kcal:plan.summary?.kcal||plan.analysis?.kcal||null,tier:plan.analysis?.tier||null});
     renderPlan(plan);checkMilestones(getHabitCheckins(pastCheckins).length+1);goTo('result');
   },5400);
@@ -3676,13 +3735,18 @@ function adaptSplitForPain(splitDays,equipment,painAreas=[]){
 function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivities=[]){
   if(!profile)profile={goal:'general',bodyGoal:'maintain',experience:'intermediate',days:4,sessionLen:60,focusMuscles:['chest','back'],equipment:'full',dietGoal:'maintain',restrictions:['none'],weight:75,height:175,age:25,sex:'male',activityLevel:'moderate',workStyle:'mixed',bodyFat:18,painAreas:['none'],consistency:'building',selfRating:'balanced'};
   const{goal='general',bodyGoal='maintain',experience='beginner',days=3,sessionLen=60,focusMuscles=[],equipment='full',dietGoal='maintain',restrictions=['none'],weight:pw,height=175,age=25,sex='male',customCalories,activityLevel='moderate',workStyle='mixed',bodyFat=18,painAreas=['none'],consistency='building',selfRating='balanced',saunaGoal='recovery'}=profile;
-  const{energy,stress,sleep,lifts,diet,weight:cw,calOverride,sorenessAreas=[]}=checkin;
+  const{energy,stress,sleep,lifts,diet,weight:cw,calOverride,sorenessAreas=[],crampSeverity=0,cycleSymptoms=[]}=checkin;
   const weight=cw||pw||75;
   let tier;if(energy<=3)tier=0;else if(energy<=5)tier=((sleep==='7-8hrs'||sleep==='8+hrs')&&stress<=5)?1:0;else if(energy<=7)tier=(sleep==='<5hrs'||stress>=8)?1:2;else tier=((sleep==='<5hrs'||sleep==='5-6hrs')&&stress>=7)?1:2;
   const baseTier=tier;
   const autoDeloadReason=getAutoDeloadTrigger(pastCheckins,lastSessions);
   if(autoDeloadReason)tier=0;
-  const mlSignal=getMlReadinessSignal(pastCheckins,checkin);
+  // Cycle phase inference — used as a soft contextual modifier, not a dominant driver
+  const cycleProfile=profile.cycleProfile||CYCLE_PROFILES.NOT_APPLICABLE;
+  const cycleLogs=profile.cycleLogs||[];
+  const cycleInference=inferCyclePhase(cycleLogs,cycleProfile);
+  const cfVec=buildCycleFeatures(cycleInference,crampSeverity);
+  const mlSignal=getMlReadinessSignal(pastCheckins,checkin,cfVec);
   if(!autoDeloadReason&&mlSignal.enabled&&mlSignal.confidence>=0.18){
     if(mlSignal.probability>=0.67&&tier<2)tier++;
     else if(mlSignal.probability<=0.33&&tier>0)tier--;
@@ -3691,6 +3755,9 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivit
   else if(consistency==='building'&&tier===2&&pastCheckins.length<2)tier=1;
   if(selfRating==='need_support'&&tier>0)tier--;
   if(selfRating==='ready_to_push'&&energy>=7&&stress<=6&&(sleep==='7-8hrs'||sleep==='8+hrs'))tier=Math.min(2,tier+1);
+  // Cycle symptom modifier — soft constraint, only applies when not already auto-deloading
+  const cycleMod=getCycleSymptomModifier(cycleInference.phase,crampSeverity,cycleSymptoms,cycleInference.confidence);
+  if(!autoDeloadReason&&cycleMod.isApplied&&tier>0)tier=Math.max(0,tier+cycleMod.tierDelta);
   const block=calcBlock(pastCheckins);const isStr=block.isStr&&tier!==0;
   const RR={beginner:{comp:{2:'10–15',1:'12–15',0:'15'},iso:{2:'12–15',1:'15',0:'15–20'}},intermediate:{comp:{2:'8–12',1:'10–12',0:'12–15'},iso:{2:'10–12',1:'12',0:'15'}},advanced:{comp:{2:'6–10',1:'8–10',0:'10–12'},iso:{2:'8–10',1:'10',0:'12'}}};
   const SRR={beginner:{comp:{2:'6–8',1:'8–10',0:'10–12'},iso:{2:'8–10',1:'10',0:'12'}},intermediate:{comp:{2:'3–6',1:'5–6',0:'8–10'},iso:{2:'6–8',1:'8',0:'10'}},advanced:{comp:{2:'1–5',1:'3–5',0:'6–8'},iso:{2:'4–6',1:'6',0:'8'}}};
@@ -3720,7 +3787,7 @@ function buildPlan(profile,checkin,lastSessions=[],pastCheckins=[],recentActivit
   const splitDays=adaptSplitForPain(adaptiveSplit.splitDays,equipment,painAreas);
   const mealCount=kcal<2000?3:kcal<2800?4:kcal<3600?5:6;
   const meals=buildMeals(kcal,protein,carbs,fat,mealCount,restrictions,effectiveDietGoal);
-  return{summary:{tier,kcal,protein,carbs,fat,days,goal,bodyGoal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal:effectiveDietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,cardioAdj,block,isStr,calOverride,autoDeloadReason,activityLevel,workStyle,bodyGoal,bodyFat,painAreas,consistency,selfRating,recoveryFocus:saunaGoal,activityMultiplier,recommendationHooks:{readinessModel:'ml-ready-v1',splitSelector:profile?.recommendationHooks?.engine||'rule-based-v2',calorieTargetModel:'rule-based-calorie-v2'},ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,isCustomSplit:adaptiveSplit.isCustomSplit||false,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
+  return{summary:{tier,kcal,protein,carbs,fat,days,goal,bodyGoal},analysis:{energy,stress,sleep,tier,lifts,diet,kcal,protein,carbs,fat,dietGoal:effectiveDietGoal,weight,tdee,trendMsg:trend.msg,trendAdj:trend.adj,cardioAdj,block,isStr,calOverride,autoDeloadReason,activityLevel,workStyle,bodyGoal,bodyFat,painAreas,consistency,selfRating,recoveryFocus:saunaGoal,activityMultiplier,cycle:{phase:cycleInference.phase,cycleDay:cycleInference.cycleDay,confidence:cycleInference.confidence,avgCycleLength:cycleInference.avgCycleLength,cycleAbsenceFlag:cycleInference.cycleAbsenceFlag,isIrregular:cycleInference.isIrregular,phaseNote:cycleInference.phaseNote,crampSeverity,cycleMod},recommendationHooks:{readinessModel:'ml-ready-v1',splitSelector:profile?.recommendationHooks?.engine||'rule-based-v2',calorieTargetModel:'rule-based-calorie-v2'},ml:{...mlSignal,baseTier,adjusted:baseTier!==tier}},splitDays,isCustomSplit:adaptiveSplit.isCustomSplit||false,meals,tier,focusMuscles,experience,sIdx,splitMeta:adaptiveSplit.splitMeta};
 }
 
 // ── MEAL BUILDER ──
@@ -3751,7 +3818,13 @@ function renderPlan(plan,activeTab='overview',focusDay=''){
     ?`<div style="padding:12px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.22);border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:#00d4ff;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">ML Performance · v${ml.version}${ml.cached?' · cached':''}</div><div style="font-size:13px;color:#f2f2f2;line-height:1.5;">Accuracy ${(ml.performance.accuracy*100).toFixed(0)}% · Brier loss ${ml.performance.brier.toFixed(3)} · ${ml.performance.samples} training samples</div></div>`
     :'';
   const cardioAdjHtml=cardioAdj?`<div style="padding:12px;background:rgba(200,255,0,0.05);border:1px solid rgba(200,255,0,0.15);border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:#c8ff00;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Cardio Adjustment · +${cardioAdj} kcal/day</div><div style="font-size:13px;color:#f2f2f2;">Weekly cardio activity is raising your daily calorie target to offset the burn. Keep logging runs, swims and cycles to keep it accurate.</div></div>`:'';
-  document.getElementById('tab-overview').innerHTML=`<div class="stat-row"><div class="stat-box"><div class="stat-val">${energy}/10</div><div class="stat-lbl">Energy</div></div><div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal${calOverride?' (custom)':''}</div></div><div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div><div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div></div><div class="block-card ${isStr?'str':'hyp'}"><div class="block-tag">${isStr?'Strength Block':'Hypertrophy Block'}</div><div class="block-name">${block.name} Block — Week ${block.week} of ${block.total}</div><div class="block-desc">${isStr?'Lower reps, heavier weight, 3–4 min rest. Neural adaptation.':'Higher reps, moderate weight, shorter rest. Muscle growth and volume.'}</div>${block.earlyTrigger?`<div style="font-size:12px;color:#ffaa00;margin-bottom:8px;">${block.earlyTrigger}</div>`:''}<div class="block-row"><div class="block-bar-track"><div class="block-bar-fill" style="width:${Math.round(block.week/block.total*100)}%;"></div></div><div class="block-weeks">${block.week}/${block.total} weeks</div></div></div><h2>Analysis</h2><p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>${mlInsight}${mlPerfCard}${autoDeloadReason?`<p style="color:#ffaa00;">${autoDeloadReason}</p>`:''}<p>${{regressed:'Lifts went backwards. Do not add weight — fix recovery and nutrition first.',same:'Held steady. Target +1 rep or 2.5kg on at least one compound.',slightly_up:'Good progress. Keep increments small and consistent.',pbs:'PRs hit. Ride this momentum carefully.'}[analysis.lifts]||''}</p><p>${dietMsg}</p>${trendMsg?`<div style="padding:12px;background:${trendAdj>0?'rgba(200,255,0,0.05)':trendAdj<0?'rgba(255,77,0,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${trendAdj>0?'rgba(200,255,0,0.15)':trendAdj<0?'rgba(255,77,0,0.15)':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:${trendAdj>0?'#c8ff00':trendAdj<0?'#ff4d00':'#888'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Weight Trend${trendAdj?` · ${trendAdj>0?'+':''}${trendAdj} kcal`:''}</div><div style="font-size:13px;color:#f2f2f2;">${trendMsg}</div></div>`:''}${cardioAdjHtml}<h2>Macros</h2><ul><li><span>Daily Calories</span><span class="li-r">${kcal} kcal${calOverride?' (custom)':''}</span></li><li><span>TDEE estimate</span><span class="li-r">${tdee} kcal</span></li>${cardioAdj?`<li><span>Cardio adjustment</span><span class="li-r" style="color:#c8ff00;">+${cardioAdj} kcal/day</span></li>`:''}<li><span>Protein</span><span class="li-r">${protein}g · ${protein*4} kcal</span></li><li><span>Carbs</span><span class="li-r">${carbs}g · ${carbs*4} kcal</span></li><li><span>Fats</span><span class="li-r">${fat}g · ${fat*9} kcal</span></li></ul><h2>Profile</h2><ul><li><span>Goal</span><span class="li-r">${cap(p.goal||'general')}</span></li><li><span>Body goal</span><span class="li-r">${BODY_GOAL_LABELS[analysis.bodyGoal||p.bodyGoal||'maintain']||cap(analysis.bodyGoal||p.bodyGoal||'maintain')}</span></li><li><span>Focus muscles</span><span class="li-r">${(focusMuscles||[]).map(cap).join(' & ')}</span></li><li><span>Experience</span><span class="li-r">${cap(experience)}</span></li><li><span>Split</span><span class="li-r">${isCustomSplit?'Custom':'Auto'} · ${p.days||4} days · ${p.sessionLen||60} min</span></li><li><span>Body fat est.</span><span class="li-r">${p.bodyFat?`${p.bodyFat}%`:'—'}</span></li><li><span>Lifestyle</span><span class="li-r">${cap(String(analysis.activityLevel||p.activityLevel||'moderate').replace(/_/g,' '))} · ${cap(String(analysis.workStyle||p.workStyle||'mixed').replace(/_/g,' '))}</span></li><li><span>Pain flags</span><span class="li-r">${(analysis.painAreas||p.painAreas||[]).filter(v=>v&&v!=='none').map(v=>cap(String(v).replace(/_/g,' '))).join(' · ')||'None'}</span></li><li><span>Diet goal</span><span class="li-r">${cap(dietGoal)}</span></li></ul>${profileHtml}${freqHtml}${setHtml}${whyHtml}`;
+  const cycleCtx=analysis.cycle;
+  const PHASE_LABEL={menstrual:'Menstrual',early_follicular:'Early Follicular',ovulatory:'Ovulatory',early_luteal:'Early Luteal',late_luteal:'Late Luteal',unknown:'Unknown'};
+  const cycleCardHtml=cycleCtx&&cycleCtx.phase&&cycleCtx.phase!==CYCLE_PHASES.UNKNOWN&&cycleCtx.confidence>0
+    ?`<div style="padding:12px;background:rgba(255,105,180,0.05);border:1px solid rgba(255,105,180,0.18);border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:#ff69b4;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Cycle Context · ${PHASE_LABEL[cycleCtx.phase]||cycleCtx.phase}${cycleCtx.cycleDay?` · Day ${cycleCtx.cycleDay}`:''}</div><div style="font-size:13px;color:#f2f2f2;line-height:1.5;">${cycleCtx.cycleMod?.isApplied?cycleCtx.cycleMod.note:'Cycle phase noted — no adjustment needed based on your logged symptoms today.'}</div>${cycleCtx.cycleAbsenceFlag?`<div style="font-size:12px;color:#ffaa00;margin-top:6px;">No period logged in over 90 days. If this is unexpected, consider speaking with a clinician.</div>`:''}<div style="font-size:11px;color:#888;margin-top:6px;">Confidence ${Math.round(cycleCtx.confidence*100)}% · Cycle is one of several signals — symptoms and readiness drive most adjustments.</div></div>`
+    :cycleCtx?.cycleAbsenceFlag?`<div style="padding:12px;background:rgba(255,170,0,0.05);border:1px solid rgba(255,170,0,0.18);border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:#ffaa00;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Cycle Log</div><div style="font-size:13px;color:#f2f2f2;">No period logged in over 90 days. If this is unexpected, consider speaking with a clinician.</div></div>`
+    :'';
+  document.getElementById('tab-overview').innerHTML=`<div class="stat-row"><div class="stat-box"><div class="stat-val">${energy}/10</div><div class="stat-lbl">Energy</div></div><div class="stat-box"><div class="stat-val">${kcal}</div><div class="stat-lbl">kcal${calOverride?' (custom)':''}</div></div><div class="stat-box"><div class="stat-val">${protein}g</div><div class="stat-lbl">Protein</div></div><div class="stat-box"><div class="stat-val">${{0:'Deload',1:'Mod',2:'Full'}[tier]}</div><div class="stat-lbl">Mode</div></div></div><div class="block-card ${isStr?'str':'hyp'}"><div class="block-tag">${isStr?'Strength Block':'Hypertrophy Block'}</div><div class="block-name">${block.name} Block — Week ${block.week} of ${block.total}</div><div class="block-desc">${isStr?'Lower reps, heavier weight, 3–4 min rest. Neural adaptation.':'Higher reps, moderate weight, shorter rest. Muscle growth and volume.'}</div>${block.earlyTrigger?`<div style="font-size:12px;color:#ffaa00;margin-bottom:8px;">${block.earlyTrigger}</div>`:''}<div class="block-row"><div class="block-bar-track"><div class="block-bar-fill" style="width:${Math.round(block.week/block.total*100)}%;"></div></div><div class="block-weeks">${block.week}/${block.total} weeks</div></div></div><h2>Analysis</h2><p>Recovery: <strong>${{0:'poor — deload week',1:'moderate — controlled effort',2:'strong — push hard'}[tier]}</strong></p>${mlInsight}${mlPerfCard}${cycleCardHtml}${autoDeloadReason?`<p style="color:#ffaa00;">${autoDeloadReason}</p>`:''}<p>${{regressed:'Lifts went backwards. Do not add weight — fix recovery and nutrition first.',same:'Held steady. Target +1 rep or 2.5kg on at least one compound.',slightly_up:'Good progress. Keep increments small and consistent.',pbs:'PRs hit. Ride this momentum carefully.'}[analysis.lifts]||''}</p><p>${dietMsg}</p>${trendMsg?`<div style="padding:12px;background:${trendAdj>0?'rgba(200,255,0,0.05)':trendAdj<0?'rgba(255,77,0,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${trendAdj>0?'rgba(200,255,0,0.15)':trendAdj<0?'rgba(255,77,0,0.15)':'rgba(255,255,255,0.06)'};border-radius:10px;margin-bottom:12px;"><div style="font-size:10px;color:${trendAdj>0?'#c8ff00':trendAdj<0?'#ff4d00':'#888'};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Weight Trend${trendAdj?` · ${trendAdj>0?'+':''}${trendAdj} kcal`:''}</div><div style="font-size:13px;color:#f2f2f2;">${trendMsg}</div></div>`:''}${cardioAdjHtml}<h2>Macros</h2><ul><li><span>Daily Calories</span><span class="li-r">${kcal} kcal${calOverride?' (custom)':''}</span></li><li><span>TDEE estimate</span><span class="li-r">${tdee} kcal</span></li>${cardioAdj?`<li><span>Cardio adjustment</span><span class="li-r" style="color:#c8ff00;">+${cardioAdj} kcal/day</span></li>`:''}<li><span>Protein</span><span class="li-r">${protein}g · ${protein*4} kcal</span></li><li><span>Carbs</span><span class="li-r">${carbs}g · ${carbs*4} kcal</span></li><li><span>Fats</span><span class="li-r">${fat}g · ${fat*9} kcal</span></li></ul><h2>Profile</h2><ul><li><span>Goal</span><span class="li-r">${cap(p.goal||'general')}</span></li><li><span>Body goal</span><span class="li-r">${BODY_GOAL_LABELS[analysis.bodyGoal||p.bodyGoal||'maintain']||cap(analysis.bodyGoal||p.bodyGoal||'maintain')}</span></li><li><span>Focus muscles</span><span class="li-r">${(focusMuscles||[]).map(cap).join(' & ')}</span></li><li><span>Experience</span><span class="li-r">${cap(experience)}</span></li><li><span>Split</span><span class="li-r">${isCustomSplit?'Custom':'Auto'} · ${p.days||4} days · ${p.sessionLen||60} min</span></li><li><span>Body fat est.</span><span class="li-r">${p.bodyFat?`${p.bodyFat}%`:'—'}</span></li><li><span>Lifestyle</span><span class="li-r">${cap(String(analysis.activityLevel||p.activityLevel||'moderate').replace(/_/g,' '))} · ${cap(String(analysis.workStyle||p.workStyle||'mixed').replace(/_/g,' '))}</span></li><li><span>Pain flags</span><span class="li-r">${(analysis.painAreas||p.painAreas||[]).filter(v=>v&&v!=='none').map(v=>cap(String(v).replace(/_/g,' '))).join(' · ')||'None'}</span></li><li><span>Diet goal</span><span class="li-r">${cap(dietGoal)}</span></li></ul>${profileHtml}${freqHtml}${setHtml}${whyHtml}`;
   // Training tab — custom split banner + customize button
   const customSplitBanner=isCustomSplit
     ?`<div class="custom-split-banner"><span class="custom-split-badge">Custom Split</span><span class="custom-split-note">Your structure is locked in — sets &amp; rep ranges still adapt automatically.</span><div class="custom-split-actions"><button class="btn btn-outline btn-sm" onclick="openCustomSplitModal()">Edit Split</button><button class="btn btn-outline btn-sm" onclick="resetCustomSplit()">Reset to Auto</button></div></div>`
@@ -4370,6 +4443,9 @@ function renderSettings() {
   const calorieMode=p.customCalories?`${p.customCalories} kcal fixed`:`${trEnum('dietGoal',p.dietGoal)} adaptive`;
   const reminderSummary=buildProfileReminderSummary(p);
   const lastSyncLabel=formatLastSyncedLabel(getLastSyncMeta());
+  const showCycleCard=p.sex==='female'&&p.cycleProfile&&p.cycleProfile!==CYCLE_PROFILES.NOT_APPLICABLE;
+  const sortedCycleLogs=[...(p.cycleLogs||[])].filter(l=>l.startDate).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
+  const todayIso=new Date().toISOString().split('T')[0];
   document.getElementById('settingsBody').innerHTML = `
     <div class="settings-card">
       <div class="settings-card-head">
@@ -4425,6 +4501,16 @@ function renderSettings() {
       <div class="settings-copy">You still need browser notification permission for reminders to fire.</div>
     </div>
     <div class="settings-actions"><div class="settings-actions-copy"><strong>Save profile changes</strong><span>Home, plan defaults, recovery setup, and reminders will update together.</span></div><button class="btn btn-acc" onclick="saveSettingsProfile()">Save Changes</button></div>
+    ${showCycleCard?`<div class="settings-card">
+      <div class="settings-title">Period Log</div>
+      <div class="settings-copy">Log period start and end dates. Up to 12 entries are kept — used to estimate your cycle phase and adjust training intensity.</div>
+      <div style="margin:12px 0;">${sortedCycleLogs.length?sortedCycleLogs.map(l=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:14px;color:#f2f2f2;">Started ${l.startDate}${l.endDate?` · Ended ${l.endDate}`:' · End not logged'}</span><button class="btn btn-outline btn-sm" onclick="deleteCycleLogEntry('${l.startDate}')">Remove</button></div>`).join(''):'<div style="font-size:13px;color:#888;padding:8px 0;">No periods logged yet.</div>'}</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:4px;">
+        <label class="settings-field" style="flex:1;min-width:140px;margin:0;"><span class="settings-field-label">Period start</span><input type="date" id="newCycleStart" class="settings-input" max="${todayIso}"></label>
+        <label class="settings-field" style="flex:1;min-width:140px;margin:0;"><span class="settings-field-label">End date (optional)</span><input type="date" id="newCycleEnd" class="settings-input" max="${todayIso}"></label>
+        <button class="btn btn-outline btn-sm" style="align-self:flex-end;" onclick="addCycleLogEntry()">Add Entry</button>
+      </div>
+    </div>`:''}
     <div class="settings-card">
       <div class="settings-title">${t('settings.language')}</div>
       <div class="settings-copy">ADDAPT is available in English and German. Changing language reloads the app.</div>
@@ -4445,6 +4531,30 @@ function renderSettings() {
   syncSettingsFocusHint();
   syncSettingsSaunaHint();
 }
+
+window.addCycleLogEntry=function(){
+  const startDate=document.getElementById('newCycleStart')?.value;
+  if(!startDate){showToast('Date required','Please enter a period start date.');return;}
+  const endDate=document.getElementById('newCycleEnd')?.value||undefined;
+  if(endDate&&endDate<startDate){showToast('Invalid dates','End date must be on or after start date.');return;}
+  const p=window.userProfile;if(!p)return;
+  const logs=[...(p.cycleLogs||[])];
+  if(logs.some(l=>l.startDate===startDate)){showToast('Already logged','A period starting on this date is already recorded.');return;}
+  const entry={startDate,...(endDate?{endDate}:{})};
+  logs.push(entry);
+  logs.sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
+  p.cycleLogs=logs.slice(0,12);
+  if(window.fbSaveProfile)window.fbSaveProfile(p);
+  renderSettings();
+  showToast('Entry added','Period log updated.');
+};
+window.deleteCycleLogEntry=function(startDate){
+  const p=window.userProfile;if(!p)return;
+  p.cycleLogs=(p.cycleLogs||[]).filter(l=>l.startDate!==startDate);
+  if(window.fbSaveProfile)window.fbSaveProfile(p);
+  renderSettings();
+  showToast('Entry removed','Period log updated.');
+};
 
 window.toggleNotifSetting = function(key, val) {
   if (!window.userProfile) return;
