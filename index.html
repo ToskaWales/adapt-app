@@ -78,6 +78,17 @@
         <div class="opt-card" data-key="sex" data-value="female" onclick="obSel(this,'sex','female')"><div class="opt-label">Female</div></div>
         <div class="opt-card" data-key="sex" data-value="other" onclick="obSel(this,'sex','other')"><div class="opt-label">Other</div></div>
       </div>
+      <!-- Cycle profile — only shown for female users -->
+      <div id="ob3CycleSection" style="display:none;margin-top:22px;">
+        <div class="ob-sub" style="margin-bottom:10px;">Cycle profile <span style="color:#888;font-weight:400;">(optional — helps personalise around symptoms)</span></div>
+        <div class="opt-grid c2">
+          <div class="opt-card" data-key="cycleProfile" data-value="eumenorrheic" onclick="obSel(this,'cycleProfile','eumenorrheic')"><div class="opt-label">Regular cycle</div><div class="opt-desc">Fairly consistent monthly periods.</div></div>
+          <div class="opt-card" data-key="cycleProfile" data-value="hormonal_contraception" onclick="obSel(this,'cycleProfile','hormonal_contraception')"><div class="opt-label">Hormonal contraception</div><div class="opt-desc">Pill, patch, implant, or hormonal IUD.</div></div>
+          <div class="opt-card" data-key="cycleProfile" data-value="irregular" onclick="obSel(this,'cycleProfile','irregular')"><div class="opt-label">Irregular / PCOS</div><div class="opt-desc">Variable or unpredictable cycles.</div></div>
+          <div class="opt-card" data-key="cycleProfile" data-value="perimenopause" onclick="obSel(this,'cycleProfile','perimenopause')"><div class="opt-label">Perimenopause / menopause</div><div class="opt-desc">Changing or absent periods.</div></div>
+        </div>
+        <div class="premium-note" style="margin-top:10px;">Cycle phase is one signal among many — symptoms and readiness always take priority. You can skip this and it won't affect your plan.</div>
+      </div>
     </div>
     <div class="foot"><button class="btn btn-outline btn-sm" onclick="obBack(3)">Back</button><button class="btn btn-acc" onclick="obNext(3)" id="ob3n" disabled>Continue</button></div>
   </div>
@@ -508,6 +519,28 @@
     <div class="ci-section"><div class="ci-label">Diet</div><div class="ci-q">How has eating been?</div><div class="chip-wrap" id="dietC"><div class="chip" onclick="selC(this,'dietC')" data-val="way_under">Way under</div><div class="chip sel" onclick="selC(this,'dietC')" data-val="under">Slightly under</div><div class="chip" onclick="selC(this,'dietC')" data-val="on_target">On target</div><div class="chip" onclick="selC(this,'dietC')" data-val="over">Over target</div></div></div>
 
     <div class="ci-section"><div class="ci-label">Notes (optional)</div><div class="ci-q">Pain, highlights or anything to flag?</div><textarea class="textarea" id="ciNotes" placeholder="e.g. Left knee sore, hit a bench PR, skipped a few sessions"></textarea></div>
+    <!-- Cycle section — shown only when profile.sex === 'female' and cycleProfile !== not_applicable -->
+    <div class="ci-section" id="ciCycleSection" style="display:none;">
+      <div class="ci-label">Cycle <span style="font-size:10px;color:#888;font-weight:400;letter-spacing:0;">· optional</span></div>
+      <div class="ci-q" style="margin-bottom:10px;">Period log</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="btn btn-outline btn-sm" id="ciPeriodStart" onclick="toggleCycleButton(this)" style="flex:1;">Period started today</button>
+        <button class="btn btn-outline btn-sm" id="ciPeriodEnd" onclick="toggleCycleButton(this)" style="flex:1;">Period ended today</button>
+      </div>
+      <div class="ci-q">Cramp severity</div>
+      <input type="range" class="range-inp" id="ciCrampSlider" min="0" max="5" value="0" oninput="document.getElementById('ciCrampVal').textContent=this.value">
+      <div class="slider-lbl"><span>None</span><span>Severe</span></div>
+      <div class="slider-val" id="ciCrampVal">0</div>
+      <div class="ci-q" style="margin-top:14px;">Symptoms today</div>
+      <div class="chip-wrap" id="ciCycleSympChips">
+        <div class="chip" data-val="fatigue" onclick="this.classList.toggle('sel')">Fatigue</div>
+        <div class="chip" data-val="bloating" onclick="this.classList.toggle('sel')">Bloating</div>
+        <div class="chip" data-val="mood" onclick="this.classList.toggle('sel')">Mood changes</div>
+        <div class="chip" data-val="headache" onclick="this.classList.toggle('sel')">Headache</div>
+        <div class="chip" data-val="breast_tenderness" onclick="this.classList.toggle('sel')">Breast tenderness</div>
+      </div>
+      <div style="font-size:11px;color:#555;margin-top:8px;">These are one signal among several — symptoms affect load only when they're severe and combined with low energy or readiness.</div>
+    </div>
     <div class="ci-section"><div class="ci-label">Stress</div><div class="ci-q">Overall stress level?</div><input type="range" class="range-inp" id="sS" min="1" max="10" value="4" oninput="updS('sS','sV',this.value)"><div class="slider-lbl"><span>Relaxed</span><span>Maxed out</span></div><div class="slider-val" id="sV">4</div></div>
   </div>
   <div class="foot"><button class="btn btn-acc" onclick="submitCheckin()">Generate My Plan</button></div>

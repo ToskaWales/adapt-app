@@ -242,15 +242,32 @@ export function getAdaptiveScheme(baseSch, exName, sessions = [], sorenessAreas 
 }
 
 /**
- * Build the enhanced ML feature vector (v2) for a single check-in.
- * Includes bias term, current check-in signals, day-of-week, and
- * rolling 3-day average energy/stress from prior check-ins.
+ * Build the enhanced ML feature vector (v3) for a single check-in.
+ * Includes bias term, current check-in signals, day-of-week,
+ * rolling 3-day average energy/stress, and 4 optional cycle features.
+ *
+ * Vector layout (14 elements):
+ *  [0]  bias
+ *  [1]  energy (0–1)
+ *  [2]  inverted stress (0–1)
+ *  [3]  sleep quality (0–1)
+ *  [4]  lift result (0–1)
+ *  [5]  diet adherence (0–1)
+ *  [6]  normalised bodyweight
+ *  [7]  day-of-week (0=Mon … 1=Sun)
+ *  [8]  rolling energy (3-day avg, 0–1)
+ *  [9]  rolling inverted stress (3-day avg, 0–1)
+ *  [10] cycle phase position (0–1, 0.5=unknown/neutral)
+ *  [11] phase confidence (0–1)
+ *  [12] cycle day normalised to avg cycle length (0–1)
+ *  [13] cramp severity normalised (0–1)
  *
  * @param {object} c - Current check-in
  * @param {object[]} priorCheckins - Up to 3 most-recent prior check-ins
+ * @param {number[]|null} cycleFeatures - 4-element array from buildCycleFeatures(), or null for neutral defaults
  * @returns {number[]}
  */
-export function mlFeatureVecV2(c, priorCheckins = []) {
+export function mlFeatureVecV2(c, priorCheckins = [], cycleFeatures = null) {
   const mlSleepVal = (v) =>
     ({ '<5hrs': 0, '5-6hrs': 0.35, '7-8hrs': 0.75, '8+hrs': 1 }[v] ?? 0.5);
   const mlLiftVal = (v) =>
@@ -279,17 +296,28 @@ export function mlFeatureVecV2(c, priorCheckins = []) {
           10
       : 1 - (parseFloat(c.stress) || 5) / 10;
 
+  // Cycle features — neutral defaults when no cycle data available:
+  //   phase=0.5 (mid-cycle), confidence=0, cycleDay=0.5, cramps=0
+  const cf =
+    Array.isArray(cycleFeatures) && cycleFeatures.length === 4
+      ? cycleFeatures
+      : [0.5, 0, 0.5, 0];
+
   return [
-    1, // bias
-    Math.max(0, Math.min(1, (parseFloat(c.energy) || 5) / 10)),
-    Math.max(0, Math.min(1, 1 - (parseFloat(c.stress) || 5) / 10)),
-    mlSleepVal(c.sleep),
-    mlLiftVal(c.lifts),
-    mlDietVal(c.diet),
-    Math.max(0, Math.min(1, (parseFloat(c.weight) || 75) / 140)),
-    dowNorm,
-    rollEnergy,
-    rollStress,
+    1, // [0] bias
+    Math.max(0, Math.min(1, (parseFloat(c.energy) || 5) / 10)),  // [1]
+    Math.max(0, Math.min(1, 1 - (parseFloat(c.stress) || 5) / 10)), // [2]
+    mlSleepVal(c.sleep),   // [3]
+    mlLiftVal(c.lifts),    // [4]
+    mlDietVal(c.diet),     // [5]
+    Math.max(0, Math.min(1, (parseFloat(c.weight) || 75) / 140)), // [6]
+    dowNorm,               // [7]
+    rollEnergy,            // [8]
+    rollStress,            // [9]
+    cf[0],                 // [10] cycle phase position
+    cf[1],                 // [11] phase confidence
+    cf[2],                 // [12] cycle day norm
+    cf[3],                 // [13] cramp severity norm
   ];
 }
 
